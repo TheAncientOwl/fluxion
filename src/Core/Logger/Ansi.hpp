@@ -1,11 +1,11 @@
 /// --------------------------------------------------------------------------
-///                     Copyright (c) by Graphite 2026
+///                     Copyright (c) by Fluxion 2026
 /// --------------------------------------------------------------------------
-/// @license https://github.com/TheAncientOwl/graphite/blob/main/LICENSE
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
 /// @file Ansi.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 1.0
 /// @brief ANSI helpers for escape sequences.
 ///
 
