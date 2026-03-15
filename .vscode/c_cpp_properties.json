@@ -1,0 +1,50 @@
+{
+  "configurations": [
+    {
+      "name": "Mac",
+      "defines": ["GRAPHITE_USE_METAL_API"],
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/Core/Application",
+        "${workspaceFolder}/external",
+        "${workspaceFolder}/external/imgui",
+        "${workspaceFolder}/external/imgui/backends",
+        "/opt/homebrew/include",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks"
+      ],
+      "intelliSenseMode": "macos-clang-x64",
+      "compilerPath": "/usr/bin/clang"
+    },
+    {
+      "name": "Linux",
+      "defines": ["GRAPHITE_USE_VULKAN_API"],
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/Core/Application",
+        "${workspaceFolder}/external",
+        "${workspaceFolder}/external/imgui",
+        "${workspaceFolder}/external/imgui/backends",
+        "/usr/include",
+        "/usr/local/include"
+      ],
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc"
+    },
+    {
+      "name": "Windows",
+      "defines": ["GRAPHITE_USE_VULKAN_API", "_WINDOWS"],
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/Core/Application",
+        "${workspaceFolder}/external",
+        "${workspaceFolder}/external/imgui",
+        "${workspaceFolder}/external/imgui/backends",
+        "D:/msys64/mingw64/include",
+        "D:/msys64/mingw64/include/c++/15.2.0"
+      ],
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "D:/msys64/mingw64/bin/g++.exe"
+    }
+  ],
+  "version": 4
+}

@@ -1,0 +1,5 @@
+build/*
+imgui.ini
+.DS_Store
+players.txt
+app.graphite.log
