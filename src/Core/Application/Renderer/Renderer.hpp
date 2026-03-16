@@ -6,7 +6,7 @@
 /// @file Renderer.hpp
 /// @author Alexandru Delegeanu
 /// @version 1.0
-/// @brief Create IRenderer based on buid platform.
+/// @brief Create IRenderer based on build platform.
 ///
 
 #pragma once
