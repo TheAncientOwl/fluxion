@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Main application.
 ///
 
@@ -15,6 +15,7 @@
 #include <concepts>
 #include <memory>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -52,10 +53,10 @@ public:
         requires std::derived_from<LayerImpl, ILayer<ApplicationState>> && requires {
             { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
         }
-    Graphite::Core::Common::UniqueID const& PushLayer(Args&&... args);
+    Graphite::Core::Common::UniqueID const& AddLayer(Args&&... args);
 
-    void PopLayer();
-
+    void ActivateLayer(Graphite::Core::Common::UniqueID const& uid);
+    void DeactivateLayer(Graphite::Core::Common::UniqueID const& uid);
     void RemoveLayer(Graphite::Core::Common::UniqueID const& uid);
     bool IsLayerPushed(Graphite::Core::Common::UniqueID const& uid) const;
     std::weak_ptr<ILayer<ApplicationState>> GetLayer(Graphite::Core::Common::UniqueID const& uid);
@@ -80,6 +81,8 @@ protected:
 
 private:
     std::vector<typename ILayer<ApplicationState>::Ptr> m_layers{};
+    std::unordered_set<Graphite::Core::Common::UniqueID, Graphite::Core::Common::UniqueID::Hash>
+        m_removed_layers{};
     std::unique_ptr<Graphite::Core::Renderer::IRenderer> m_renderer{nullptr};
 };
 
@@ -124,7 +127,7 @@ void TGraphiteApplication<ApplicationState>::Shutdown()
     LOG_SCOPE("");
     while (!m_layers.empty())
     {
-        m_layers.back()->OnPop();
+        m_layers.back()->OnRemove();
         m_layers.pop_back();
     }
     m_renderer->Cleanup();
@@ -135,7 +138,7 @@ template <typename LayerImpl, typename... Args>
     requires std::derived_from<LayerImpl, ILayer<ApplicationState>> && requires {
         { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
     }
-Graphite::Core::Common::UniqueID const& TGraphiteApplication<ApplicationState>::PushLayer(Args&&... args)
+Graphite::Core::Common::UniqueID const& TGraphiteApplication<ApplicationState>::AddLayer(Args&&... args)
 {
     LOG_SCOPE("{}", LayerImpl::GetLayerName().data());
     auto layer = std::make_unique<LayerImpl>(std::forward<Args>(args)...);
@@ -148,40 +151,48 @@ Graphite::Core::Common::UniqueID const& TGraphiteApplication<ApplicationState>::
             m_layers.cend(),
         "Trying to add layer with same ID");
 
-    layer->OnPush();
+    layer->OnAdd();
 
     auto const& layer_uid{layer->GetUID()};
     m_layers.push_back(std::move(layer));
+
+    std::sort(m_layers.begin(), m_layers.end(), [](auto const& a, auto const& b) {
+        return a->GetZIndex() < b->GetZIndex();
+    });
 
     return layer_uid;
 }
 
 template <typename ApplicationState>
-void TGraphiteApplication<ApplicationState>::PopLayer()
+void TGraphiteApplication<ApplicationState>::ActivateLayer(Graphite::Core::Common::UniqueID const& uid)
 {
-    if (!m_layers.empty())
+    auto it = std::find_if(m_layers.begin(), m_layers.end(), [uid](auto const& layer_ptr) {
+        return layer_ptr->GetUID() == uid;
+    });
+
+    if (it != m_layers.end())
     {
-        m_layers.back()->OnPop();
-        m_layers.pop_back();
+        it->Activate();
+    }
+}
+
+template <typename ApplicationState>
+void TGraphiteApplication<ApplicationState>::DeactivateLayer(Graphite::Core::Common::UniqueID const& uid)
+{
+    auto it = std::find_if(m_layers.begin(), m_layers.end(), [uid](auto const& layer_ptr) {
+        return layer_ptr->GetUID() == uid;
+    });
+
+    if (it != m_layers.end())
+    {
+        it->Deactivate();
     }
 }
 
 template <typename ApplicationState>
 void TGraphiteApplication<ApplicationState>::RemoveLayer(Graphite::Core::Common::UniqueID const& uid)
 {
-    m_layers.erase(
-        std::remove_if(
-            m_layers.begin(),
-            m_layers.end(),
-            [&](ILayer<ApplicationState>::Ptr& layer_ptr) {
-                if (layer_ptr->GetUID() == uid)
-                {
-                    layer_ptr->OnPop();
-                    return true;
-                }
-                return false;
-            }),
-        m_layers.end());
+    m_removed_layers.insert(uid);
 }
 
 template <typename ApplicationState>
@@ -213,9 +224,27 @@ template <typename ApplicationState>
 void TGraphiteApplication<ApplicationState>::RenderLayers()
 {
     LOG_SCOPE("");
+    m_removed_layers.clear();
     std::for_each(m_layers.begin(), m_layers.end(), [this](ILayer<ApplicationState>::Ptr& layer_ptr) {
-        layer_ptr->OnRender();
+        if (layer_ptr->IsActive())
+        {
+            layer_ptr->OnRender();
+        }
     });
+
+    m_layers.erase(
+        std::remove_if(
+            m_layers.begin(),
+            m_layers.end(),
+            [&](auto& layer_ptr) {
+                if (m_removed_layers.contains(layer_ptr->GetUID()))
+                {
+                    layer_ptr->OnRemove();
+                    return true;
+                }
+                return false;
+            }),
+        m_layers.end());
 }
 
 } // namespace Graphite::Core::Application

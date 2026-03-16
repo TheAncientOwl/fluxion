@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Logging utilities
 ///
 
@@ -112,9 +112,12 @@ private:
     ::Graphite::Core::Logger::Logger::log( \
         ::Graphite::Core::Logger::LogLevel::Error, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_CRITICAL(fmt, ...)             \
-    ::Graphite::Core::Logger::Logger::log( \
-        ::Graphite::Core::Logger::LogLevel::Critical, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define LOG_CRITICAL(fmt, ...)                        \
+    ::Graphite::Core::Logger::Logger::log(            \
+        ::Graphite::Core::Logger::LogLevel::Critical, \
+        __PRETTY_FUNCTION__,                          \
+        fmt __VA_OPT__(, ) __VA_ARGS__);              \
+    std::this_thread::sleep_for(std::chrono::seconds{2})
 
 #define LOG_DEBUG(fmt, ...)                \
     ::Graphite::Core::Logger::Logger::log( \

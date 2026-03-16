@@ -33,7 +33,12 @@ public: // public API
     ///
     /// @brief Self explanatory
     ///
-    static UniqueID generate();
+    static UniqueID Generate();
+
+    ///
+    /// @brief Self explanatory
+    ///
+    static UniqueID Default();
 
     ///
     /// @brief Self explanatory
@@ -64,8 +69,8 @@ public: // operators
     friend std::ostream& operator<<(std::ostream&, UniqueID const&);
 
 private: // fields
+    static const UniqueID s_default;
     std::array<unsigned char, 16> m_data{};
-    bool m_initialized{false};
 };
 
 } // namespace Graphite::Core::Common

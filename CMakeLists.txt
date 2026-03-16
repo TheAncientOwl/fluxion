@@ -24,6 +24,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(src/Core)
+add_subdirectory(src/Application)
 
 # Create executable
 set(SOURCES
@@ -39,9 +40,7 @@ set_target_properties(fluxion PROPERTIES
 )
 
 target_link_libraries(fluxion PRIVATE
-    graphite_core_logger
-    graphite_core_renderer
-    graphite_core_application
+    fluxion_app
 )
 
 # Include directories

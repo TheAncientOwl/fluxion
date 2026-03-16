@@ -1,0 +1,63 @@
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file Fluxion.cpp
+/// @author Alexandru Delegeanu
+/// @version 0.1
+/// @brief Implementation of @see Fluxion.hpp.
+///
+
+#include "Fluxion.hpp"
+
+#include "Layers/BaseLayer.hpp"
+#include "Layers/FiltersLayer.hpp"
+#include "Layers/LogsViewLayer.hpp"
+#include "Layers/MainMenuLayer.hpp"
+
+#include "DummyPlugin.hpp"
+
+namespace Fluxion::Application {
+
+FluxionApplication::FluxionApplication(
+    Graphite::Core::Application::WindowConfiguration window_configuration,
+    AppState initial_state)
+    : TGraphiteApplication{std::move(window_configuration), std::move(initial_state)}
+{
+    LOG_SCOPE("");
+}
+
+FluxionApplication::~FluxionApplication()
+{
+    LOG_SCOPE("");
+}
+
+void FluxionApplication::AppInit()
+{
+    LOG_SCOPE("");
+    if (ImGui::GetCurrentContext() == nullptr)
+    {
+        ImGui::CreateContext();
+    }
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    SetupFonts();
+
+    // TODO: this is only for testing purpose during impl
+    m_app_state.logs_logic = std::make_unique<DummyPlugin>();
+
+    AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
+    AddLayer<Layers::MainMenuLayer>(shared_from_this(), 0);
+    AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);
+    AddLayer<Layers::FiltersLayer>(shared_from_this(), 20);
+}
+
+void FluxionApplication::SetupFonts()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF("assets/fonts/JetBrainsMono-Medium.ttf", 15.5f);
+}
+
+} // namespace Fluxion::Application

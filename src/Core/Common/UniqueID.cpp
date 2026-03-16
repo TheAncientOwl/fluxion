@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -21,29 +21,28 @@
 
 namespace Graphite::Core::Common {
 
-UniqueID::UniqueID(UniqueID&& other) noexcept
-    : m_data{std::move(other.m_data)}, m_initialized(std::exchange(other.m_initialized, false))
+UniqueID::UniqueID(UniqueID&& other) noexcept : m_data{std::move(other.m_data)}
 {
 }
 
 UniqueID& UniqueID::operator=(UniqueID&& rhs) noexcept
 {
     m_data = std::move(rhs.m_data);
-    m_initialized = std::exchange(rhs.m_initialized, false);
+    rhs.m_data = s_default.m_data;
     return *this;
 }
 
 bool UniqueID::operator<(UniqueID const& rhs) const
 {
-    return m_data < rhs.m_data && m_initialized < rhs.m_initialized;
+    return m_data < rhs.m_data;
 }
 
 bool UniqueID::operator==(UniqueID const& rhs) const
 {
-    return m_data == rhs.m_data && m_initialized == rhs.m_initialized;
+    return m_data == rhs.m_data;
 }
 
-UniqueID UniqueID::generate()
+UniqueID UniqueID::Generate()
 {
     UniqueID out{};
     auto& uuid = out.m_data;
@@ -63,14 +62,19 @@ UniqueID UniqueID::generate()
     // Set variant to 2 (0b10xxxxxx)
     uuid[8] = (uuid[8] & 0x3F) | 0x80;
 
-    out.m_initialized = true;
+    return out;
+}
 
+UniqueID UniqueID::Default()
+{
+    UniqueID out{};
+    out.m_data.fill('0');
     return out;
 }
 
 std::string UniqueID::toString() const
 {
-    if (!m_initialized)
+    if (!initialized())
     {
         return "";
     }
@@ -96,13 +100,15 @@ std::ostream& operator<<(std::ostream& os, UniqueID const& rhs)
 
 bool UniqueID::initialized() const
 {
-    return m_initialized;
+    return s_default != *this;
 }
 
 std::size_t UniqueID::Hash::operator()(UniqueID const& uid) const
 {
     auto const data_hash{std::hash<std::string>{}(uid.toString())};
-    return data_hash ^ (uid.m_initialized << 1);
+    return data_hash;
 }
+
+const UniqueID UniqueID::s_default = UniqueID::Default();
 
 } // namespace Graphite::Core::Common
