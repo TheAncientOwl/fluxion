@@ -5,11 +5,13 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
 #include "Fluxion.hpp"
+
+#include "icons/IconsCodicons.h"
 
 #include "Layers/BaseLayer.hpp"
 #include "Layers/FiltersLayer.hpp"
@@ -56,8 +58,16 @@ void FluxionApplication::AppInit()
 
 void FluxionApplication::SetupFonts()
 {
-    ImGuiIO& io = ImGui::GetIO();
+    auto& io = ImGui::GetIO();
+
     io.Fonts->AddFontFromFileTTF("assets/fonts/JetBrainsMono-Medium.ttf", 15.5f);
+
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.PixelSnapH = true;
+    config.GlyphOffset.y = 2.5f;
+    ImWchar const codicon_ranges[] = {ICON_MIN_CI, ICON_MAX_16_CI, 0};
+    io.Fonts->AddFontFromFileTTF("assets/fonts/codicon.ttf", 15.5f, &config, codicon_ranges);
 }
 
 } // namespace Fluxion::Application

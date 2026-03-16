@@ -5,7 +5,7 @@
 ///
 /// @file DataIO.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief IO related utilities.
 ///
 
@@ -74,14 +74,14 @@ inline std::ostream& operator<<(std::ostream& os, const FilterComponent& v)
         flags_str += "IsEquals";
         first = false;
     }
-    if (v[EFilterComponentFlag::IsIgnoreCase])
+    if (v[EFilterComponentFlag::IsCaseSensitive])
     {
         if (!first)
             flags_str += ", ";
-        flags_str += "IsIgnoreCase";
+        flags_str += "IsCaseSensitive";
         first = false;
     }
-    return os << "FilterComponent(uid=" << v.uid << ", over_field_id=" << v.over_field_id
+    return os << "FilterComponent(id=" << v.id << ", over_field_id=" << v.over_field_id
               << ", data=\"" << v.data << "\", flags=" << flags_str << ")";
 }
 
@@ -117,8 +117,8 @@ inline std::ostream& operator<<(std::ostream& os, const Filter& v)
         flags_str += "IsCollapsed";
         first = false;
     }
-    os << "Filter(uid=" << v.uid << ", name=\"" << v.name << "\", components=" << v.component_uids
-       << ", priority=" << +v.priority << ", flags=" << flags_str << ")";
+    os << "Filter(id=" << v.id << ", name=\"" << v.name << "\", components=" << v.component_ids
+       << ", priority=" << +v.priority << ", colors=" << v.colors << ", flags=" << flags_str << ")";
     return os;
 }
 
@@ -133,7 +133,7 @@ inline std::ostream& operator<<(std::ostream& os, const FilterTab& v)
         flags_str += "IsActive";
         first = false;
     }
-    os << "FilterTab(uid=" << v.uid << ", name=\"" << v.name << "\", filters=" << v.filter_ids
+    os << "FilterTab(id=" << v.id << ", name=\"" << v.name << "\", filters=" << v.filter_ids
        << ", flags=" << flags_str << ")";
     return os;
 }
@@ -168,17 +168,17 @@ struct std::formatter<Fluxion::API::Data::FilterComponent>
             flags_str += "IsEquals";
             first = false;
         }
-        if (fc[Fluxion::API::Data::EFilterComponentFlag::IsIgnoreCase])
+        if (fc[Fluxion::API::Data::EFilterComponentFlag::IsCaseSensitive])
         {
             if (!first)
                 flags_str += ", ";
-            flags_str += "IsIgnoreCase";
+            flags_str += "IsCaseSensitive";
             first = false;
         }
 
         auto out = ctx.out();
-        out = std::format_to(out, "FilterComponent(uid=");
-        out = std::format_to(out, "{}", fc.uid);
+        out = std::format_to(out, "FilterComponent(id=");
+        out = std::format_to(out, "{}", fc.id);
         out = std::format_to(out, ", over_field_id={}", fc.over_field_id);
         out = std::format_to(out, ", data=\"{}\"", fc.data);
         out = std::format_to(out, ", flags={}", flags_str);
@@ -239,10 +239,10 @@ struct std::formatter<Fluxion::API::Data::Filter>
             first = false;
         }
         auto out = ctx.out();
-        out = std::format_to(out, "Filter(uid=");
-        out = std::format_to(out, "{}", f.uid);
+        out = std::format_to(out, "Filter(id=");
+        out = std::format_to(out, "{}", f.id);
         out = std::format_to(out, ", name=\"{}\"", f.name);
-        out = std::format_to(out, ", components={}", f.component_uids.size());
+        out = std::format_to(out, ", components={}", f.component_ids.size());
         out = std::format_to(out, ", priority={}", +f.priority);
         out = std::format_to(out, ", flags={}", flags_str);
         out = std::format_to(out, ")");
@@ -268,8 +268,8 @@ struct std::formatter<Fluxion::API::Data::FilterTab>
             first = false;
         }
         auto out = ctx.out();
-        out = std::format_to(out, "FilterTab(uid=");
-        out = std::format_to(out, "{}", ft.uid);
+        out = std::format_to(out, "FilterTab(id=");
+        out = std::format_to(out, "{}", ft.id);
         out = std::format_to(out, ", name=\"{}\"", ft.name);
         out = std::format_to(out, ", filters={}", ft.filter_ids.size());
         out = std::format_to(out, ", flags={}", flags_str);

@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -45,22 +45,22 @@ bool UniqueID::operator==(UniqueID const& rhs) const
 UniqueID UniqueID::Generate()
 {
     UniqueID out{};
-    auto& uuid = out.m_data;
+    auto& uid = out.m_data;
 
     std::random_device random_device{};
     std::mt19937 generator(random_device());
     std::uniform_int_distribution<std::uint16_t> distribution(0, 255);
 
-    for (auto& byte : uuid)
+    for (auto& byte : uid)
     {
         byte = distribution(generator);
     }
 
     // Set version to 4 (0b0100xxxx)
-    uuid[6] = (uuid[6] & 0x0F) | 0x40;
+    uid[6] = (uid[6] & 0x0F) | 0x40;
 
     // Set variant to 2 (0b10xxxxxx)
-    uuid[8] = (uuid[8] & 0x3F) | 0x80;
+    uid[8] = (uid[8] & 0x3F) | 0x80;
 
     return out;
 }
@@ -103,9 +103,9 @@ bool UniqueID::initialized() const
     return s_default != *this;
 }
 
-std::size_t UniqueID::Hash::operator()(UniqueID const& uid) const
+std::size_t UniqueID::Hash::operator()(UniqueID const& id) const
 {
-    auto const data_hash{std::hash<std::string>{}(uid.toString())};
+    auto const data_hash{std::hash<std::string>{}(id.toString())};
     return data_hash;
 }
 

@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -50,7 +50,7 @@ void LogsViewLayer::OnRender()
 
     if (!m_application->GetApplicationState().logs_view_open)
     {
-        m_application->RemoveLayer(m_layer_uid);
+        m_application->RemoveLayer(m_layer_id);
     }
 }
 
