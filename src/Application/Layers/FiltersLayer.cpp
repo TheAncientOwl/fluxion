@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -47,7 +47,7 @@ void FiltersLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::Begin("Filters", &app_state.filters.menu_open, ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin(ICON_CI_WAND " Filters", &app_state.filters.menu_open, ImGuiWindowFlags_NoTitleBar);
 
     RenderFilterTabs();
 

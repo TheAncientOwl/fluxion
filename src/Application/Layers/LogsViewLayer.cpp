@@ -5,12 +5,13 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
 #include "LogsViewLayer.hpp"
 
+#include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
 
 namespace Fluxion::Application::Layers {
@@ -44,7 +45,7 @@ void LogsViewLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::Begin("LogsView", &app_state.logs_view_open);
+    ImGui::Begin(ICON_CI_OUTPUT " Logs", &app_state.logs_view_open);
 
     RenderLogsTable();
 

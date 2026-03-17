@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
@@ -62,7 +62,7 @@ void MainMenuLayer::RenderMenu()
     LOG_SCOPE("");
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("Views"))
+        if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
             auto& app_state{m_application->GetApplicationState()};
 
