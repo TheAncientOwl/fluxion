@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
@@ -13,6 +13,7 @@
 #include "FiltersLayer.hpp"
 #include "LogsViewLayer.hpp"
 
+#include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
 
 #include "Api/DataIO.hpp"
@@ -61,21 +62,26 @@ void MainMenuLayer::RenderMenu()
     LOG_SCOPE("");
     if (ImGui::BeginMainMenuBar())
     {
-        if (ImGui::BeginMenu("Panels"))
+        if (ImGui::BeginMenu("Views"))
         {
-            if (ImGui::MenuItem("Toggle LogsView"))
+            auto& app_state{m_application->GetApplicationState()};
+
+            if (ImGui::MenuItem(
+                    app_state.logs_view_open ? ICON_CI_EYE " Logs" : ICON_CI_EYE_CLOSED " LogsView"))
             {
-                auto& app_state{m_application->GetApplicationState()};
                 if (!app_state.logs_view_open)
                 {
                     m_application->AddLayer<LogsViewLayer>(m_application->shared_from_this(), 10);
                 }
                 app_state.logs_view_open = !app_state.logs_view_open;
             }
+
             ImGui::Separator();
-            if (ImGui::MenuItem("Toggle Filters"))
+
+            if (ImGui::MenuItem(
+                    app_state.filters.menu_open ? ICON_CI_EYE " Filters"
+                                                : ICON_CI_EYE_CLOSED " Filters"))
             {
-                auto& app_state{m_application->GetApplicationState()};
                 if (!app_state.filters.menu_open)
                 {
                     m_application->AddLayer<FiltersLayer>(m_application->shared_from_this(), 20);

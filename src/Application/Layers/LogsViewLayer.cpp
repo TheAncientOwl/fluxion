@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -42,7 +42,9 @@ void LogsViewLayer::OnRender()
 {
     LOG_SCOPE("");
 
-    ImGui::Begin("LogsView");
+    auto& app_state{m_application->GetApplicationState()};
+
+    ImGui::Begin("LogsView", &app_state.logs_view_open);
 
     RenderLogsTable();
 
