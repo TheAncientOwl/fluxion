@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief UniqueID abstraction.
 ///
 
@@ -67,10 +67,15 @@ public: // operators
     bool operator<(UniqueID const&) const;
     bool operator==(UniqueID const&) const;
     friend std::ostream& operator<<(std::ostream&, UniqueID const&);
+    friend std::string operator+(std::string_view const lhs, UniqueID const& rhs);
+    friend std::string operator+(UniqueID const& lhs, std::string_view const rhs);
 
 private: // fields
     static const UniqueID s_default;
     std::array<unsigned char, 16> m_data{};
 };
+
+std::string operator+(std::string_view const lhs, UniqueID const& rhs);
+std::string operator+(UniqueID const& lhs, std::string_view const rhs);
 
 } // namespace Graphite::Core::Common

@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -96,6 +96,34 @@ std::string UniqueID::toString() const
 std::ostream& operator<<(std::ostream& os, UniqueID const& rhs)
 {
     return os << rhs.toString();
+}
+
+std::string operator+(std::string_view const lhs, UniqueID const& rhs)
+{
+    static constexpr char hex[] = "0123456789abcdef";
+
+    std::string result;
+    result.reserve(lhs.size() + 36);
+    result.append(lhs);
+
+    for (std::size_t i = 0; i < rhs.m_data.size(); ++i)
+    {
+        if (i == 4 || i == 6 || i == 8 || i == 10)
+        {
+            result.push_back('-');
+        }
+
+        unsigned char byte = rhs.m_data[i];
+        result.push_back(hex[(byte >> 4) & 0xF]);
+        result.push_back(hex[byte & 0xF]);
+    }
+
+    return result;
+}
+
+std::string operator+(UniqueID const& lhs, std::string_view const rhs)
+{
+    return operator+(rhs, lhs);
 }
 
 bool UniqueID::initialized() const

@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -165,6 +165,48 @@ void ColorsPicker(
     }
 }
 
+void PushButtonGrayIfOff(bool const state)
+{
+    if (!state)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, {0.5f, 0.5f, 0.5f, 0.6f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.6f, 0.6f, 0.6f, 0.9f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.4f, 0.4f, 0.4f, 0.3f});
+    }
+};
+
+void PopButtonGrayIfOff(bool const state)
+{
+    if (!state)
+    {
+        ImGui::PopStyleColor(3);
+    }
+};
+
+void PushRedButton()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button, {0.75f, 0.0f, 0.0f, 0.6f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.75f, 0.0f, 0.0f, 0.9f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.75f, 0.0f, 0.0f, 0.3f});
+};
+
+void PopRedButton()
+{
+    ImGui::PopStyleColor(3);
+};
+
+void PushButtonGripper()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button, {0.0f, 0.0f, 0.0f, 0.0f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.0f, 0.0f, 0.0f, 0.0f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.0f, 0.0f, 0.0f, 0.0f});
+}
+
+void PopButtonGripper()
+{
+    ImGui::PopStyleColor(3);
+}
+
 void FiltersLayer::RenderFilterTabs()
 {
     LOG_SCOPE("");
@@ -178,27 +220,54 @@ void FiltersLayer::RenderFilterTabs()
 
     if (ImGui::BeginTabBar("Tabs"))
     {
-        auto PushButtonGrayIfOff = [](bool const state) {
-            if (!state)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Button, {0.5f, 0.5f, 0.5f, 0.6f});
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.6f, 0.6f, 0.6f, 0.9f});
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.4f, 0.4f, 0.4f, 0.3f});
-            }
-        };
-
-        auto PopButtonGrayIfOff = [](bool const state) {
-            if (!state)
-            {
-                ImGui::PopStyleColor(3);
-            }
-        };
-
         auto& filters{app_state.filters.data};
         for (auto& tab : filters.tabs)
         {
-            if (ImGui::BeginTabItem(tab.name.c_str()))
+            auto tab_label = tab.name + "###" + tab.id;
+            if (ImGui::BeginTabItem(tab_label.c_str()))
             {
+                if (ImGui::Button(ICON_CI_PLUS))
+                {
+                    // TODO: implement add filter
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Add Filter");
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button(ICON_CI_COPY))
+                {
+                    // TODO: implement duplicate
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Duplicate Tab");
+                }
+
+                ImGui::SameLine();
+                PushRedButton();
+                if (ImGui::Button(ICON_CI_TRASH))
+                {
+                    // TODO: implement delete
+                }
+                PopRedButton();
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Delete Tab");
+                }
+
+                char tab_name_buf[128];
+                std::strncpy(tab_name_buf, tab.name.c_str(), sizeof(tab_name_buf));
+                tab_name_buf[sizeof(tab_name_buf) - 1] = '\0';
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                if (ImGui::InputText("##tab_name", tab_name_buf, sizeof(tab_name_buf)))
+                {
+                    tab.name = tab_name_buf;
+                }
+                ImGui::PopItemWidth();
+
                 int filter_render_index{0};
                 for (auto& filter : filters.filters)
                 {
@@ -213,7 +282,7 @@ void FiltersLayer::RenderFilterTabs()
                         continue;
                     }
 
-                    LOG_TRACE("Tab {} | Filter {}", tab.name, filter.name);
+                    LOG_DEBUG("Tab {} | Filter {}", tab.name, filter.name);
 
                     auto const filter_child_id{std::to_string(++filter_render_index)};
                     ImGui::BeginChild(
@@ -222,6 +291,18 @@ void FiltersLayer::RenderFilterTabs()
 
                     using EFilterFlag = Fluxion::API::Data::EFilterFlag;
 
+                    PushButtonGripper();
+                    if (ImGui::Button(ICON_CI_GRIPPER))
+                    {
+                        // TODO: Implement move
+                    }
+                    PopButtonGripper();
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Move Filter");
+                    }
+
+                    ImGui::SameLine();
                     if (ImGui::Button(
                             filter[EFilterFlag::IsCollapsed] ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
                     {
@@ -243,15 +324,13 @@ void FiltersLayer::RenderFilterTabs()
                         ImGui::SetTooltip("Duplicate Filter");
                     }
 
-                    ImGui::PushStyleColor(ImGuiCol_Button, {0.75f, 0.0f, 0.0f, 0.6f});
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.75f, 0.0f, 0.0f, 0.9f});
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.75f, 0.0f, 0.0f, 0.3f});
                     ImGui::SameLine();
+                    PushRedButton();
                     if (ImGui::Button(ICON_CI_TRASH))
                     {
                         // TODO: implement delete
                     }
-                    ImGui::PopStyleColor(3);
+                    PopRedButton();
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Delete Filter");
@@ -276,7 +355,7 @@ void FiltersLayer::RenderFilterTabs()
                     ImGui::SameLine();
                     int priority_tmp = static_cast<int>(filter.priority);
                     ImGui::PushItemWidth(85);
-                    if (ImGui::InputInt("##PR", &priority_tmp, 1, 1))
+                    if (ImGui::InputInt("##prio", &priority_tmp, 1, 1))
                     {
                         priority_tmp = std::clamp(priority_tmp, 0, 255);
                         filter.priority = static_cast<std::uint8_t>(priority_tmp);
@@ -306,6 +385,7 @@ void FiltersLayer::RenderFilterTabs()
 
                     ImGui::Separator();
 
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
                     if (ImGui::Button(ICON_CI_PLUS))
                     {
                         // TODO: implement add component
@@ -345,24 +425,35 @@ void FiltersLayer::RenderFilterTabs()
                             continue;
                         }
 
-                        LOG_TRACE(
+                        LOG_DEBUG(
                             "Tab {} | Filter {} | Component {}",
                             tab.name,
                             filter.name,
                             component.id.toString());
 
                         auto const component_child_id{std::to_string(++component_render_index)};
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
                         ImGui::BeginChild(
                             component_child_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 
-                        ImGui::PushStyleColor(ImGuiCol_Button, {0.75f, 0.0f, 0.0f, 0.6f});
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.75f, 0.0f, 0.0f, 0.9f});
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.75f, 0.0f, 0.0f, 0.3f});
+                        PushButtonGripper();
+                        if (ImGui::Button(ICON_CI_GRIPPER))
+                        {
+                            // TODO: Implement move
+                        }
+                        PopButtonGripper();
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Move Component");
+                        }
+
+                        ImGui::SameLine();
+                        PushRedButton();
                         if (ImGui::Button(ICON_CI_TRASH))
                         {
                             // TODO: implement delete component
                         }
-                        ImGui::PopStyleColor(3);
+                        PopRedButton();
                         if (ImGui::IsItemHovered())
                         {
                             ImGui::SetTooltip("Delete Component");
@@ -434,6 +525,19 @@ void FiltersLayer::RenderFilterTabs()
                         {
                             ImGui::SetTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
                         }
+
+                        ImGui::SameLine();
+                        char component_data_buf[256];
+                        std::strncpy(
+                            component_data_buf, component.data.c_str(), sizeof(component_data_buf));
+                        component_data_buf[sizeof(component_data_buf) - 1] = '\0';
+                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+                        if (ImGui::InputText(
+                                "##comp_data", component_data_buf, sizeof(component_data_buf)))
+                        {
+                            component.data = component_data_buf;
+                        }
+                        ImGui::PopItemWidth();
 
                         ImGui::EndChild();
                     }
