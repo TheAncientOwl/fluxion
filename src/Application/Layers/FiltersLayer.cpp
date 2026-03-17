@@ -9,6 +9,8 @@
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
+#include <optional>
+
 #include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
 
@@ -65,6 +67,44 @@ void FiltersLayer::OnRemove()
 }
 
 namespace UIHelpers {
+
+template <typename... Args>
+void ItemHoverTooltip(const char* fmt, Args&&... args)
+{
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip(fmt, std::forward<Args>(args)...);
+    }
+}
+
+enum EInputTextWidth
+{
+    Auto,
+    Fill
+};
+
+template <std::size_t TBufferSize, EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
+void InputText(const char* label, std::string& str)
+{
+    char buffer[TBufferSize];
+    std::strncpy(buffer, str.c_str(), TBufferSize);
+    buffer[TBufferSize - 1] = '\0';
+
+    if constexpr (TInputTextWidth == EInputTextWidth::Fill)
+    {
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    }
+
+    if (ImGui::InputText(label, buffer, TBufferSize))
+    {
+        str = buffer;
+    }
+
+    if constexpr (TInputTextWidth == EInputTextWidth::Fill)
+    {
+        ImGui::PopItemWidth();
+    }
+}
 
 void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f)
 {
@@ -229,20 +269,14 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
     {
         // TODO: implement add filter
     }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Add Filter");
-    }
+    UIHelpers::ItemHoverTooltip("Add Filter");
 
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_COPY))
     {
         // TODO: implement duplicate
     }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Duplicate Tab");
-    }
+    UIHelpers::ItemHoverTooltip("Duplicate Tab");
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
@@ -251,21 +285,10 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
         // TODO: implement delete
     }
     UIHelpers::Styles::PopRedButton();
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Delete Tab");
-    }
+    UIHelpers::ItemHoverTooltip("Delete Tab");
 
-    char tab_name_buf[128];
-    std::strncpy(tab_name_buf, tab.name.c_str(), sizeof(tab_name_buf));
-    tab_name_buf[sizeof(tab_name_buf) - 1] = '\0';
     ImGui::SameLine();
-    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    if (ImGui::InputText("##tab_name", tab_name_buf, sizeof(tab_name_buf)))
-    {
-        tab.name = tab_name_buf;
-    }
-    ImGui::PopItemWidth();
+    UIHelpers::InputText<128>("##tab_name", tab.name);
 
     for (auto& filter : filter_tabs.filters)
     {
@@ -300,30 +323,21 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
         // TODO: Implement move
     }
     UIHelpers::Styles::PopButtonGripper();
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Move Filter");
-    }
+    UIHelpers::ItemHoverTooltip("Move Filter");
 
     ImGui::SameLine();
     if (ImGui::Button(filter[EFilterFlag::IsCollapsed] ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
     {
         // TODO: implement collapse
     }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip(filter[EFilterFlag::IsCollapsed] ? "Show Filter" : "Hide Filter");
-    }
+    UIHelpers::ItemHoverTooltip(filter[EFilterFlag::IsCollapsed] ? "Show Filter" : "Hide Filter");
 
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_COPY))
     {
         // TODO: implement duplicate
     }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Duplicate Filter");
-    }
+    UIHelpers::ItemHoverTooltip("Duplicate Filter");
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
@@ -332,10 +346,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
         // TODO: implement delete
     }
     UIHelpers::Styles::PopRedButton();
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Delete Filter");
-    }
+    UIHelpers::ItemHoverTooltip("Delete Filter");
 
     ImGui::SameLine();
     UIHelpers::ColorsPicker(
@@ -356,26 +367,15 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
         filter.priority = static_cast<std::uint8_t>(priority_tmp);
     }
     ImGui::PopItemWidth();
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Filter Priority");
-    }
+    UIHelpers::ItemHoverTooltip("Filter Priority");
 
     ImGui::SameLine();
     UIHelpers::VerticalSeparator();
 
-    char name_buf[128];
-    std::strncpy(name_buf, filter.name.c_str(), sizeof(name_buf));
-    name_buf[sizeof(name_buf) - 1] = '\0';
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    if (ImGui::InputText("##FN", name_buf, sizeof(name_buf)))
-    {
-        filter.name = name_buf;
-    }
-    ImGui::PopItemWidth(); // input text width
+    UIHelpers::InputText<128>("##filter_name", filter.name);
     ImGui::PopStyleColor(2); // input text and background colors
 
     ImGui::Separator();
@@ -385,10 +385,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     {
         // TODO: implement add component
     }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Add Component");
-    }
+    UIHelpers::ItemHoverTooltip("Add Component");
 
     ImGui::SameLine();
     bool is_active{filter[EFilterFlag::IsActive]};
@@ -439,10 +436,7 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::AP
         // TODO: Implement move
     }
     UIHelpers::Styles::PopButtonGripper();
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Move Component");
-    }
+    UIHelpers::ItemHoverTooltip("Move Component");
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
@@ -451,10 +445,7 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::AP
         // TODO: implement delete component
     }
     UIHelpers::Styles::PopRedButton();
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("Delete Component");
-    }
+    UIHelpers::ItemHoverTooltip("Delete Component");
 
     // TODO: update when plugin implementation supports headers with IDs
     const char* items[] = {"Option 1", "Option 2", "Option 3"};
@@ -489,10 +480,7 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::AP
         component[EFilterComponentFlag::IsRegex] = !is_regex;
     }
     UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip(is_regex ? "Toggle Regex Off" : "Toggle Regex On");
-    }
+    UIHelpers::ItemHoverTooltip(is_regex ? "Toggle Regex Off" : "Toggle Regex On");
 
     ImGui::SameLine();
     bool const is_case_sensitive{component[EFilterComponentFlag::IsCaseSensitive]};
@@ -502,10 +490,8 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::AP
         component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive;
     }
     UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip(is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On");
-    }
+    UIHelpers::ItemHoverTooltip(
+        is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On");
 
     ImGui::SameLine();
     bool const is_equals{component[EFilterComponentFlag::IsEquals]};
@@ -515,21 +501,10 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::AP
         component[EFilterComponentFlag::IsEquals] = !is_equals;
     }
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
-    }
+    UIHelpers::ItemHoverTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
 
     ImGui::SameLine();
-    char component_data_buf[256];
-    std::strncpy(component_data_buf, component.data.c_str(), sizeof(component_data_buf));
-    component_data_buf[sizeof(component_data_buf) - 1] = '\0';
-    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    if (ImGui::InputText("##comp_data", component_data_buf, sizeof(component_data_buf)))
-    {
-        component.data = component_data_buf;
-    }
-    ImGui::PopItemWidth();
+    UIHelpers::InputText<256>("##component_data", component.data);
 
     ImGui::EndChild();
 }
