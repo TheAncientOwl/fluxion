@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -73,7 +73,7 @@ public:
         // No import functionality for dummy plugin
     }
 
-    void ApplyFilters(Fluxion::API::Data::Filters const& /*filters*/) override
+    void ApplyFilters(Fluxion::API::Data::FilterTabs const& /*tabs*/) override
     {
         // No filtering for dummy plugin
     }

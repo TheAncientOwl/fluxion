@@ -5,7 +5,7 @@
 ///
 /// @file DataIO.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief IO related utilities.
 ///
 
@@ -138,9 +138,9 @@ inline std::ostream& operator<<(std::ostream& os, const FilterTab& v)
     return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const Filters& v)
+inline std::ostream& operator<<(std::ostream& os, const FilterTabs& v)
 {
-    return os << "Filters(tabs=" << v.tabs.size() << ", filters=" << v.filters.size()
+    return os << "FilterTabs(tabs=" << v.tabs.size() << ", filters=" << v.filters.size()
               << ", components=" << v.components.size() << ")";
 }
 
@@ -279,12 +279,12 @@ struct std::formatter<Fluxion::API::Data::FilterTab>
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Filters>
+struct std::formatter<Fluxion::API::Data::FilterTabs>
 {
     constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const Fluxion::API::Data::Filters& fs, FormatContext& ctx)
+    auto format(const Fluxion::API::Data::FilterTabs& fs, FormatContext& ctx)
     {
         auto out = ctx.out();
         out = std::format_to(

@@ -5,13 +5,14 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief UniqueID abstraction.
 ///
 
 #pragma once
 
 #include <array>
+#include <format>
 #include <functional>
 #include <ostream>
 #include <unordered_map>
@@ -67,6 +68,7 @@ public: // operators
     bool operator<(UniqueID const&) const;
     bool operator==(UniqueID const&) const;
     friend std::ostream& operator<<(std::ostream&, UniqueID const&);
+    friend struct std::formatter<UniqueID>;
     friend std::string operator+(std::string_view const lhs, UniqueID const& rhs);
     friend std::string operator+(UniqueID const& lhs, std::string_view const rhs);
 
@@ -79,3 +81,30 @@ std::string operator+(std::string_view const lhs, UniqueID const& rhs);
 std::string operator+(UniqueID const& lhs, std::string_view const rhs);
 
 } // namespace Graphite::Core::Common
+
+template <>
+struct std::formatter<Graphite::Core::Common::UniqueID>
+{
+    constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+
+    auto format(Graphite::Core::Common::UniqueID const& p, std::format_context& ctx) const
+    {
+        static constexpr char hex[] = "0123456789abcdef";
+
+        auto out = ctx.out();
+
+        for (std::size_t i = 0; i < p.m_data.size(); ++i)
+        {
+            if (i == 4 || i == 6 || i == 8 || i == 10)
+            {
+                *out++ = '-';
+            }
+
+            unsigned char byte = p.m_data[i];
+            *out++ = hex[(byte >> 4) & 0xF];
+            *out++ = hex[byte & 0xF];
+        }
+
+        return out;
+    }
+};

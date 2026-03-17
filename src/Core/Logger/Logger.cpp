@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -94,7 +94,7 @@ void Logger::processQueue()
 
         while (!m_queue.empty())
         {
-            LogMessage msg = std::move(m_queue.front());
+            auto const msg = std::move(m_queue.front());
             m_queue.pop();
             lock.unlock();
 
@@ -110,7 +110,7 @@ void Logger::processQueue()
         std::unique_lock<std::mutex> lock(m_queue_mutex);
         if (m_queue.empty())
             break;
-        LogMessage msg = std::move(m_queue.front());
+        auto const msg = std::move(m_queue.front());
         m_queue.pop();
         lock.unlock();
 
@@ -180,8 +180,10 @@ void Logger::printMessage(const LogMessage& msg)
     }
 }
 
-ScopeLogger::ScopeLogger(std::string_view const tag, std::string_view const scope)
-    : m_tag{tag}, m_scope{scope}, m_start{std::chrono::high_resolution_clock::now()}
+ScopeLogger::ScopeLogger(std::string tag, std::string scope)
+    : m_tag{std::move(tag)}
+    , m_scope{std::move(scope)}
+    , m_start{std::chrono::high_resolution_clock::now()}
 {
     static constexpr auto green = "\033[32m";
     static constexpr auto gray = "\033[90m";
@@ -256,7 +258,7 @@ ScopeLogger::~ScopeLogger()
     Logger::log(
         LogLevel::Scope,
         m_scope,
-        "{}[{}-{}]{} End {}» {}{} ~ elapsed {}",
+        "{}[{}-{}]{} End   {}» {}{} ~ elapsed {}",
         gray,
         red,
         gray,

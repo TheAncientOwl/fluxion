@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief Logging utilities
 ///
 
@@ -41,7 +41,7 @@ enum class LogLevel
 struct LogMessage
 {
     LogLevel level;
-    std::string_view scope;
+    std::string scope;
     std::string message;
     std::chrono::system_clock::time_point time;
 };
@@ -52,12 +52,12 @@ public:
     ~Logger();
 
     template <typename... Args>
-    static void log(LogLevel level, std::string_view scope, std::format_string<Args...> fmt, Args&&... args)
+    static void log(LogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
     {
         instance().enqueue(
             LogMessage{
                 level,
-                scope,
+                std::move(scope),
                 std::format(fmt, std::forward<Args>(args)...),
                 std::chrono::system_clock::now()});
     }
@@ -85,12 +85,12 @@ private:
 class ScopeLogger
 {
 public:
-    ScopeLogger(std::string_view const tag, std::string_view const scope);
+    ScopeLogger(std::string tag, std::string scope);
     ~ScopeLogger();
 
 private:
-    std::string_view m_scope;
-    std::string_view m_tag;
+    std::string m_scope;
+    std::string m_tag;
     std::chrono::high_resolution_clock::time_point m_start;
 };
 

@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -63,6 +63,8 @@ void FiltersLayer::OnRemove()
 {
     LOG_SCOPE("");
 }
+
+namespace UIHelpers {
 
 void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f)
 {
@@ -165,6 +167,8 @@ void ColorsPicker(
     }
 }
 
+namespace Styles {
+
 void PushButtonGrayIfOff(bool const state)
 {
     if (!state)
@@ -207,349 +211,356 @@ void PopButtonGripper()
     ImGui::PopStyleColor(3);
 }
 
+} // namespace Styles
+
+namespace Filters {
+
+void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs);
+void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs);
+void RenderComponent(
+    Fluxion::API::Data::FilterComponent& component,
+    Fluxion::API::Data::FilterTabs& filter_tabs);
+
+void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs)
+{
+    LOG_SCOPE("ID: \"{}\" | \"{}\"", tab.id, tab.name);
+
+    if (ImGui::Button(ICON_CI_PLUS))
+    {
+        // TODO: implement add filter
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Add Filter");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_CI_COPY))
+    {
+        // TODO: implement duplicate
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Duplicate Tab");
+    }
+
+    ImGui::SameLine();
+    UIHelpers::Styles::PushRedButton();
+    if (ImGui::Button(ICON_CI_TRASH))
+    {
+        // TODO: implement delete
+    }
+    UIHelpers::Styles::PopRedButton();
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Delete Tab");
+    }
+
+    char tab_name_buf[128];
+    std::strncpy(tab_name_buf, tab.name.c_str(), sizeof(tab_name_buf));
+    tab_name_buf[sizeof(tab_name_buf) - 1] = '\0';
+    ImGui::SameLine();
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::InputText("##tab_name", tab_name_buf, sizeof(tab_name_buf)))
+    {
+        tab.name = tab_name_buf;
+    }
+    ImGui::PopItemWidth();
+
+    for (auto& filter : filter_tabs.filters)
+    {
+        if (auto const filter_it = std::find_if(
+                tab.filter_ids.cbegin(),
+                tab.filter_ids.cend(),
+                [&target_id = filter.id](auto const& filter_id) { return target_id == filter_id; });
+            filter_it == tab.filter_ids.cend())
+        {
+            continue;
+        }
+
+        RenderFilter(filter, filter_tabs);
+
+        ImGui::Separator();
+    }
+}
+
+void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs)
+{
+    LOG_SCOPE("ID: \"{}\" | \"{}\"", filter.id, filter.name);
+
+    auto const filter_id{filter.id.toString()};
+    ImGui::BeginChild(filter_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
+    ImGui::Separator();
+
+    using EFilterFlag = Fluxion::API::Data::EFilterFlag;
+
+    UIHelpers::Styles::PushButtonGripper();
+    if (ImGui::Button(ICON_CI_GRIPPER))
+    {
+        // TODO: Implement move
+    }
+    UIHelpers::Styles::PopButtonGripper();
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Move Filter");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button(filter[EFilterFlag::IsCollapsed] ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
+    {
+        // TODO: implement collapse
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip(filter[EFilterFlag::IsCollapsed] ? "Show Filter" : "Hide Filter");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_CI_COPY))
+    {
+        // TODO: implement duplicate
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Duplicate Filter");
+    }
+
+    ImGui::SameLine();
+    UIHelpers::Styles::PushRedButton();
+    if (ImGui::Button(ICON_CI_TRASH))
+    {
+        // TODO: implement delete
+    }
+    UIHelpers::Styles::PopRedButton();
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Delete Filter");
+    }
+
+    ImGui::SameLine();
+    UIHelpers::ColorsPicker(
+        "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet");
+    ImGui::SameLine();
+    UIHelpers::ColorsPicker(
+        "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet");
+
+    ImGui::SameLine();
+    UIHelpers::VerticalSeparator();
+
+    ImGui::SameLine();
+    int priority_tmp = static_cast<int>(filter.priority);
+    ImGui::PushItemWidth(85);
+    if (ImGui::InputInt("##prio", &priority_tmp, 1, 1))
+    {
+        priority_tmp = std::clamp(priority_tmp, 0, 255);
+        filter.priority = static_cast<std::uint8_t>(priority_tmp);
+    }
+    ImGui::PopItemWidth();
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Filter Priority");
+    }
+
+    ImGui::SameLine();
+    UIHelpers::VerticalSeparator();
+
+    char name_buf[128];
+    std::strncpy(name_buf, filter.name.c_str(), sizeof(name_buf));
+    name_buf[sizeof(name_buf) - 1] = '\0';
+    ImGui::SameLine();
+    ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::InputText("##FN", name_buf, sizeof(name_buf)))
+    {
+        filter.name = name_buf;
+    }
+    ImGui::PopItemWidth(); // input text width
+    ImGui::PopStyleColor(2); // input text and background colors
+
+    ImGui::Separator();
+
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
+    if (ImGui::Button(ICON_CI_PLUS))
+    {
+        // TODO: implement add component
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Add Component");
+    }
+
+    ImGui::SameLine();
+    bool is_active{filter[EFilterFlag::IsActive]};
+    if (ImGui::Checkbox("Active", &is_active))
+    {
+        filter[EFilterFlag::IsActive] = is_active;
+    }
+
+    ImGui::SameLine();
+    bool is_highlight_only{filter[EFilterFlag::IsHighlightOnly]};
+    if (ImGui::Checkbox("Highlight Only", &is_highlight_only))
+    {
+        filter[EFilterFlag::IsHighlightOnly] = is_highlight_only;
+    }
+
+    ImGui::Separator();
+
+    for (auto& component : filter_tabs.components)
+    {
+        if (auto const component_it = std::find_if(
+                filter.component_ids.cbegin(),
+                filter.component_ids.cend(),
+                [&target_id = component.id](auto const& component_id) {
+                    return target_id == component_id;
+                });
+            component_it == filter.component_ids.cend())
+        {
+            continue;
+        }
+
+        RenderComponent(component, filter_tabs);
+    }
+
+    ImGui::EndChild();
+}
+
+void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::API::Data::FilterTabs& filter_tabs)
+{
+    LOG_SCOPE("ID: \"{}\"", component.id);
+
+    auto const component_id{component.id.toString()};
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
+    ImGui::BeginChild(component_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
+
+    UIHelpers::Styles::PushButtonGripper();
+    if (ImGui::Button(ICON_CI_GRIPPER))
+    {
+        // TODO: Implement move
+    }
+    UIHelpers::Styles::PopButtonGripper();
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Move Component");
+    }
+
+    ImGui::SameLine();
+    UIHelpers::Styles::PushRedButton();
+    if (ImGui::Button(ICON_CI_TRASH))
+    {
+        // TODO: implement delete component
+    }
+    UIHelpers::Styles::PopRedButton();
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("Delete Component");
+    }
+
+    // TODO: update when plugin implementation supports headers with IDs
+    const char* items[] = {"Option 1", "Option 2", "Option 3"};
+    static int selected_index = 0; // stores currently selected index
+    ImGui::SameLine();
+    ImGui::PushItemWidth(125);
+    if (ImGui::BeginCombo("##alternative", items[selected_index]))
+    {
+        for (int select_index = 0; select_index < IM_ARRAYSIZE(items); select_index++)
+        {
+            bool is_selected = (selected_index == select_index);
+            if (ImGui::Selectable(items[select_index], is_selected))
+            {
+                selected_index = select_index;
+            }
+            if (is_selected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+
+    using EFilterComponentFlag = Fluxion::API::Data::EFilterComponentFlag;
+
+    ImGui::SameLine();
+    bool const is_regex{component[EFilterComponentFlag::IsRegex]};
+    UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
+    if (ImGui::Button(ICON_CI_REGEX))
+    {
+        component[EFilterComponentFlag::IsRegex] = !is_regex;
+    }
+    UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip(is_regex ? "Toggle Regex Off" : "Toggle Regex On");
+    }
+
+    ImGui::SameLine();
+    bool const is_case_sensitive{component[EFilterComponentFlag::IsCaseSensitive]};
+    UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
+    if (ImGui::Button(ICON_CI_CASE_SENSITIVE))
+    {
+        component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive;
+    }
+    UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip(is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On");
+    }
+
+    ImGui::SameLine();
+    bool const is_equals{component[EFilterComponentFlag::IsEquals]};
+    UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
+    if (ImGui::Button(ICON_CI_CHEVRON_RIGHT))
+    {
+        component[EFilterComponentFlag::IsEquals] = !is_equals;
+    }
+    UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
+    }
+
+    ImGui::SameLine();
+    char component_data_buf[256];
+    std::strncpy(component_data_buf, component.data.c_str(), sizeof(component_data_buf));
+    component_data_buf[sizeof(component_data_buf) - 1] = '\0';
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::InputText("##comp_data", component_data_buf, sizeof(component_data_buf)))
+    {
+        component.data = component_data_buf;
+    }
+    ImGui::PopItemWidth();
+
+    ImGui::EndChild();
+}
+
+} // namespace Filters
+
+} // namespace UIHelpers
+
 void FiltersLayer::RenderFilterTabs()
 {
     LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
-    LOG_DEBUG("Filter Tabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.data.tabs));
+    LOG_DEBUG("Filter Tabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.tabs));
     LOG_DEBUG(
-        "Filter Filters: {}", Fluxion::Utils::Format::format_vector(app_state.filters.data.filters));
+        "Filter Filters: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.filters));
     LOG_DEBUG(
         "Filter Components: {}",
-        Fluxion::Utils::Format::format_vector(app_state.filters.data.components));
+        Fluxion::Utils::Format::format_vector(app_state.filters.tabs.components));
 
-    if (ImGui::BeginTabBar("Tabs"))
+    if (ImGui::BeginTabBar("FilterTabs"))
     {
-        auto& filters{app_state.filters.data};
-        for (auto& tab : filters.tabs)
+        auto& filter_tabs{app_state.filters.tabs};
+        for (auto& tab : filter_tabs.tabs)
         {
             auto tab_label = tab.name + "###" + tab.id;
             if (ImGui::BeginTabItem(tab_label.c_str()))
             {
-                if (ImGui::Button(ICON_CI_PLUS))
-                {
-                    // TODO: implement add filter
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Add Filter");
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button(ICON_CI_COPY))
-                {
-                    // TODO: implement duplicate
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Duplicate Tab");
-                }
-
-                ImGui::SameLine();
-                PushRedButton();
-                if (ImGui::Button(ICON_CI_TRASH))
-                {
-                    // TODO: implement delete
-                }
-                PopRedButton();
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Delete Tab");
-                }
-
-                char tab_name_buf[128];
-                std::strncpy(tab_name_buf, tab.name.c_str(), sizeof(tab_name_buf));
-                tab_name_buf[sizeof(tab_name_buf) - 1] = '\0';
-                ImGui::SameLine();
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::InputText("##tab_name", tab_name_buf, sizeof(tab_name_buf)))
-                {
-                    tab.name = tab_name_buf;
-                }
-                ImGui::PopItemWidth();
-
-                int filter_render_index{0};
-                for (auto& filter : filters.filters)
-                {
-                    if (auto const filter_it = std::find_if(
-                            tab.filter_ids.cbegin(),
-                            tab.filter_ids.cend(),
-                            [&target_id = filter.id](auto const& filter_id) {
-                                return target_id == filter_id;
-                            });
-                        filter_it == tab.filter_ids.cend())
-                    {
-                        continue;
-                    }
-
-                    LOG_DEBUG("Tab {} | Filter {}", tab.name, filter.name);
-
-                    auto const filter_child_id{std::to_string(++filter_render_index)};
-                    ImGui::BeginChild(
-                        filter_child_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
-                    ImGui::Separator();
-
-                    using EFilterFlag = Fluxion::API::Data::EFilterFlag;
-
-                    PushButtonGripper();
-                    if (ImGui::Button(ICON_CI_GRIPPER))
-                    {
-                        // TODO: Implement move
-                    }
-                    PopButtonGripper();
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Move Filter");
-                    }
-
-                    ImGui::SameLine();
-                    if (ImGui::Button(
-                            filter[EFilterFlag::IsCollapsed] ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
-                    {
-                        // TODO: implement collapse
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip(
-                            filter[EFilterFlag::IsCollapsed] ? "Show Filter" : "Hide Filter");
-                    }
-
-                    ImGui::SameLine();
-                    if (ImGui::Button(ICON_CI_COPY))
-                    {
-                        // TODO: implement duplicate
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Duplicate Filter");
-                    }
-
-                    ImGui::SameLine();
-                    PushRedButton();
-                    if (ImGui::Button(ICON_CI_TRASH))
-                    {
-                        // TODO: implement delete
-                    }
-                    PopRedButton();
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Delete Filter");
-                    }
-
-                    ImGui::SameLine();
-                    ColorsPicker(
-                        "##FG",
-                        filter.colors,
-                        filter.colors.foreground,
-                        "Lorem ipsum dolor sit amet");
-                    ImGui::SameLine();
-                    ColorsPicker(
-                        "##BG",
-                        filter.colors,
-                        filter.colors.background,
-                        "Lorem ipsum dolor sit amet");
-
-                    ImGui::SameLine();
-                    VerticalSeparator();
-
-                    ImGui::SameLine();
-                    int priority_tmp = static_cast<int>(filter.priority);
-                    ImGui::PushItemWidth(85);
-                    if (ImGui::InputInt("##prio", &priority_tmp, 1, 1))
-                    {
-                        priority_tmp = std::clamp(priority_tmp, 0, 255);
-                        filter.priority = static_cast<std::uint8_t>(priority_tmp);
-                    }
-                    ImGui::PopItemWidth();
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Filter Priority");
-                    }
-
-                    ImGui::SameLine();
-                    VerticalSeparator();
-
-                    char name_buf[128];
-                    std::strncpy(name_buf, filter.name.c_str(), sizeof(name_buf));
-                    name_buf[sizeof(name_buf) - 1] = '\0';
-                    ImGui::SameLine();
-                    ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-                    if (ImGui::InputText("##FN", name_buf, sizeof(name_buf)))
-                    {
-                        filter.name = name_buf;
-                    }
-                    ImGui::PopItemWidth(); // input text width
-                    ImGui::PopStyleColor(2); // input text and background colors
-
-                    ImGui::Separator();
-
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
-                    if (ImGui::Button(ICON_CI_PLUS))
-                    {
-                        // TODO: implement add component
-                    }
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Add Component");
-                    }
-
-                    ImGui::SameLine();
-                    bool is_active{filter[EFilterFlag::IsActive]};
-                    if (ImGui::Checkbox("Active", &is_active))
-                    {
-                        filter[EFilterFlag::IsActive] = is_active;
-                    }
-
-                    ImGui::SameLine();
-                    bool is_highlight_only{filter[EFilterFlag::IsHighlightOnly]};
-                    if (ImGui::Checkbox("Highlight Only", &is_highlight_only))
-                    {
-                        filter[EFilterFlag::IsHighlightOnly] = is_highlight_only;
-                    }
-
-                    ImGui::Separator();
-
-                    int component_render_index{0};
-                    for (auto& component : filters.components)
-                    {
-                        if (auto const component_it = std::find_if(
-                                filter.component_ids.cbegin(),
-                                filter.component_ids.cend(),
-                                [&target_id = component.id](auto const& component_id) {
-                                    return target_id == component_id;
-                                });
-                            component_it == filter.component_ids.cend())
-                        {
-                            continue;
-                        }
-
-                        LOG_DEBUG(
-                            "Tab {} | Filter {} | Component {}",
-                            tab.name,
-                            filter.name,
-                            component.id.toString());
-
-                        auto const component_child_id{std::to_string(++component_render_index)};
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
-                        ImGui::BeginChild(
-                            component_child_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
-
-                        PushButtonGripper();
-                        if (ImGui::Button(ICON_CI_GRIPPER))
-                        {
-                            // TODO: Implement move
-                        }
-                        PopButtonGripper();
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Move Component");
-                        }
-
-                        ImGui::SameLine();
-                        PushRedButton();
-                        if (ImGui::Button(ICON_CI_TRASH))
-                        {
-                            // TODO: implement delete component
-                        }
-                        PopRedButton();
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Delete Component");
-                        }
-
-                        // TODO: update when plugin implementation supports headers with IDs
-                        const char* items[] = {"Option 1", "Option 2", "Option 3"};
-                        static int selected_index = 0; // stores currently selected index
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(125);
-                        if (ImGui::BeginCombo("##alternative", items[selected_index]))
-                        {
-                            for (int select_index = 0; select_index < IM_ARRAYSIZE(items);
-                                 select_index++)
-                            {
-                                bool is_selected = (selected_index == select_index);
-                                if (ImGui::Selectable(items[select_index], is_selected))
-                                {
-                                    selected_index = select_index;
-                                }
-                                if (is_selected)
-                                {
-                                    ImGui::SetItemDefaultFocus();
-                                }
-                            }
-                            ImGui::EndCombo();
-                        }
-                        ImGui::PopItemWidth();
-
-                        using EFilterComponentFlag = Fluxion::API::Data::EFilterComponentFlag;
-
-                        ImGui::SameLine();
-                        bool const is_regex{component[EFilterComponentFlag::IsRegex]};
-                        PushButtonGrayIfOff(is_regex);
-                        if (ImGui::Button(ICON_CI_REGEX))
-                        {
-                            component[EFilterComponentFlag::IsRegex] = !is_regex;
-                        }
-                        PopButtonGrayIfOff(is_regex);
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip(is_regex ? "Toggle Regex Off" : "Toggle Regex On");
-                        }
-
-                        ImGui::SameLine();
-                        bool const is_case_sensitive{component[EFilterComponentFlag::IsCaseSensitive]};
-                        PushButtonGrayIfOff(is_case_sensitive);
-                        if (ImGui::Button(ICON_CI_CASE_SENSITIVE))
-                        {
-                            component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive;
-                        }
-                        PopButtonGrayIfOff(is_case_sensitive);
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip(
-                                is_case_sensitive ? "Toggle CaseSensitive Off"
-                                                  : "Toggle CaseSensitive On");
-                        }
-
-                        ImGui::SameLine();
-                        bool const is_equals{component[EFilterComponentFlag::IsEquals]};
-                        PushButtonGrayIfOff(is_equals);
-                        if (ImGui::Button(ICON_CI_CHEVRON_RIGHT))
-                        {
-                            component[EFilterComponentFlag::IsEquals] = !is_equals;
-                        }
-                        PopButtonGrayIfOff(is_equals);
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
-                        }
-
-                        ImGui::SameLine();
-                        char component_data_buf[256];
-                        std::strncpy(
-                            component_data_buf, component.data.c_str(), sizeof(component_data_buf));
-                        component_data_buf[sizeof(component_data_buf) - 1] = '\0';
-                        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-                        if (ImGui::InputText(
-                                "##comp_data", component_data_buf, sizeof(component_data_buf)))
-                        {
-                            component.data = component_data_buf;
-                        }
-                        ImGui::PopItemWidth();
-
-                        ImGui::EndChild();
-                    }
-
-                    ImGui::EndChild();
-                }
-                ImGui::Separator();
-
+                UIHelpers::Filters::RenderTab(tab, filter_tabs);
                 ImGui::EndTabItem();
             }
         }
-
         ImGui::EndTabBar();
     }
 }

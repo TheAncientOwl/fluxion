@@ -5,7 +5,7 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief ImGui entry point.
 ///
 
@@ -21,7 +21,7 @@ Fluxion::Application::AppState MakeDefaultAppState()
     using namespace Fluxion::API::Data;
     using UniqueID = Graphite::Core::Common::UniqueID;
 
-    auto& filter_tabs{app_state.filters.data};
+    auto& filter_tabs{app_state.filters.tabs};
 
     // Tab 1
     {

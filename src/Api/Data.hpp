@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief General data.
 ///
 
@@ -168,7 +168,7 @@ struct FilterTab : public Internal::TWithFlags<FilterTab, EFilterFlag>
     friend std::ostream& operator<<(std::ostream& os, const FilterTab& v);
 };
 
-struct Filters
+struct FilterTabs
 {
     std::vector<FilterTab> tabs{};
     std::vector<Filter> filters{};
