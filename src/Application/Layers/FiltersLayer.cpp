@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -91,7 +91,7 @@ enum EInputTextWidth
 };
 
 template <std::size_t TBufferSize, EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
-void InputText(const char* label, std::string& str)
+void InputText(const char* label, std::string& str, bool& dirty)
 {
     char buffer[TBufferSize];
     std::strncpy(buffer, str.c_str(), TBufferSize);
@@ -105,6 +105,7 @@ void InputText(const char* label, std::string& str)
     if (ImGui::InputText(label, buffer, TBufferSize))
     {
         str = buffer;
+        dirty = true;
     }
 
     if constexpr (TInputTextWidth == EInputTextWidth::Fill)
@@ -141,7 +142,8 @@ void ColorsPicker(
     const char* id,
     Fluxion::API::Data::FilterColors& colors,
     ImVec4 const& display,
-    std::string_view const preview)
+    std::string_view const preview,
+    bool& dirty)
 {
     static bool s_editing_fg = true;
 
@@ -208,8 +210,11 @@ void ColorsPicker(
         ImGui::SliderFloat("##opacity", &target.w, 0.0f, 1.0f, "%.2f");
         ImGui::PopStyleColor(6);
 
-        ImGui::ColorPicker4(
-            "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview);
+        if (ImGui::ColorPicker4(
+                "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview))
+        {
+            dirty = true;
+        }
 
         ImGui::EndPopup();
     }
@@ -263,16 +268,17 @@ void PopButtonGripper()
 
 namespace Filters {
 
-void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs);
-void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs);
-void RenderComponent(Fluxion::API::Data::FilterComponent& component);
+void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty);
+void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty);
+void RenderComponent(Fluxion::API::Data::FilterComponent& component, bool& dirty);
 
-void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs)
+void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty)
 {
     LOG_SCOPE("ID: \"{}\" | \"{}\"", tab.id, tab.name);
 
     if (ImGui::Button(ICON_CI_PLUS))
     {
+        dirty = true;
         // TODO: implement add filter
     }
     UIHelpers::ItemHoverTooltip("Add Filter");
@@ -280,6 +286,7 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_COPY))
     {
+        dirty = true;
         // TODO: implement duplicate
     }
     UIHelpers::ItemHoverTooltip("Duplicate Tab");
@@ -288,13 +295,14 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
     UIHelpers::Styles::PushRedButton();
     if (ImGui::Button(ICON_CI_TRASH))
     {
+        dirty = true;
         // TODO: implement delete
     }
     UIHelpers::Styles::PopRedButton();
     UIHelpers::ItemHoverTooltip("Delete Tab");
 
     ImGui::SameLine();
-    UIHelpers::InputText<128>("##tab_name", tab.name);
+    UIHelpers::InputText<128>("##tab_name", tab.name, dirty);
 
     for (auto& filter : filter_tabs.filters)
     {
@@ -307,13 +315,13 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
             continue;
         }
 
-        RenderFilter(filter, filter_tabs);
+        RenderFilter(filter, filter_tabs, dirty);
 
         ImGui::Separator();
     }
 }
 
-void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs)
+void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty)
 {
     LOG_SCOPE("ID: \"{}\" | \"{}\"", filter.id, filter.name);
 
@@ -341,6 +349,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_COPY))
     {
+        dirty = true;
         // TODO: implement duplicate
     }
     UIHelpers::ItemHoverTooltip("Duplicate Filter");
@@ -349,6 +358,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     UIHelpers::Styles::PushRedButton();
     if (ImGui::Button(ICON_CI_TRASH))
     {
+        dirty = true;
         // TODO: implement delete
     }
     UIHelpers::Styles::PopRedButton();
@@ -356,10 +366,10 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
 
     ImGui::SameLine();
     UIHelpers::ColorsPicker(
-        "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet");
+        "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet", dirty);
     ImGui::SameLine();
     UIHelpers::ColorsPicker(
-        "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet");
+        "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet", dirty);
 
     ImGui::SameLine();
     UIHelpers::VerticalSeparator();
@@ -369,8 +379,8 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     ImGui::PushItemWidth(85);
     if (ImGui::InputInt("##prio", &priority_tmp, 1, 1))
     {
-        priority_tmp = std::clamp(priority_tmp, 0, 255);
-        filter.priority = static_cast<std::uint8_t>(priority_tmp);
+        dirty = true;
+        filter.priority = static_cast<std::uint8_t>(std::clamp(priority_tmp, 0, 255));
     }
     ImGui::PopItemWidth();
     UIHelpers::ItemHoverTooltip("Filter Priority");
@@ -381,7 +391,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-    UIHelpers::InputText<128>("##filter_name", filter.name);
+    UIHelpers::InputText<128>("##filter_name", filter.name, dirty);
     ImGui::PopStyleColor(2); // input text and background colors
 
     ImGui::Separator();
@@ -389,6 +399,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
     if (ImGui::Button(ICON_CI_PLUS))
     {
+        dirty = true;
         // TODO: implement add component
     }
     UIHelpers::ItemHoverTooltip("Add Component");
@@ -397,6 +408,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     bool is_active{filter[EFilterFlag::IsActive]};
     if (ImGui::Checkbox("Active", &is_active))
     {
+        dirty = true;
         filter[EFilterFlag::IsActive] = is_active;
     }
 
@@ -404,6 +416,7 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     bool is_highlight_only{filter[EFilterFlag::IsHighlightOnly]};
     if (ImGui::Checkbox("Highlight Only", &is_highlight_only))
     {
+        dirty = true;
         filter[EFilterFlag::IsHighlightOnly] = is_highlight_only;
     }
 
@@ -422,13 +435,13 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
             continue;
         }
 
-        RenderComponent(component);
+        RenderComponent(component, dirty);
     }
 
     ImGui::EndChild();
 }
 
-void RenderComponent(Fluxion::API::Data::FilterComponent& component)
+void RenderComponent(Fluxion::API::Data::FilterComponent& component, bool& dirty)
 {
     LOG_SCOPE("ID: \"{}\"", component.id);
 
@@ -448,6 +461,7 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component)
     UIHelpers::Styles::PushRedButton();
     if (ImGui::Button(ICON_CI_TRASH))
     {
+        dirty = true;
         // TODO: implement delete component
     }
     UIHelpers::Styles::PopRedButton();
@@ -484,6 +498,7 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component)
     UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
     if (ImGui::Button(ICON_CI_REGEX))
     {
+        dirty = true;
         component[EFilterComponentFlag::IsRegex] = !is_regex;
     }
     UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
@@ -494,6 +509,7 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component)
     UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
     if (ImGui::Button(ICON_CI_CASE_SENSITIVE))
     {
+        dirty = true;
         component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive;
     }
     UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
@@ -505,13 +521,14 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component)
     UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
     if (ImGui::Button(ICON_CI_CHEVRON_RIGHT))
     {
+        dirty = true;
         component[EFilterComponentFlag::IsEquals] = !is_equals;
     }
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
     UIHelpers::ItemHoverTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
 
     ImGui::SameLine();
-    UIHelpers::InputText<256>("##component_data", component.data);
+    UIHelpers::InputText<256>("##component_data", component.data, dirty);
 
     ImGui::EndChild();
 }
@@ -539,7 +556,7 @@ void FiltersLayer::RenderFilterTabs()
             auto tab_label = tab.name + "###" + tab.id;
             if (ImGui::BeginTabItem(tab_label.c_str()))
             {
-                UIHelpers::Filters::RenderTab(tab, filter_tabs);
+                UIHelpers::Filters::RenderTab(tab, filter_tabs, app_state.filters.dirty);
                 ImGui::EndTabItem();
             }
         }
