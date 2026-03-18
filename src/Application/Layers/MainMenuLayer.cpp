@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
@@ -46,8 +46,6 @@ void MainMenuLayer::OnAdd()
 void MainMenuLayer::OnRender()
 {
     LOG_SCOPE("");
-
-    auto& app_state{m_application->GetApplicationState()};
 
     RenderMenu();
 }
@@ -94,9 +92,9 @@ void MainMenuLayer::RenderMenu()
 
         // --- Right Side Stats ---
         // 1. Calculate how much space the FPS text will take
-        float fps = ImGui::GetIO().Framerate;
         char fps_text[32];
-        snprintf(fps_text, sizeof(fps_text), "%.1f FPS", fps);
+        snprintf(
+            fps_text, sizeof(fps_text), "%.1f FPS", static_cast<double>(ImGui::GetIO().Framerate));
 
         float text_width = ImGui::CalcTextSize(fps_text).x;
 

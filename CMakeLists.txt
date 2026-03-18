@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
+add_subdirectory(project/compile-options)
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
@@ -41,6 +43,7 @@ set_target_properties(fluxion PROPERTIES
 
 target_link_libraries(fluxion PRIVATE
     fluxion_app
+    fluxion_compile_options
 )
 
 # Include directories

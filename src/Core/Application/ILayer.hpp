@@ -5,7 +5,7 @@
 ///
 /// @file ILayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief App layer.
 ///
 
@@ -36,15 +36,21 @@ public:
     ILayer(
         std::shared_ptr<Graphite::Core::Application::TGraphiteApplication<ApplicationState>> application,
         Layer::ZIndex const z_index)
-        : m_application{std::move(application)}
-        , m_is_active{true}
+        : m_is_active{true}
         , m_z_index{z_index}
-        , m_layer_id{Graphite::Core::Common::UniqueID::Generate()} {};
+        , m_layer_id{Graphite::Core::Common::UniqueID::Generate()}
+        , m_application{std::move(application)}
+    {
+    }
 
     ILayer(
         std::shared_ptr<Graphite::Core::Application::TGraphiteApplication<ApplicationState>> application,
+        Layer::ZIndex const zindex,
         Graphite::Core::Common::UniqueID id)
-        : m_application{std::move(application)}, m_layer_id{std::move(id)} {};
+        : m_application{std::move(application)}
+        , m_is_active{true}
+        , m_z_index{zindex}
+        , m_layer_id{std::move(id)} {};
 
     virtual ~ILayer() = default;
 
@@ -65,10 +71,11 @@ private:
     virtual void OnRemove() = 0;
 
 protected:
-    std::shared_ptr<TGraphiteApplication<ApplicationState>> m_application{nullptr};
-    Graphite::Core::Common::UniqueID m_layer_id{};
     bool m_is_active{true};
     Layer::ZIndex m_z_index{0};
+    Graphite::Core::Common::UniqueID m_layer_id{};
+    std::shared_ptr<Graphite::Core::Application::TGraphiteApplication<ApplicationState>> m_application{
+        nullptr};
 };
 
 } // namespace Graphite::Core::Application

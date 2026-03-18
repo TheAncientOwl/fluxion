@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -39,8 +39,10 @@ public:
         {
             Fluxion::API::Data::LogRow entry{};
             entry.push_back(std::string("2026-01-01 12:00:") + (i < 10 ? "0" : "") + std::to_string(i));
-            entry.push_back(channels[channel_dist(gen)]);
-            entry.push_back(levels[level_dist(gen)]);
+            auto const channel_idx{static_cast<std::size_t>(std::max(0, channel_dist(gen)))};
+            entry.push_back(channels[channel_idx]);
+            auto const level_idx{static_cast<std::size_t>(std::max(0, level_dist(gen)))};
+            entry.push_back(levels[level_idx]);
             entry.push_back(
                 "Dummy log entry number " + std::to_string(i) + " ---------------------------");
             m_logs.push_back(std::move(entry));
@@ -92,7 +94,10 @@ public:
             return chunk;
 
         std::size_t actual_end = (end > m_logs.size()) ? m_logs.size() : end;
-        chunk.insert(chunk.end(), m_logs.begin() + begin, m_logs.begin() + actual_end);
+        chunk.insert(
+            chunk.end(),
+            m_logs.begin() + static_cast<Fluxion::API::Data::LogsChunk::difference_type>(begin),
+            m_logs.begin() + static_cast<Fluxion::API::Data::LogsChunk::difference_type>(actual_end));
         return chunk;
     }
 

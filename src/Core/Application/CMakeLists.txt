@@ -19,6 +19,7 @@ target_sources(graphite_core_application
 )
 
 target_link_libraries(graphite_core_application INTERFACE
+    fluxion_compile_options
     graphite_core_common
     graphite_core_logger
     graphite_core_renderer

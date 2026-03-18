@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -73,7 +73,14 @@ void ItemHoverTooltip(const char* fmt, Args&&... args)
 {
     if (ImGui::IsItemHovered())
     {
-        ImGui::SetTooltip(fmt, std::forward<Args>(args)...);
+        if constexpr (sizeof...(args) == 0)
+        {
+            ImGui::SetTooltip("%s", fmt);
+        }
+        else
+        {
+            ImGui::SetTooltip(fmt, std::forward<Args>(args)...);
+        }
     }
 }
 
@@ -201,7 +208,8 @@ void ColorsPicker(
         ImGui::SliderFloat("##opacity", &target.w, 0.0f, 1.0f, "%.2f");
         ImGui::PopStyleColor(6);
 
-        ImGui::ColorPicker4("##color", (float*)&target, ImGuiColorEditFlags_NoSidePreview);
+        ImGui::ColorPicker4(
+            "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview);
 
         ImGui::EndPopup();
     }
@@ -257,9 +265,7 @@ namespace Filters {
 
 void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs);
 void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs);
-void RenderComponent(
-    Fluxion::API::Data::FilterComponent& component,
-    Fluxion::API::Data::FilterTabs& filter_tabs);
+void RenderComponent(Fluxion::API::Data::FilterComponent& component);
 
 void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs)
 {
@@ -416,13 +422,13 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
             continue;
         }
 
-        RenderComponent(component, filter_tabs);
+        RenderComponent(component);
     }
 
     ImGui::EndChild();
 }
 
-void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::API::Data::FilterTabs& filter_tabs)
+void RenderComponent(Fluxion::API::Data::FilterComponent& component)
 {
     LOG_SCOPE("ID: \"{}\"", component.id);
 
@@ -448,13 +454,14 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, Fluxion::AP
     UIHelpers::ItemHoverTooltip("Delete Component");
 
     // TODO: update when plugin implementation supports headers with IDs
-    const char* items[] = {"Option 1", "Option 2", "Option 3"};
-    static int selected_index = 0; // stores currently selected index
+    constexpr std::size_t c_dummy_options_size{3};
+    const char* items[c_dummy_options_size] = {"Option 1", "Option 2", "Option 3"};
+    static std::size_t selected_index = 0; // stores currently selected index
     ImGui::SameLine();
     ImGui::PushItemWidth(125);
     if (ImGui::BeginCombo("##alternative", items[selected_index]))
     {
-        for (int select_index = 0; select_index < IM_ARRAYSIZE(items); select_index++)
+        for (std::size_t select_index = 0; select_index < c_dummy_options_size; ++select_index)
         {
             bool is_selected = (selected_index == select_index);
             if (ImGui::Selectable(items[select_index], is_selected))

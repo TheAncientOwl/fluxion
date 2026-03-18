@@ -13,6 +13,7 @@ set_target_properties(fluxion_app PROPERTIES
 )
 
 target_link_libraries(fluxion_app PRIVATE
+    fluxion_compile_options
     graphite_core_logger
     graphite_core_renderer
     graphite_core_application

@@ -1,6 +1,5 @@
-# 1. Create Library
-set(CORE_RENDERER_SOURCES
-    # ImGui
+# 0. Compile ImGui stuff without fluxion compile options
+set(IMGUI_SOURCES
     ${PROJECT_SOURCE_DIR}/external/imgui/imgui.cpp
     ${PROJECT_SOURCE_DIR}/external/imgui/imgui_draw.cpp
     ${PROJECT_SOURCE_DIR}/external/imgui/imgui_tables.cpp
@@ -9,12 +8,33 @@ set(CORE_RENDERER_SOURCES
 )
 
 if(APPLE)
-    list(APPEND CORE_RENDERER_SOURCES
+    list(APPEND IMGUI_SOURCES
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_metal.mm
+    )
+    set_source_files_properties(
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_metal.mm
+        PROPERTIES COMPILE_OPTIONS "-fobjc-arc"
+    )
+else()
+    list(APPEND IMGUI_SOURCES
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_vulkan.cpp
+    )
+endif()
+
+add_library(imgui STATIC ${IMGUI_SOURCES})
+
+target_include_directories(imgui PUBLIC
+    ${PROJECT_SOURCE_DIR}/external/imgui
+)
+
+# 1. Create Library
+if(APPLE)
+    set(CORE_RENDERER_SOURCES
         Renderer.mm
         Backends/Metal/MetalRenderer.mm
         Backends/Metal/MetalRendererState.mm
-        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp
-        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_metal.mm
     )
 
     # Set Objective-C++ compiler for Metal backend
@@ -25,12 +45,9 @@ if(APPLE)
         PROPERTIES LANGUAGE OBJCXX
     )
 else()
-    list(APPEND CORE_RENDERER_SOURCES
+    set(CORE_RENDERER_SOURCES
         Renderer.cpp
         Backends/Vulkan/VulkanRenderer.cpp
-        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_glfw.cpp
-        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_vulkan.cpp
-        ${PROJECT_SOURCE_DIR}/external/imgui/imgui_demo.cpp
     )
 endif()
 
@@ -50,7 +67,11 @@ target_include_directories(graphite_core_renderer PUBLIC
     ${PROJECT_SOURCE_DIR}/external/backends
 )
 
-target_link_libraries(graphite_core_renderer PRIVATE graphite_core_logger)
+target_link_libraries(graphite_core_renderer PRIVATE
+    fluxion_compile_options
+    imgui
+    graphite_core_logger
+)
 
 # 2. Set compile definitions
 if(APPLE)
@@ -80,6 +101,8 @@ set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(glfw)
+
+target_link_libraries(imgui glfw)
 
 if(APPLE)
     find_library(COCOA_LIBRARY Cocoa REQUIRED)

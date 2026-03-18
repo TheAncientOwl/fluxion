@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -66,7 +66,7 @@ void LogsViewLayer::RenderLogsTable()
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 5));
     if (ImGui::BeginTable(
             "LogsTable",
-            headers.size(),
+            static_cast<int>(headers.size()),
             ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable |
                 ImGuiTableFlags_SizingFixedFit,
@@ -86,8 +86,9 @@ void LogsViewLayer::RenderLogsTable()
         {
             LOG_INFO("Rendering from {} to {}", clipper.DisplayStart, clipper.DisplayEnd - 1);
 
-            auto const logs_chunk =
-                app_state.logs_logic->GetLogsChunk(clipper.DisplayStart, clipper.DisplayEnd);
+            auto const logs_chunk = app_state.logs_logic->GetLogsChunk(
+                static_cast<std::size_t>(clipper.DisplayStart),
+                static_cast<std::size_t>(clipper.DisplayEnd));
             for (auto const& log_row : logs_chunk)
             {
                 ImGui::TableNextRow();

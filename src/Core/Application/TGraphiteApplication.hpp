@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Main application.
 ///
 
@@ -225,7 +225,7 @@ void TGraphiteApplication<ApplicationState>::RenderLayers()
 {
     LOG_SCOPE("");
     m_removed_layers.clear();
-    std::for_each(m_layers.begin(), m_layers.end(), [this](ILayer<ApplicationState>::Ptr& layer_ptr) {
+    std::for_each(m_layers.begin(), m_layers.end(), [](ILayer<ApplicationState>::Ptr& layer_ptr) {
         if (layer_ptr->IsActive())
         {
             layer_ptr->OnRender();

@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -49,7 +49,7 @@ UniqueID UniqueID::Generate()
 
     std::random_device random_device{};
     std::mt19937 generator(random_device());
-    std::uniform_int_distribution<std::uint16_t> distribution(0, 255);
+    std::uniform_int_distribution<std::uint8_t> distribution(0, 255);
 
     for (auto& byte : uid)
     {

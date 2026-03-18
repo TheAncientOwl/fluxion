@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -181,8 +181,8 @@ void Logger::printMessage(const LogMessage& msg)
 }
 
 ScopeLogger::ScopeLogger(std::string tag, std::string scope)
-    : m_tag{std::move(tag)}
-    , m_scope{std::move(scope)}
+    : m_scope{std::move(scope)}
+    , m_tag{std::move(tag)}
     , m_start{std::chrono::high_resolution_clock::now()}
 {
     static constexpr auto green = "\033[32m";
