@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -84,7 +84,7 @@ void ItemHoverTooltip(const char* fmt, Args&&... args)
     }
 }
 
-enum EInputTextWidth
+enum class EInputTextWidth : std::uint8_t
 {
     Auto,
     Fill
