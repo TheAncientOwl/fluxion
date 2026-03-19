@@ -5,7 +5,7 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief ImGui entry point.
 ///
 
@@ -21,124 +21,151 @@ Fluxion::Application::AppState MakeDefaultAppState()
     using namespace Fluxion::API::Data;
     using UniqueID = Graphite::Core::Common::UniqueID;
 
-    auto& filter_tabs{app_state.filters.tabs};
-
-    // Tab 1
+    auto& tabs{app_state.filters.tabs};
     {
-        auto component = FilterComponent{};
-        component.id = UniqueID::Generate();
-        component.over_field_id =
-            UniqueID::Default(); // TODO: this should come from plugins, so no filter can be created
-        component[EFilterComponentFlag::IsEquals] = true;
-        filter_tabs.components.emplace_back(std::move(component));
-    }
-    {
-        auto component = FilterComponent{};
-        component.id = UniqueID::Generate();
-        component.over_field_id =
-            UniqueID::Default(); // TODO: this should come from plugins, so no filter can be created
-        component[EFilterComponentFlag::IsEquals] = true;
-        component[EFilterComponentFlag::IsCaseSensitive] = true;
-        component[EFilterComponentFlag::IsRegex] = true;
-        filter_tabs.components.emplace_back(std::move(component));
-    }
-    {
-        auto component = FilterComponent{};
-        component.id = UniqueID::Generate();
-        component.over_field_id =
-            UniqueID::Default(); // TODO: this should come from plugins, so no filter can be created
-        component[EFilterComponentFlag::IsEquals] = true;
-        filter_tabs.components.emplace_back(std::move(component));
-    }
-    {
-        auto component = FilterComponent{};
-        component.id = UniqueID::Generate();
-        component.over_field_id =
-            UniqueID::Default(); // TODO: this should come from plugins, so no filter can be created
-        component[EFilterComponentFlag::IsEquals] = true;
-        component[EFilterComponentFlag::IsCaseSensitive] = true;
-        component[EFilterComponentFlag::IsRegex] = true;
-        filter_tabs.components.emplace_back(std::move(component));
-    }
-
-    {
-        auto filter = Filter{};
-        filter.id = UniqueID::Generate();
-        filter.name = "> Filter 11";
-        filter.component_ids.push_back(filter_tabs.components[0].id);
-        filter.component_ids.push_back(filter_tabs.components[1].id);
-        filter.colors = FilterColors{
-            .foreground = ImVec4{1.0f, 1.0f, 1.0f, 1.0f},
-            .background = ImVec4{0.0f, 0.0f, 0.0f, 0.2f}};
-        filter.priority = 0;
-        filter[EFilterFlag::IsActive] = true;
-        filter_tabs.filters.emplace_back(std::move(filter));
-    }
-    {
-        auto filter = Filter{};
-        filter.id = UniqueID::Generate();
-        filter.name = "> Filter 12";
-        filter.component_ids.push_back(filter_tabs.components[2].id);
-        filter.component_ids.push_back(filter_tabs.components[3].id);
-        filter.colors = FilterColors{
-            .foreground = ImVec4{1.0f, 1.0f, 1.0f, 1.0f},
-            .background = ImVec4{0.0f, 0.0f, 0.0f, 0.2f}};
-        filter.priority = 0;
-        filter[EFilterFlag::IsActive] = true;
-        filter_tabs.filters.emplace_back(std::move(filter));
-    }
-
-    {
-        auto tab = FilterTab{};
+        auto& tab = *tabs.emplace_back(std::make_shared<FiltersTab>());
         tab.id = UniqueID::Generate();
-        tab.name = "> Tab 1";
-        tab.filter_ids.push_back(filter_tabs.filters[0].id);
-        tab.filter_ids.push_back(filter_tabs.filters[1].id);
-        filter_tabs.tabs.emplace_back(std::move(tab));
-    }
+        tab.name = "Tab1";
+        tab[EFiltersTabFlag::IsActive] = true;
 
-    // Tab 2
-    {
-        auto component = FilterComponent{};
-        component.id = UniqueID::Generate();
-        component.over_field_id =
-            UniqueID::Default(); // TODO: this should come from plugins, so no filter can be created
-        component[EFilterComponentFlag::IsEquals] = true;
-        filter_tabs.components.emplace_back(std::move(component));
-    }
-    {
-        auto component = FilterComponent{};
-        component.id = UniqueID::Generate();
-        component.over_field_id =
-            UniqueID::Default(); // TODO: this should come from plugins, so no filter can be created
-        component[EFilterComponentFlag::IsEquals] = true;
-        component[EFilterComponentFlag::IsCaseSensitive] = true;
-        component[EFilterComponentFlag::IsRegex] = true;
-        filter_tabs.components.emplace_back(std::move(component));
-    }
+        {
+            auto& filter = *tab.filters.emplace_back(std::make_shared<Filter>());
+            filter.id = UniqueID::Generate();
+            filter.name = "Filter1 @1";
+            filter.colors = FilterColors{
+                .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+            filter[EFilterFlag::IsActive] = true;
+            filter[EFilterFlag::IsHighlightOnly] = false;
+            filter[EFilterFlag::IsCollapsed] = false;
 
-    {
-        auto filter = Filter{};
-        filter.id = UniqueID::Generate();
-        filter.name = "> Filter 21";
-        filter.component_ids.push_back(filter_tabs.components[4].id);
-        filter.component_ids.push_back(filter_tabs.components[5].id);
-        filter.colors = FilterColors{
-            .foreground = ImVec4{1.0f, 1.0f, 1.0f, 1.0f},
-            .background = ImVec4{0.0f, 0.0f, 0.0f, 0.2f}};
-        filter.priority = 0;
-        filter[EFilterFlag::IsActive] = true;
-        filter_tabs.filters.emplace_back(std::move(filter));
-    }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = true;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = false;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = false;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+        }
 
+        {
+            auto& filter = *tab.filters.emplace_back(std::make_shared<Filter>());
+            filter.id = UniqueID::Generate();
+            filter.name = "Filter2 @1";
+            filter.colors = FilterColors{
+                .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+            filter[EFilterFlag::IsActive] = true;
+            filter[EFilterFlag::IsHighlightOnly] = true;
+            filter[EFilterFlag::IsCollapsed] = false;
+
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = true;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = false;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = false;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+        }
+    }
     {
-        auto tab = FilterTab{};
+        auto& tab = *tabs.emplace_back(std::make_shared<FiltersTab>());
         tab.id = UniqueID::Generate();
-        tab.name = "> Tab 2";
-        tab.filter_ids.push_back(filter_tabs.filters[2].id);
-        filter_tabs.tabs.emplace_back(std::move(tab));
-    }
+        tab.name = "Tab2";
+        tab[EFiltersTabFlag::IsActive] = true;
 
+        {
+            auto& filter = *tab.filters.emplace_back(std::make_shared<Filter>());
+            filter.id = UniqueID::Generate();
+            filter.name = "Filter1 @2";
+            filter.colors = FilterColors{
+                .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+            filter[EFilterFlag::IsActive] = true;
+            filter[EFilterFlag::IsHighlightOnly] = false;
+            filter[EFilterFlag::IsCollapsed] = false;
+
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = true;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = false;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = false;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+        }
+
+        {
+            auto& filter = *tab.filters.emplace_back(std::make_shared<Filter>());
+            filter.id = UniqueID::Generate();
+            filter.name = "Filter2 @2";
+            filter.colors = FilterColors{
+                .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+            filter[EFilterFlag::IsActive] = true;
+            filter[EFilterFlag::IsHighlightOnly] = true;
+            filter[EFilterFlag::IsCollapsed] = false;
+
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = true;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = false;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = false;
+            }
+            {
+                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                component.id = UniqueID::Generate();
+                component[EFilterComponentFlag::IsRegex] = true;
+                component[EFilterComponentFlag::IsEquals] = false;
+                component[EFilterComponentFlag::IsCaseSensitive] = true;
+            }
+        }
+    }
     return app_state;
 }
 
@@ -147,8 +174,10 @@ int main()
     LOG_SCOPE("");
 
     Graphite::Core::Application::WindowConfiguration window_configuration{};
-    window_configuration.width = 800;
-    window_configuration.height = 570;
+    // window_configuration.width = 800;
+    // window_configuration.height = 570;
+    window_configuration.width = 950;
+    window_configuration.height = 750;
     window_configuration.title = "Fluxion";
 
     auto app =

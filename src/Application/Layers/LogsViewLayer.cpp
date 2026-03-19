@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -29,7 +29,7 @@ std::string_view LogsViewLayer::GetName() const noexcept
 LogsViewLayer::LogsViewLayer(
     Fluxion::Application::FluxionApplication::Ptr application,
     Graphite::Core::Application::Layer::ZIndex const z_index)
-    : ILayer{std::move(application), z_index}
+    : BaseLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }

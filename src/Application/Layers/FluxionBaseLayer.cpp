@@ -3,13 +3,13 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file BaseLayer.cpp
+/// @file FluxionBaseLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
-/// @brief Implementation of @see BaseLayer.hpp.
+/// @version 0.2
+/// @brief Implementation of @see FluxionBaseLayer.hpp.
 ///
 
-#include "BaseLayer.hpp"
+#include "FluxionBaseLayer.hpp"
 #include "FiltersLayer.hpp"
 #include "LogsViewLayer.hpp"
 
@@ -17,36 +17,36 @@
 
 namespace Fluxion::Application::Layers {
 
-std::string_view BaseLayer::GetLayerName() noexcept
+std::string_view FluxionBaseLayer::GetLayerName() noexcept
 {
-    return "BaseLayer";
+    return "FluxionBaseLayer";
 }
 
-std::string_view BaseLayer::GetName() const noexcept
+std::string_view FluxionBaseLayer::GetName() const noexcept
 {
-    return BaseLayer::GetLayerName();
+    return FluxionBaseLayer::GetLayerName();
 }
 
-BaseLayer::BaseLayer(
+FluxionBaseLayer::FluxionBaseLayer(
     Fluxion::Application::FluxionApplication::Ptr application,
     Graphite::Core::Application::Layer::ZIndex const z_index)
-    : ILayer{std::move(application), z_index}
+    : BaseLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
 
-void BaseLayer::OnAdd()
+void FluxionBaseLayer::OnAdd()
 {
     LOG_SCOPE("");
 }
 
-void BaseLayer::OnRender()
+void FluxionBaseLayer::OnRender()
 {
     LOG_SCOPE("");
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
 }
 
-void BaseLayer::OnRemove()
+void FluxionBaseLayer::OnRemove()
 {
     LOG_SCOPE("");
 }

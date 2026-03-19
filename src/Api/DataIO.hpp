@@ -5,15 +5,27 @@
 ///
 /// @file DataIO.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief IO related utilities.
 ///
 
 #pragma once
 
+#include <format>
+
 #include "Data.hpp"
 
 namespace std {
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<T>& ptr)
+{
+    if (ptr)
+        os << *ptr;
+    else
+        os << "nullptr";
+    return os;
+}
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
@@ -117,31 +129,25 @@ inline std::ostream& operator<<(std::ostream& os, const Filter& v)
         flags_str += "IsCollapsed";
         first = false;
     }
-    os << "Filter(id=" << v.id << ", name=\"" << v.name << "\", components=" << v.component_ids
+    os << "Filter(id=" << v.id << ", name=\"" << v.name << "\", components=" << v.components
        << ", priority=" << +v.priority << ", colors=" << v.colors << ", flags=" << flags_str << ")";
     return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const FilterTab& v)
+inline std::ostream& operator<<(std::ostream& os, const FiltersTab& v)
 {
     std::string flags_str;
     bool first = true;
-    if (v[EFilterFlag::IsActive])
+    if (v[EFiltersTabFlag::IsActive])
     {
         if (!first)
             flags_str += ", ";
         flags_str += "IsActive";
         first = false;
     }
-    os << "FilterTab(id=" << v.id << ", name=\"" << v.name << "\", filters=" << v.filter_ids
+    os << "FiltersTab(id=" << v.id << ", name=\"" << v.name << "\", filters=" << v.filters
        << ", flags=" << flags_str << ")";
     return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, const FilterTabs& v)
-{
-    return os << "FilterTabs(tabs=" << v.tabs.size() << ", filters=" << v.filters.size()
-              << ", components=" << v.components.size() << ")";
 }
 
 } // namespace Fluxion::API::Data
@@ -242,7 +248,7 @@ struct std::formatter<Fluxion::API::Data::Filter>
         out = std::format_to(out, "Filter(id=");
         out = std::format_to(out, "{}", f.id);
         out = std::format_to(out, ", name=\"{}\"", f.name);
-        out = std::format_to(out, ", components={}", f.component_ids.size());
+        out = std::format_to(out, ", components={}", f.components.size());
         out = std::format_to(out, ", priority={}", +f.priority);
         out = std::format_to(out, ", flags={}", flags_str);
         out = std::format_to(out, ")");
@@ -251,16 +257,16 @@ struct std::formatter<Fluxion::API::Data::Filter>
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::FilterTab>
+struct std::formatter<Fluxion::API::Data::FiltersTab>
 {
     constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const Fluxion::API::Data::FilterTab& ft, FormatContext& ctx)
+    auto format(const Fluxion::API::Data::FiltersTab& ft, FormatContext& ctx)
     {
         std::string flags_str;
         bool first = true;
-        if (ft[Fluxion::API::Data::EFilterFlag::IsActive])
+        if (ft[Fluxion::API::Data::EFiltersTabFlag::IsActive])
         {
             if (!first)
                 flags_str += ", ";
@@ -268,31 +274,12 @@ struct std::formatter<Fluxion::API::Data::FilterTab>
             first = false;
         }
         auto out = ctx.out();
-        out = std::format_to(out, "FilterTab(id=");
+        out = std::format_to(out, "FiltersTab(id=");
         out = std::format_to(out, "{}", ft.id);
         out = std::format_to(out, ", name=\"{}\"", ft.name);
-        out = std::format_to(out, ", filters={}", ft.filter_ids.size());
+        out = std::format_to(out, ", filters={}", ft.filters.size());
         out = std::format_to(out, ", flags={}", flags_str);
         out = std::format_to(out, ")");
-        return out;
-    }
-};
-
-template <>
-struct std::formatter<Fluxion::API::Data::FilterTabs>
-{
-    constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const Fluxion::API::Data::FilterTabs& fs, FormatContext& ctx)
-    {
-        auto out = ctx.out();
-        out = std::format_to(
-            out,
-            "Filters(tabs={}, filters={}, components={})",
-            fs.tabs.size(),
-            fs.filters.size(),
-            fs.components.size());
         return out;
     }
 };

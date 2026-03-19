@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Application state.
 ///
 
@@ -26,7 +26,7 @@ struct AppState
 
     struct
     {
-        Fluxion::API::Data::FilterTabs tabs{};
+        Fluxion::API::Data::FiltersTabs tabs{};
         bool menu_open{true};
         bool dirty{false};
     } filters{};

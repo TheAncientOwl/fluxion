@@ -1,6 +1,6 @@
 add_library(fluxion_app STATIC
     Fluxion.cpp
-    layers/BaseLayer.cpp
+    layers/FluxionBaseLayer.cpp
     layers/MainMenuLayer.cpp
     layers/LogsViewLayer.cpp
     layers/FiltersLayer.cpp
@@ -14,6 +14,7 @@ set_target_properties(fluxion_app PROPERTIES
 
 target_link_libraries(fluxion_app PRIVATE
     fluxion_compile_options
+    fluxion_api
     graphite_core_logger
     graphite_core_renderer
     graphite_core_application

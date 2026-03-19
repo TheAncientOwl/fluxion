@@ -3,9 +3,9 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file ILayer.hpp
+/// @file BaseLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief App layer.
 ///
 
@@ -28,12 +28,12 @@ using ZIndex = std::uint8_t;
 } // namespace Layer
 
 template <typename ApplicationState>
-class ILayer
+class BaseLayer
 {
 public:
-    using Ptr = std::unique_ptr<ILayer<ApplicationState>>;
+    using Ptr = std::unique_ptr<BaseLayer<ApplicationState>>;
 
-    ILayer(
+    BaseLayer(
         std::shared_ptr<Graphite::Core::Application::TGraphiteApplication<ApplicationState>> application,
         Layer::ZIndex const z_index)
         : m_is_active{true}
@@ -43,7 +43,7 @@ public:
     {
     }
 
-    ILayer(
+    BaseLayer(
         std::shared_ptr<Graphite::Core::Application::TGraphiteApplication<ApplicationState>> application,
         Layer::ZIndex const zindex,
         Graphite::Core::Common::UniqueID id)
@@ -52,7 +52,7 @@ public:
         , m_z_index{zindex}
         , m_layer_id{std::move(id)} {};
 
-    virtual ~ILayer() = default;
+    virtual ~BaseLayer() = default;
 
     inline Graphite::Core::Common::UniqueID const& GetID() const noexcept { return m_layer_id; }
 

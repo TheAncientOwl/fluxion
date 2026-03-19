@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -13,11 +13,11 @@
 
 #include "Application/AppState.hpp"
 #include "Application/Fluxion.hpp"
-#include "Core/Application/ILayer.hpp"
+#include "Core/Application/BaseLayer.hpp"
 
 namespace Fluxion::Application::Layers {
 
-class LogsViewLayer : public Graphite::Core::Application::ILayer<AppState>
+class LogsViewLayer : public Graphite::Core::Application::BaseLayer<AppState>
 {
 public:
     static std::string_view GetLayerName() noexcept;

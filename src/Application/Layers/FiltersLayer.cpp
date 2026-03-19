@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -33,7 +33,7 @@ std::string_view FiltersLayer::GetName() const noexcept
 FiltersLayer::FiltersLayer(
     Fluxion::Application::FluxionApplication::Ptr application,
     Graphite::Core::Application::Layer::ZIndex const z_index)
-    : ILayer{std::move(application), z_index}
+    : BaseLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
@@ -51,9 +51,11 @@ void FiltersLayer::OnRender()
 
     ImGui::Begin(ICON_CI_WAND " Filters", &app_state.filters.menu_open, ImGuiWindowFlags_NoTitleBar);
 
-    RenderFilterTabs();
+    RenderFiltersTabs();
 
     ImGui::End();
+
+    HandleAction();
 
     if (!m_application->GetApplicationState().filters.menu_open)
     {
@@ -155,7 +157,6 @@ void ColorsPicker(
     if (ImGui::BeginPopup(id))
     {
         // --- Checkbox to switch FG/BG ---
-        // ImGui::Checkbox("Edit Foreground", &s_editing_fg);
         if (ImGui::ColorButton(
                 "FG", colors.foreground, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoSidePreview))
         {
@@ -266,28 +267,64 @@ void PopButtonGripper()
 
 } // namespace Styles
 
-namespace Filters {
+} // namespace UIHelpers
 
-void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty);
-void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty);
-void RenderComponent(Fluxion::API::Data::FilterComponent& component, bool& dirty);
-
-void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty)
+void FiltersLayer::RenderFiltersTabs()
 {
+    LOG_SCOPE("");
+    auto& app_state{m_application->GetApplicationState()};
+    LOG_DEBUG("FiltersTabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs));
+
+    if (ImGui::BeginTabBar("FiltersTabs"))
+    {
+        for (auto& tab : app_state.filters.tabs)
+        {
+            auto tab_label = tab->name + "###" + tab->id;
+            if (ImGui::BeginTabItem(tab_label.c_str()))
+            {
+                RenderFiltersTab(tab, app_state.filters.dirty);
+                ImGui::EndTabItem();
+            }
+        }
+        ImGui::EndTabBar();
+    }
+}
+
+void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr, bool& dirty)
+{
+    GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
+    GRAPHITE_ASSERT(
+        tab_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        "Received tab with default ID for rendering...");
+
+    auto& tab{*tab_ptr};
     LOG_SCOPE("ID: \"{}\" | \"{}\"", tab.id, tab.name);
 
     if (ImGui::Button(ICON_CI_PLUS))
     {
-        dirty = true;
-        // TODO: implement add filter
+        m_current_action = Action{
+            .type = EActionType::AddFilter, .tab = tab_ptr, .filter = nullptr, .component = nullptr};
     }
     UIHelpers::ItemHoverTooltip("Add Filter");
 
     ImGui::SameLine();
+    if (ImGui::Button(ICON_CI_NEW_FOLDER))
+    {
+        // filters_tabs.AddTab();
+        // TODO:
+        m_current_action = Action{
+            .type = EActionType::AddFiltersTab, .tab = nullptr, .filter = nullptr, .component = nullptr};
+    }
+    UIHelpers::ItemHoverTooltip("Add Tab");
+
+    ImGui::SameLine();
     if (ImGui::Button(ICON_CI_COPY))
     {
-        dirty = true;
-        // TODO: implement duplicate
+        m_current_action = Action{
+            .type = EActionType::DuplicateFiltersTab,
+            .tab = tab_ptr,
+            .filter = nullptr,
+            .component = nullptr};
     }
     UIHelpers::ItemHoverTooltip("Duplicate Tab");
 
@@ -296,7 +333,8 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
     if (ImGui::Button(ICON_CI_TRASH))
     {
         dirty = true;
-        // TODO: implement delete
+        m_current_action = Action{
+            .type = EActionType::RemoveFiltersTab, .tab = tab_ptr, .filter = nullptr, .component = nullptr};
     }
     UIHelpers::Styles::PopRedButton();
     UIHelpers::ItemHoverTooltip("Delete Tab");
@@ -304,25 +342,30 @@ void RenderTab(Fluxion::API::Data::FilterTab& tab, Fluxion::API::Data::FilterTab
     ImGui::SameLine();
     UIHelpers::InputText<128>("##tab_name", tab.name, dirty);
 
-    for (auto& filter : filter_tabs.filters)
+    for (auto& filter_ptr : tab.filters)
     {
-        if (auto const filter_it = std::find_if(
-                tab.filter_ids.cbegin(),
-                tab.filter_ids.cend(),
-                [&target_id = filter.id](auto const& filter_id) { return target_id == filter_id; });
-            filter_it == tab.filter_ids.cend())
-        {
-            continue;
-        }
-
-        RenderFilter(filter, filter_tabs, dirty);
+        RenderFilter(filter_ptr, tab_ptr, dirty);
 
         ImGui::Separator();
     }
 }
 
-void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::FilterTabs& filter_tabs, bool& dirty)
+void FiltersLayer::RenderFilter(
+    std::shared_ptr<Fluxion::API::Data::Filter> filter_ptr,
+    std::shared_ptr<Fluxion::API::Data::FiltersTab> owning_tab_ptr,
+    bool& dirty)
 {
+    GRAPHITE_ASSERT(filter_ptr != nullptr, "Received filter::nullptr for rendering...");
+    GRAPHITE_ASSERT(
+        filter_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        "Received filter with default ID for rendering...");
+
+    GRAPHITE_ASSERT(owning_tab_ptr != nullptr, "Received owning_tab::nullptr for rendering...");
+    GRAPHITE_ASSERT(
+        owning_tab_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        "Received owning_tab with default ID for rendering...");
+
+    auto& filter{*filter_ptr};
     LOG_SCOPE("ID: \"{}\" | \"{}\"", filter.id, filter.name);
 
     auto const filter_id{filter.id.toString()};
@@ -340,17 +383,21 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     UIHelpers::ItemHoverTooltip("Move Filter");
 
     ImGui::SameLine();
-    if (ImGui::Button(filter[EFilterFlag::IsCollapsed] ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
+    bool const is_collapsed{filter[EFilterFlag::IsCollapsed]};
+    if (ImGui::Button(is_collapsed ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
     {
-        // TODO: implement collapse
+        filter[EFilterFlag::IsCollapsed] = !is_collapsed;
     }
-    UIHelpers::ItemHoverTooltip(filter[EFilterFlag::IsCollapsed] ? "Show Filter" : "Hide Filter");
+    UIHelpers::ItemHoverTooltip(is_collapsed ? "Show Filter" : "Hide Filter");
 
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_COPY))
     {
-        dirty = true;
-        // TODO: implement duplicate
+        m_current_action = Action{
+            .type = EActionType::DuplicateFilter,
+            .tab = owning_tab_ptr,
+            .filter = filter_ptr,
+            .component = nullptr};
     }
     UIHelpers::ItemHoverTooltip("Duplicate Filter");
 
@@ -359,7 +406,8 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     if (ImGui::Button(ICON_CI_TRASH))
     {
         dirty = true;
-        // TODO: implement delete
+        m_current_action =
+            Action{.type = EActionType::RemoveFilter, .tab = owning_tab_ptr, .filter = filter_ptr};
     }
     UIHelpers::Styles::PopRedButton();
     UIHelpers::ItemHoverTooltip("Delete Filter");
@@ -399,8 +447,11 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
     if (ImGui::Button(ICON_CI_PLUS))
     {
-        dirty = true;
-        // TODO: implement add component
+        m_current_action = Action{
+            .type = EActionType::AddFilterComponent,
+            .tab = nullptr,
+            .filter = filter_ptr,
+            .component = nullptr};
     }
     UIHelpers::ItemHoverTooltip("Add Component");
 
@@ -422,27 +473,31 @@ void RenderFilter(Fluxion::API::Data::Filter& filter, Fluxion::API::Data::Filter
 
     ImGui::Separator();
 
-    for (auto& component : filter_tabs.components)
+    for (auto& component_ptr : filter.components)
     {
-        if (auto const component_it = std::find_if(
-                filter.component_ids.cbegin(),
-                filter.component_ids.cend(),
-                [&target_id = component.id](auto const& component_id) {
-                    return target_id == component_id;
-                });
-            component_it == filter.component_ids.cend())
-        {
-            continue;
-        }
-
-        RenderComponent(component, dirty);
+        RenderFilterComponent(component_ptr, filter_ptr, dirty);
     }
 
     ImGui::EndChild();
 }
 
-void RenderComponent(Fluxion::API::Data::FilterComponent& component, bool& dirty)
+void FiltersLayer::RenderFilterComponent(
+    std::shared_ptr<Fluxion::API::Data::FilterComponent> component_ptr,
+    std::shared_ptr<Fluxion::API::Data::Filter> owning_filter_ptr,
+    bool& dirty)
 {
+    GRAPHITE_ASSERT(component_ptr != nullptr, "Received component::nullptr for rendering...");
+    GRAPHITE_ASSERT(
+        component_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        "Received component with default ID for rendering...");
+
+    GRAPHITE_ASSERT(
+        owning_filter_ptr != nullptr, "Received owning_filter::nullptr for rendering...");
+    GRAPHITE_ASSERT(
+        owning_filter_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        "Received owning_filter with default ID for rendering...");
+
+    auto& component{*component_ptr};
     LOG_SCOPE("ID: \"{}\"", component.id);
 
     auto const component_id{component.id.toString()};
@@ -462,7 +517,13 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, bool& dirty
     if (ImGui::Button(ICON_CI_TRASH))
     {
         dirty = true;
-        // TODO: implement delete component
+        // filters_tabs.RemoveComponent(component.id);
+        // TODO:
+        m_current_action = Action{
+            .type = EActionType::RemoveFilterComponent,
+            .tab = nullptr,
+            .filter = owning_filter_ptr,
+            .component = component_ptr};
     }
     UIHelpers::Styles::PopRedButton();
     UIHelpers::ItemHoverTooltip("Delete Component");
@@ -533,35 +594,264 @@ void RenderComponent(Fluxion::API::Data::FilterComponent& component, bool& dirty
     ImGui::EndChild();
 }
 
-} // namespace Filters
-
-} // namespace UIHelpers
-
-void FiltersLayer::RenderFilterTabs()
+void FiltersLayer::HandleAction()
 {
-    LOG_SCOPE("");
-    auto& app_state{m_application->GetApplicationState()};
-    LOG_DEBUG("Filter Tabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.tabs));
-    LOG_DEBUG(
-        "Filter Filters: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.filters));
-    LOG_DEBUG(
-        "Filter Components: {}",
-        Fluxion::Utils::Format::format_vector(app_state.filters.tabs.components));
-
-    if (ImGui::BeginTabBar("FilterTabs"))
+    if (m_current_action.type == EActionType::None)
     {
-        auto& filter_tabs{app_state.filters.tabs};
-        for (auto& tab : filter_tabs.tabs)
-        {
-            auto tab_label = tab.name + "###" + tab.id;
-            if (ImGui::BeginTabItem(tab_label.c_str()))
-            {
-                UIHelpers::Filters::RenderTab(tab, filter_tabs, app_state.filters.dirty);
-                ImGui::EndTabItem();
-            }
-        }
-        ImGui::EndTabBar();
+        m_current_action = {};
+        return;
     }
+
+    LOG_TRACE(
+        "Handling action type {} -> tab: {} | filter: {} | component: {}",
+        static_cast<std::uint32_t>(m_current_action.type),
+        m_current_action.tab ? m_current_action.tab->id.toString() : "nullptr",
+        m_current_action.filter ? m_current_action.filter->id.toString() : "nullptr",
+        m_current_action.component ? m_current_action.component->id.toString() : "nullptr");
+
+    auto& application_state{m_application->GetApplicationState()};
+    application_state.filters.dirty = true;
+
+    using namespace Fluxion::API::Data;
+
+    auto& tabs{application_state.filters.tabs};
+    switch (m_current_action.type)
+    {
+    case EActionType::AddFiltersTab: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab == nullptr, "tab should be nullptr for AddFiltersTab action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter == nullptr, "filter should be nullptr for AddFiltersTab action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should be nullptr for AddFiltersTab action");
+
+        auto& new_tab = *tabs.emplace_back(std::make_shared<FiltersTab>());
+        new_tab.id = Graphite::Core::Common::UniqueID::Generate();
+        new_tab.name = "New Tab";
+        new_tab[EFiltersTabFlag::IsActive] = true;
+
+        auto& new_filter = *new_tab.filters.emplace_back(std::make_shared<Filter>());
+        new_filter.id = Graphite::Core::Common::UniqueID::Generate();
+        new_filter.name = "New Filter";
+        new_filter.colors = {
+            .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
+        new_filter[EFilterFlag::IsActive] = true;
+
+        auto& new_component = *new_filter.components.emplace_back(std::make_shared<FilterComponent>());
+        new_component.id = Graphite::Core::Common::UniqueID::Generate();
+        new_component[EFilterComponentFlag::IsEquals] = true;
+
+        break;
+    }
+    case EActionType::RemoveFiltersTab: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab != nullptr,
+            "tab should NOT be nullptr for RemoveFiltersTab action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter == nullptr,
+            "filter should be nullptr for RemoveFiltersTab action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should be nullptr for RemoveFiltersTab action");
+
+        auto const it = std::find_if(
+            tabs.cbegin(), tabs.cend(), [&target_id = m_current_action.tab->id](auto const& tab_ptr) {
+                return tab_ptr->id == target_id;
+            });
+
+        if (it != tabs.cend())
+        {
+            tabs.erase(it);
+        }
+        else
+        {
+            LOG_WARN(
+                "Failed to RemoveFiltersTab with tab ID {} because it does not exist in the data",
+                m_current_action.tab->id);
+        }
+        break;
+    }
+    case EActionType::DuplicateFiltersTab: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab != nullptr,
+            "tab should NOT be nullptr for DuplicateFiltersTab action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter == nullptr,
+            "filter should be nullptr for DuplicateFiltersTab action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should be nullptr for DuplicateFiltersTab action");
+
+        auto const it = std::find_if(
+            tabs.cbegin(), tabs.cend(), [&target_id = m_current_action.tab->id](auto const& tab_ptr) {
+                return tab_ptr->id == target_id;
+            });
+
+        if (it != tabs.cend())
+        {
+            auto duplicate_tab = std::make_shared<FiltersTab>(**it);
+            duplicate_tab->id = Graphite::Core::Common::UniqueID::Generate();
+            duplicate_tab->name += "*";
+            tabs.insert(std::next(it), duplicate_tab);
+        }
+        else
+        {
+            LOG_WARN(
+                "Failed to DuplicateFiltersTab with tab ID {} because it does not exist in the "
+                "data",
+                m_current_action.tab->id);
+        }
+        break;
+    }
+    case EActionType::AddFilter: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab != nullptr, "tab should NOT be nullptr for AddFilter action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter == nullptr, "filter should be nullptr for AddFilter action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should be nullptr for AddFilter action");
+
+        auto& new_filter = *m_current_action.tab->filters.emplace_back(std::make_shared<Filter>());
+        new_filter.id = Graphite::Core::Common::UniqueID::Generate();
+        new_filter.name = "New Filter";
+        new_filter.colors = {
+            .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
+        new_filter[EFilterFlag::IsActive] = true;
+
+        auto& new_component = *new_filter.components.emplace_back(std::make_shared<FilterComponent>());
+        new_component.id = Graphite::Core::Common::UniqueID::Generate();
+        new_component[EFilterComponentFlag::IsEquals] = true;
+
+        break;
+    }
+    case EActionType::RemoveFilter: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab != nullptr, "tab should NOT be nullptr for RemoveFilter action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter != nullptr,
+            "filter should NOT be nullptr for RemoveFilter action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should be nullptr for RemoveFilter action");
+
+        auto& filters = m_current_action.tab->filters;
+        auto const it = std::find_if(
+            filters.cbegin(),
+            filters.cend(),
+            [&target_id = m_current_action.filter->id](const std::shared_ptr<Filter>& filter_ptr) {
+                return filter_ptr->id == target_id;
+            });
+
+        if (it != filters.cend())
+        {
+            filters.erase(it);
+            application_state.filters.dirty = true;
+        }
+        else
+        {
+            LOG_WARN(
+                "Failed to RemoveFilter with filter ID {} because it does not exist in the data",
+                m_current_action.filter->id);
+        }
+        break;
+    }
+    case EActionType::DuplicateFilter: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab != nullptr, "tab should NOT be nullptr for DuplicateFilter action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter != nullptr,
+            "filter should NOT be nullptr for DuplicateFilter action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should be nullptr for DuplicateFilter action");
+
+        auto& filters = m_current_action.tab->filters;
+        auto const it = std::find_if(
+            filters.cbegin(),
+            filters.cend(),
+            [&target_id = m_current_action.filter->id](const std::shared_ptr<Filter>& filter_ptr) {
+                return filter_ptr->id == target_id;
+            });
+
+        if (it != filters.cend())
+        {
+            auto duplicate_filter = std::make_shared<Filter>(**it);
+            duplicate_filter->name += "*";
+            filters.insert(std::next(it), std::move(duplicate_filter));
+        }
+        else
+        {
+            LOG_WARN(
+                "Failed to DuplicateFilter with filter ID {} because it does not exist in the data",
+                m_current_action.filter->id);
+        }
+        break;
+    }
+    case EActionType::AddFilterComponent: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab == nullptr, "tab should be nullptr for AddFilterComponent action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter != nullptr,
+            "filter should NOT be nullptr for AddFilterComponent action");
+        GRAPHITE_ASSERT(
+            m_current_action.component == nullptr,
+            "component should NOT be nullptr for AddFilterComponent action");
+
+        auto& new_component =
+            *m_current_action.filter->components.emplace_back(std::make_shared<FilterComponent>());
+        new_component.id = Graphite::Core::Common::UniqueID::Generate();
+        new_component[EFilterComponentFlag::IsEquals] = true;
+
+        break;
+    }
+    case EActionType::RemoveFilterComponent: {
+        GRAPHITE_ASSERT(
+            m_current_action.tab == nullptr,
+            "tab should be nullptr for RemoveFilterComponent action");
+        GRAPHITE_ASSERT(
+            m_current_action.filter != nullptr,
+            "filter should NOT be nullptr for RemoveFilterComponent action");
+        GRAPHITE_ASSERT(
+            m_current_action.component != nullptr,
+            "component should NOT be nullptr for RemoveFilterComponent action");
+
+        auto& components = m_current_action.filter->components;
+        auto const it = std::find_if(
+            components.cbegin(),
+            components.cend(),
+            [&target_id =
+                 m_current_action.component->id](const std::shared_ptr<FilterComponent>& comp_ptr) {
+                return comp_ptr->id == target_id;
+            });
+
+        if (it != components.cend())
+        {
+            components.erase(it);
+            application_state.filters.dirty = true;
+        }
+        else
+        {
+            LOG_WARN(
+                "Failed to RemoveFilterComponent with component ID {} because it does not exist in "
+                "the data",
+                m_current_action.component->id);
+        }
+        break;
+    }
+    default: {
+        LOG_WARN(
+            "Unknown action type {} -> tab: {} | filter: {} | component: {}",
+            static_cast<std::uint32_t>(m_current_action.type),
+            m_current_action.tab ? m_current_action.tab->id.toString() : "nullptr",
+            m_current_action.filter ? m_current_action.filter->id.toString() : "nullptr",
+            m_current_action.component ? m_current_action.component->id.toString() : "nullptr");
+        break;
+    }
+    }
+
+    m_current_action = {};
 }
 
 } // namespace Fluxion::Application::Layers

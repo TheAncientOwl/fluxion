@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Logging utilities
 ///
 
@@ -130,15 +130,17 @@ private:
     }
 
 // TODO: improve?
-#define GRAPHITE_ASSERT(condition, message)                                                \
-    do                                                                                     \
-    {                                                                                      \
-        if (!(condition))                                                                  \
-        {                                                                                  \
-            LOG_CRITICAL("Assertion failed: {} | Condition: {}", message, #condition);     \
-            std::cerr << std::endl                                                         \
-                      << "Assertion failed: " << message << " | Condition: " << #condition \
-                      << std::endl;                                                        \
-            std::abort();                                                                  \
-        }                                                                                  \
+#define GRAPHITE_ASSERT(condition, message)                                                    \
+    do                                                                                         \
+    {                                                                                          \
+        auto const line{__LINE__ - 2};                                                         \
+        if (!(condition))                                                                      \
+        {                                                                                      \
+            LOG_CRITICAL(                                                                      \
+                "Assertion failed on line {}: {} | Condition: {}", line, message, #condition); \
+            std::cerr << std::endl                                                             \
+                      << "Assertion failed on line " << line << " : " << message               \
+                      << " | Condition: " << #condition << std::endl;                          \
+            std::abort();                                                                      \
+        }                                                                                      \
     } while (0)

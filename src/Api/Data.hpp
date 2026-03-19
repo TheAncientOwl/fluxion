@@ -5,13 +5,13 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief General data.
 ///
 
 #pragma once
 
-#include <format>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -111,19 +111,28 @@ using LogsTableHeader = std::vector<std::string>;
 using LogRow = std::vector<std::string>;
 using LogsChunk = std::vector<LogRow>;
 
+// clang-format off
 enum class EFilterComponentFlag : std::uint8_t
 {
-    None = 0,
-    IsRegex = 1 << 0, // 00000001
-    IsEquals = 1 << 1, // 00000010
-    IsCaseSensitive = 1 << 2 // 00000100
+    None            = 0,      // 00000000
+    IsRegex         = 1 << 0, // 00000001
+    IsEquals        = 1 << 1, // 00000010
+    IsCaseSensitive = 1 << 2, // 00000100
 };
+// clang-format on
 
 struct FilterComponent : public Internal::TWithFlags<FilterComponent, EFilterComponentFlag>
 {
     Graphite::Core::Common::UniqueID id{};
     Graphite::Core::Common::UniqueID over_field_id{};
     std::string data{};
+
+    FilterComponent() = default;
+    FilterComponent(FilterComponent const& other);
+    FilterComponent& operator=(FilterComponent const& other);
+    FilterComponent(FilterComponent&& other) noexcept = default;
+    FilterComponent& operator=(FilterComponent&& other) noexcept = default;
+    ~FilterComponent() = default;
 
     friend std::ostream& operator<<(std::ostream& os, const FilterComponent& v);
 };
@@ -134,45 +143,58 @@ struct FilterColors
     ImVec4 background{};
 };
 
+// clang-format off
 enum class EFilterFlag : std::uint8_t
 {
-    None = 0,
-    IsActive = 1 << 0, // 00000001
+    None            = 0,      // 00000000
+    IsActive        = 1 << 0, // 00000001
     IsHighlightOnly = 1 << 1, // 00000010
-    IsCollapsed = 1 << 2, // 00000100
+    IsCollapsed     = 1 << 2, // 00000100
 };
+// clang-format on
 
 struct Filter : public Internal::TWithFlags<Filter, EFilterFlag>
 {
     Graphite::Core::Common::UniqueID id{};
     std::string name{};
-    std::vector<Graphite::Core::Common::UniqueID> component_ids{};
+    std::vector<std::shared_ptr<FilterComponent>> components{};
     FilterColors colors{};
     std::uint8_t priority{};
+
+    Filter() = default;
+    Filter(Filter const& other);
+    Filter& operator=(Filter const& other);
+    Filter(Filter&& other) noexcept;
+    Filter& operator=(Filter&& other) noexcept;
+    ~Filter() = default;
 
     friend std::ostream& operator<<(std::ostream& os, const Filter& v);
 };
 
-enum class EFilterTabFlag : std::uint8_t
+// clang-format off
+enum class EFiltersTabFlag : std::uint8_t
 {
-    None = 0,
+    None     = 0,     // 00000000
     IsActive = 1 << 0 // 00000001
 };
+// clang-format on
 
-struct FilterTab : public Internal::TWithFlags<FilterTab, EFilterFlag>
+struct FiltersTab : public Internal::TWithFlags<FiltersTab, EFiltersTabFlag>
 {
     Graphite::Core::Common::UniqueID id{};
     std::string name{};
-    std::vector<Graphite::Core::Common::UniqueID> filter_ids{};
+    std::vector<std::shared_ptr<Filter>> filters{};
 
-    friend std::ostream& operator<<(std::ostream& os, const FilterTab& v);
+    FiltersTab() = default;
+    FiltersTab(FiltersTab const& other);
+    FiltersTab& operator=(FiltersTab const& other);
+    FiltersTab(FiltersTab&& other) noexcept = default;
+    FiltersTab& operator=(FiltersTab&& other) noexcept = default;
+    ~FiltersTab() = default;
+
+    friend std::ostream& operator<<(std::ostream& os, const FiltersTab& v);
 };
 
-struct FilterTabs
-{
-    std::vector<FilterTab> tabs{};
-    std::vector<Filter> filters{};
-    std::vector<FilterComponent> components{};
-};
+using FiltersTabs = std::vector<std::shared_ptr<FiltersTab>>;
 
 } // namespace Fluxion::API::Data
