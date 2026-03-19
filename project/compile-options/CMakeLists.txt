@@ -23,7 +23,7 @@ target_compile_options(fluxion_compile_options INTERFACE
 target_compile_options(fluxion_compile_options INTERFACE
     $<$<CONFIG:Debug>:
         -O1 -g -fno-omit-frame-pointer
-        -fsanitize=address,undefined
+        # -fsanitize=address,undefined
     >
     $<$<CONFIG:Release>:
         -O3 -DNDEBUG
@@ -32,6 +32,6 @@ target_compile_options(fluxion_compile_options INTERFACE
 
 target_link_options(fluxion_compile_options INTERFACE
     $<$<CONFIG:Debug>:
-        -fsanitize=address,undefined
+        # -fsanitize=address,undefined
     >
 )
