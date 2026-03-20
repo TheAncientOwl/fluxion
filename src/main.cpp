@@ -5,7 +5,7 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief ImGui entry point.
 ///
 
@@ -171,11 +171,11 @@ Fluxion::Application::AppState MakeDefaultAppState()
 
 int main()
 {
+    Graphite::Core::Logger::Logger::LoadConfig();
+
     LOG_SCOPE("");
 
     Graphite::Core::Application::WindowConfiguration window_configuration{};
-    // window_configuration.width = 800;
-    // window_configuration.height = 570;
     window_configuration.width = 950;
     window_configuration.height = 750;
     window_configuration.title = "Fluxion";
@@ -186,6 +186,8 @@ int main()
             std::move(window_configuration), MakeDefaultAppState());
 
     app->Run();
+
+    Graphite::Core::Logger::Logger::SaveConfig();
 
     return EXIT_SUCCESS;
 }

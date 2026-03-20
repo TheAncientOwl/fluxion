@@ -5,7 +5,7 @@
 ///
 /// @file LogFormatter.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Implementation of @see LogFormatter.hpp.
 ///
 
@@ -14,46 +14,46 @@
 
 namespace Graphite::Core::Logger::Formatter {
 
-const char* getLevelColor(LogLevel level) noexcept
+const char* getLevelColor(ELogLevel level) noexcept
 {
     switch (level)
     {
-    case LogLevel::Trace:
+    case ELogLevel::Trace:
         return "\033[97m";
-    case LogLevel::Info:
+    case ELogLevel::Info:
         return "\033[34m";
-    case LogLevel::Warn:
+    case ELogLevel::Warn:
         return "\033[33m";
-    case LogLevel::Error:
+    case ELogLevel::Error:
         return "\033[31m";
-    case LogLevel::Critical:
+    case ELogLevel::Critical:
         return "\033[91m";
-    case LogLevel::Debug:
+    case ELogLevel::Debug:
         return "\033[92m";
-    case LogLevel::Scope:
+    case ELogLevel::Scope:
         return "\033[90m";
     default:
         return "\033[97m";
     }
 }
 
-const char* getLevelName(LogLevel level) noexcept
+const char* getLevelName(ELogLevel level) noexcept
 {
     switch (level)
     {
-    case LogLevel::Trace:
+    case ELogLevel::Trace:
         return "trace";
-    case LogLevel::Info:
+    case ELogLevel::Info:
         return "info";
-    case LogLevel::Warn:
+    case ELogLevel::Warn:
         return "warn";
-    case LogLevel::Error:
+    case ELogLevel::Error:
         return "error";
-    case LogLevel::Critical:
+    case ELogLevel::Critical:
         return "critical";
-    case LogLevel::Debug:
+    case ELogLevel::Debug:
         return "debug";
-    case LogLevel::Scope:
+    case ELogLevel::Scope:
         return "scope";
     default:
         return "unknown";

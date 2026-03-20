@@ -5,12 +5,13 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief Logging utilities
 ///
 
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -22,25 +23,27 @@
 #include <queue>
 #include <sstream>
 #include <string>
-#include <string_view>
 #include <thread>
+#include <unordered_map>
 
 namespace Graphite::Core::Logger {
 
-enum class LogLevel
+// clang-format off
+enum class ELogLevel : std::uint8_t
 {
-    Trace,
-    Info,
-    Warn,
-    Error,
-    Critical,
-    Debug,
-    Scope
+    Trace    = 0,
+    Info     = 1,
+    Warn     = 2,
+    Error    = 3,
+    Critical = 4,
+    Debug    = 5,
+    Scope    = 6,
 };
+// clang-format on
 
 struct LogMessage
 {
-    LogLevel level;
+    ELogLevel level;
     std::string scope;
     std::string message;
     std::chrono::system_clock::time_point time;
@@ -52,26 +55,58 @@ public:
     ~Logger();
 
     template <typename... Args>
-    static void log(LogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
+    static void log(ELogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
     {
-        instance().enqueue(
+        if (!IsLevelEnabled(level))
+        {
+            return;
+        }
+
+        {
+            std::string key(scope); // convert string to string
+            std::lock_guard lock(s_scope_mutex);
+            if (auto it = s_scope_enabled.find(key); it != s_scope_enabled.end())
+            {
+                if (!it->second)
+                    return;
+            }
+            else
+            {
+                s_scope_enabled.emplace(std::move(key), true);
+            }
+        }
+
+        Instance().Enqueue(
             LogMessage{
                 level,
-                std::move(scope),
+                scope,
                 std::format(fmt, std::forward<Args>(args)...),
                 std::chrono::system_clock::now()});
     }
 
+public:
+    static void SaveConfig();
+    static void LoadConfig();
+    static std::filesystem::path GetConfigFilePath();
+
 private:
-    void enqueue(LogMessage&& msg);
-    static Logger& instance();
-
-    Logger();
-    void processQueue();
-
-    void printMessage(const LogMessage& msg);
-
     static std::filesystem::path GetLogFilePath();
+    static Logger& Instance();
+    Logger();
+
+    void Enqueue(LogMessage&& msg);
+    void ProcessQueue();
+    void PrintMessage(LogMessage const& msg);
+
+public:
+    using ScopeEnabledMap = std::unordered_map<std::string, bool>;
+    static ScopeEnabledMap GetScopes();
+    static void SetScopeEnabled(std::string scope, bool enabled);
+
+    using LogLevels = std::array<std::pair<ELogLevel, std::string>, 7>;
+    static LogLevels const& GetLevels();
+    static void SetLevelState(ELogLevel const level, bool const enabled);
+    static bool IsLevelEnabled(ELogLevel const level);
 
 private:
     std::queue<LogMessage> m_queue;
@@ -80,6 +115,10 @@ private:
     std::atomic<bool> m_running;
     std::thread m_worker;
     std::ofstream m_log_file;
+
+    static ScopeEnabledMap s_scope_enabled;
+    static std::mutex s_scope_mutex;
+    static std::array<std::atomic<bool>, 7> s_level_enabled;
 };
 
 class ScopeLogger
@@ -96,32 +135,42 @@ private:
 
 } // namespace Graphite::Core::Logger
 
+#ifdef GRAPHITE_NO_LOGGER
+#define LOG_TRACE(fmt, ...)
+#define LOG_INFO(fmt, ...)
+#define LOG_WARN(fmt, ...)
+#define LOG_ERROR(fmt, ...)
+#define LOG_CRITICAL(fmt, ...)
+#define LOG_DEBUG(fmt, ...)
+#define LOG_SCOPE(fmt, ...)
+#define GRAPHITE_ASSERT(condition, message)
+#else
 #define LOG_TRACE(fmt, ...)                \
     ::Graphite::Core::Logger::Logger::log( \
-        ::Graphite::Core::Logger::LogLevel::Trace, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
+        ::Graphite::Core::Logger::ELogLevel::Trace, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_INFO(fmt, ...)                 \
     ::Graphite::Core::Logger::Logger::log( \
-        ::Graphite::Core::Logger::LogLevel::Info, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
+        ::Graphite::Core::Logger::ELogLevel::Info, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_WARN(fmt, ...)                 \
     ::Graphite::Core::Logger::Logger::log( \
-        ::Graphite::Core::Logger::LogLevel::Warn, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
+        ::Graphite::Core::Logger::ELogLevel::Warn, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_ERROR(fmt, ...)                \
     ::Graphite::Core::Logger::Logger::log( \
-        ::Graphite::Core::Logger::LogLevel::Error, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
+        ::Graphite::Core::Logger::ELogLevel::Error, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_CRITICAL(fmt, ...)                        \
-    ::Graphite::Core::Logger::Logger::log(            \
-        ::Graphite::Core::Logger::LogLevel::Critical, \
-        __PRETTY_FUNCTION__,                          \
-        fmt __VA_OPT__(, ) __VA_ARGS__);              \
+#define LOG_CRITICAL(fmt, ...)                         \
+    ::Graphite::Core::Logger::Logger::log(             \
+        ::Graphite::Core::Logger::ELogLevel::Critical, \
+        __PRETTY_FUNCTION__,                           \
+        fmt __VA_OPT__(, ) __VA_ARGS__);               \
     std::this_thread::sleep_for(std::chrono::seconds{2})
 
 #define LOG_DEBUG(fmt, ...)                \
     ::Graphite::Core::Logger::Logger::log( \
-        ::Graphite::Core::Logger::LogLevel::Debug, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
+        ::Graphite::Core::Logger::ELogLevel::Debug, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_SCOPE(fmt, ...)                                              \
     ::Graphite::Core::Logger::ScopeLogger _graphite_scope_logger         \
@@ -144,3 +193,4 @@ private:
             std::abort();                                                                      \
         }                                                                                      \
     } while (0)
+#endif

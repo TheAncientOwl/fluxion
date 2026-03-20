@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -13,6 +13,7 @@
 
 #include "icons/IconsCodicons.h"
 
+#include "Layers/DebugLayer.hpp"
 #include "Layers/FiltersLayer.hpp"
 #include "Layers/FluxionBaseLayer.hpp"
 #include "Layers/LogsViewLayer.hpp"
@@ -51,6 +52,8 @@ void FluxionApplication::AppInit()
     m_app_state.logs_logic = std::make_unique<DummyPlugin>();
 
     AddLayer<Layers::FluxionBaseLayer>(shared_from_this(), 0);
+    AddLayer<Layers::DebugLayer>(
+        shared_from_this(), std::numeric_limits<Graphite::Core::Application::Layer::ZIndex>::max());
     AddLayer<Layers::MainMenuLayer>(shared_from_this(), 1);
     AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);
     AddLayer<Layers::FiltersLayer>(shared_from_this(), 20);

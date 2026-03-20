@@ -5,11 +5,12 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
 #include "MainMenuLayer.hpp"
+#include "DebugLayer.hpp"
 #include "FiltersLayer.hpp"
 #include "LogsViewLayer.hpp"
 
@@ -63,6 +64,18 @@ void MainMenuLayer::RenderMenu()
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
             auto& app_state{m_application->GetApplicationState()};
+
+            if (ImGui::MenuItem(
+                    app_state.debug_menu_open ? ICON_CI_EYE " Debug" : ICON_CI_EYE_CLOSED " Debug"))
+            {
+                if (!app_state.debug_menu_open)
+                {
+                    m_application->AddLayer<DebugLayer>(
+                        m_application->shared_from_this(),
+                        std::numeric_limits<Graphite::Core::Application::Layer::ZIndex>::max());
+                }
+                app_state.debug_menu_open = !app_state.debug_menu_open;
+            }
 
             if (ImGui::MenuItem(
                     app_state.logs_view_open ? ICON_CI_EYE " Logs" : ICON_CI_EYE_CLOSED " LogsView"))

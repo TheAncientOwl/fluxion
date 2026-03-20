@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -14,7 +14,9 @@
 #include "LogFormatter.hpp"
 
 #include <ctime>
+#include <fstream>
 #include <iomanip>
+#include <sstream>
 
 using namespace std::string_literals;
 
@@ -22,13 +24,100 @@ namespace Graphite::Core::Logger {
 
 static std::mutex g_write_mutex;
 
-Logger& Logger::instance()
+Logger::ScopeEnabledMap Logger::s_scope_enabled{};
+std::mutex Logger::s_scope_mutex{};
+std::array<std::atomic<bool>, 7> Logger::s_level_enabled{true, true, true, true, true, true, true};
+
+Logger& Logger::Instance()
 {
     static Logger logger{};
     return logger;
 }
 
-void Logger::enqueue(LogMessage&& msg)
+void Logger::SaveConfig()
+{
+    LOG_SCOPE("");
+    auto const config_path = GetConfigFilePath();
+    std::ofstream ofs(config_path, std::ios::trunc);
+    if (!ofs.is_open())
+    {
+        LOG_ERROR("Failed to open config file {}", config_path.c_str());
+        return;
+    }
+
+    // Save levels
+    for (auto const& [level, name] : GetLevels())
+    {
+        bool enabled = IsLevelEnabled(level);
+        ofs << (enabled ? '1' : '0') << " Level " << name << "\n";
+    }
+
+    // Save scopes
+    {
+        std::lock_guard lock{s_scope_mutex};
+        for (auto const& [scope, enabled] : s_scope_enabled)
+        {
+            ofs << (enabled ? '1' : '0') << " Scope " << scope << "\n";
+        }
+    }
+}
+
+void Logger::LoadConfig()
+{
+    auto const config_path = GetConfigFilePath();
+    std::ifstream ifs(config_path);
+    if (!ifs.is_open())
+    {
+        // No config file, silently return
+        return;
+    }
+
+    std::string line;
+    while (std::getline(ifs, line))
+    {
+        std::istringstream iss(line);
+        char enabled_char = 0;
+        std::string type;
+        std::string name;
+
+        if (!(iss >> enabled_char >> type))
+            continue;
+
+        std::getline(iss, name);
+        // Trim leading spaces from name
+        size_t start = name.find_first_not_of(" \t");
+        if (start != std::string::npos)
+            name = name.substr(start);
+        else
+            name.clear();
+
+        bool enabled = (enabled_char == '1');
+
+        if (type == "Level")
+        {
+            // Find level by name and set enabled
+            for (auto const& [level, lvl_name] : GetLevels())
+            {
+                if (lvl_name == name)
+                {
+                    SetLevelState(level, enabled);
+                    break;
+                }
+            }
+        }
+        else if (type == "Scope")
+        {
+            SetScopeEnabled(name, enabled);
+        }
+    }
+}
+
+std::filesystem::path Logger::GetConfigFilePath()
+{
+    return std::filesystem::current_path() / "app.graphite.logger.cfg";
+}
+
+void Logger::Enqueue(LogMessage&& msg)
 {
     if (!m_running)
     {
@@ -48,6 +137,43 @@ void Logger::enqueue(LogMessage&& msg)
     }
 
     m_cv.notify_one();
+}
+
+void Logger::SetLevelState(ELogLevel const level, bool const enabled)
+{
+    s_level_enabled[static_cast<std::uint8_t>(level)].store(enabled, std::memory_order_relaxed);
+}
+
+bool Logger::IsLevelEnabled(ELogLevel level)
+{
+    return s_level_enabled[static_cast<std::uint8_t>(level)].load(std::memory_order_relaxed);
+}
+
+void Logger::SetScopeEnabled(std::string scope, bool enabled)
+{
+    std::lock_guard lock{s_scope_mutex};
+    s_scope_enabled[std::move(scope)] = enabled;
+}
+
+Logger::ScopeEnabledMap Logger::GetScopes()
+{
+    std::lock_guard lock{s_scope_mutex};
+    return s_scope_enabled;
+}
+
+Logger::LogLevels const& Logger::GetLevels()
+{
+    using namespace std::string_literals;
+    static LogLevels s_levels{
+        std::make_pair(ELogLevel::Trace, "Trace"s),
+        std::make_pair(ELogLevel::Info, "Info"s),
+        std::make_pair(ELogLevel::Warn, "Warn"s),
+        std::make_pair(ELogLevel::Error, "Error"s),
+        std::make_pair(ELogLevel::Critical, "Critical"s),
+        std::make_pair(ELogLevel::Debug, "Debug"s),
+        std::make_pair(ELogLevel::Scope, "Scope"s),
+    };
+    return s_levels;
 }
 
 Logger::~Logger()
@@ -73,10 +199,10 @@ Logger::Logger()
         std::terminate();
     }
 
-    m_worker = std::thread(&Logger::processQueue, this);
+    m_worker = std::thread(&Logger::ProcessQueue, this);
 }
 
-void Logger::processQueue()
+void Logger::ProcessQueue()
 {
     while (m_running)
     {
@@ -98,7 +224,7 @@ void Logger::processQueue()
             m_queue.pop();
             lock.unlock();
 
-            printMessage(msg);
+            PrintMessage(msg);
 
             lock.lock();
         }
@@ -114,11 +240,11 @@ void Logger::processQueue()
         m_queue.pop();
         lock.unlock();
 
-        printMessage(msg);
+        PrintMessage(msg);
     }
 }
 
-void Logger::printMessage(const LogMessage& msg)
+void Logger::PrintMessage(const LogMessage& msg)
 {
     // Format: | HH:MM:SS:ms:ns | LEVEL | Scope::Subscope: Message
 
@@ -181,19 +307,25 @@ void Logger::printMessage(const LogMessage& msg)
 }
 
 ScopeLogger::ScopeLogger(std::string tag, std::string scope)
-    : m_scope{std::move(scope)}
-    , m_tag{std::move(tag)}
-    , m_start{std::chrono::high_resolution_clock::now()}
+    : m_scope{scope}, m_tag{std::move(tag)}, m_start{}
 {
+    if (!Logger::IsLevelEnabled(ELogLevel::Scope))
+        return;
+
+    m_start = std::chrono::high_resolution_clock::now();
+
     static constexpr auto green = "\033[32m";
     static constexpr auto gray = "\033[90m";
 
     Logger::log(
-        LogLevel::Scope, m_scope, "{}[{}+{}]{} Begin {}» {}{}", gray, green, gray, green, gray, green, m_tag);
+        ELogLevel::Scope, m_scope, "{}[{}+{}]{} Begin {}» {}{}", gray, green, gray, green, gray, green, m_tag);
 }
 
 ScopeLogger::~ScopeLogger()
 {
+    if (!Logger::IsLevelEnabled(ELogLevel::Scope))
+        return;
+
     auto const end = std::chrono::high_resolution_clock::now();
     auto const elapsed = end - m_start;
 
@@ -256,7 +388,7 @@ ScopeLogger::~ScopeLogger()
     oss << reset;
 
     Logger::log(
-        LogLevel::Scope,
+        ELogLevel::Scope,
         m_scope,
         "{}[{}-{}]{} End   {}» {}{} ~ elapsed {}",
         gray,

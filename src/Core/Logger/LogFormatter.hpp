@@ -5,7 +5,7 @@
 ///
 /// @file LogFormatter.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Format helpers.
 ///
 
@@ -17,8 +17,8 @@
 
 namespace Graphite::Core::Logger::Formatter {
 
-const char* getLevelColor(LogLevel level) noexcept;
-const char* getLevelName(LogLevel level) noexcept;
+const char* getLevelColor(ELogLevel level) noexcept;
+const char* getLevelName(ELogLevel level) noexcept;
 const char* getSeparatorColor() noexcept;
 
 void formatScopeColored(std::ostream& os, std::string_view scope, std::string_view color);

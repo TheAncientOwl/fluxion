@@ -1,0 +1,535 @@
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file DebugLayer.cpp
+/// @author Alexandru Delegeanu
+/// @version 0.1
+/// @brief Implementation of @see DebugLayer.hpp.
+///
+
+#include <regex>
+
+#include "DebugLayer.hpp"
+#include "FiltersLayer.hpp"
+#include "LogsViewLayer.hpp"
+
+#include "icons/IconsCodicons.h"
+#include "imgui/imgui.h"
+
+namespace Fluxion::Application::Layers {
+
+std::string_view DebugLayer::GetLayerName() noexcept
+{
+    return "DebugLayer";
+}
+
+std::string_view DebugLayer::GetName() const noexcept
+{
+    return DebugLayer::GetLayerName();
+}
+
+DebugLayer::DebugLayer(
+    Fluxion::Application::FluxionApplication::Ptr application,
+    Graphite::Core::Application::Layer::ZIndex const z_index)
+    : BaseLayer{std::move(application), z_index}
+{
+    LOG_SCOPE("");
+}
+
+void DebugLayer::OnAdd()
+{
+    LOG_SCOPE("");
+}
+
+void DebugLayer::OnRender()
+{
+    LOG_SCOPE("");
+
+    auto& app_state{m_application->GetApplicationState()};
+
+    ImGui::Begin(ICON_CI_SYMBOL_EVENT " Debug", &app_state.debug_menu_open);
+
+    if (ImGui::BeginTabBar("Debug"))
+    {
+        if (ImGui::BeginTabItem(ICON_CI_OUTPUT " Logger"))
+        {
+            RenderLogger();
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+
+    if (!m_application->GetApplicationState().debug_menu_open)
+    {
+        m_application->RemoveLayer(m_layer_id);
+    }
+}
+
+void DebugLayer::OnRemove()
+{
+    LOG_SCOPE("");
+}
+
+namespace UIHelpers {
+
+enum class SigTokenType
+{
+    Keyword,
+    Identifier,
+    Namespace,
+    Class,
+    Method,
+    Punctuation,
+    Whitespace,
+    Number,
+    Unknown
+};
+
+struct Token
+{
+    SigTokenType type;
+    std::string_view text;
+};
+
+constexpr size_t MaxSigTokens = 200;
+
+bool IsKeyword(std::string_view word)
+{
+    static constexpr const char* keywords[] = {
+        "auto",   "bool",   "char",     "class",    "const",    "constexpr", "default",
+        "delete", "double", "enum",     "explicit", "extern",   "float",     "friend",
+        "inline", "int",    "long",     "noexcept", "operator", "short",     "static",
+        "struct", "switch", "template", "unsigned", "virtual",  "void",
+    };
+
+    for (auto k : keywords)
+    {
+        if (word == k)
+            return true;
+    }
+    return false;
+}
+
+bool IsIdentifierChar(char c)
+{
+    return (c == '_') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+}
+
+size_t TokenizeCppSignature(std::string_view line, Token (&tokens)[MaxSigTokens])
+{
+    size_t token_count = 0;
+    size_t pos = 0;
+    size_t len = line.size();
+
+    // Temporary storage for identifiers and their positions to adjust types after processing '::'
+    struct IdentPos
+    {
+        size_t index; // index in tokens array
+    };
+    std::vector<IdentPos> identifier_positions;
+
+    while (pos < len && token_count < MaxSigTokens)
+    {
+        char c = line[pos];
+
+        // Whitespace
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+        {
+            size_t start = pos;
+            while (pos < len &&
+                   (line[pos] == ' ' || line[pos] == '\t' || line[pos] == '\n' || line[pos] == '\r'))
+                ++pos;
+            tokens[token_count++] = Token{SigTokenType::Whitespace, line.substr(start, pos - start)};
+            continue;
+        }
+
+        // Identifier or keyword
+        if ((c == '_') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+        {
+            size_t start = pos;
+            ++pos;
+            while (pos < len && IsIdentifierChar(line[pos]))
+                ++pos;
+            std::string_view word = line.substr(start, pos - start);
+            SigTokenType type = IsKeyword(word) ? SigTokenType::Keyword : SigTokenType::Identifier;
+            tokens[token_count++] = Token{type, word};
+            if (type == SigTokenType::Identifier)
+            {
+                identifier_positions.push_back(IdentPos{token_count - 1});
+            }
+            continue;
+        }
+
+        // Number literal (simple)
+        if ((c >= '0' && c <= '9'))
+        {
+            size_t start = pos;
+            ++pos;
+            while (pos < len && ((line[pos] >= '0' && line[pos] <= '9') || line[pos] == '.' ||
+                                 line[pos] == 'x' || line[pos] == 'X' ||
+                                 (line[pos] >= 'a' && line[pos] <= 'f') ||
+                                 (line[pos] >= 'A' && line[pos] <= 'F')))
+                ++pos;
+            tokens[token_count++] = Token{SigTokenType::Number, line.substr(start, pos - start)};
+            continue;
+        }
+
+        // Punctuation (single char)
+        // List of common C++ punctuation characters in signatures
+        if (c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' ||
+            c == ';' || c == ':' || c == '*' || c == '&' || c == '<' || c == '>' || c == '=' ||
+            c == '+' || c == '-' || c == '/' || c == '%' || c == '^' || c == '!' || c == '?' ||
+            c == '~' || c == '.' || c == '#')
+        {
+            tokens[token_count++] = Token{SigTokenType::Punctuation, line.substr(pos, 1)};
+            ++pos;
+            continue;
+        }
+
+        // Unknown character: treat as Unknown token of length 1
+        tokens[token_count++] = Token{SigTokenType::Unknown, line.substr(pos, 1)};
+        ++pos;
+    }
+
+    // Adjust identifier token types for namespaces, classes, and methods based on '::'
+    // Strategy:
+    // - Identify sequences of identifiers separated by '::' punctuation
+    // - Mark all identifiers in such sequences except the last two as Namespace
+    // - Mark the second to last identifier as Class
+    // - Mark the last identifier in the sequence as Method
+
+    // Collect indices of '::' punctuation tokens
+    std::vector<size_t> scope_resolutions;
+    for (size_t i = 0; i + 1 < token_count; ++i)
+    {
+        if (tokens[i].type == SigTokenType::Punctuation && tokens[i].text == ":" &&
+            tokens[i + 1].type == SigTokenType::Punctuation && tokens[i + 1].text == ":")
+        {
+            scope_resolutions.push_back(i);
+        }
+    }
+
+    if (!scope_resolutions.empty())
+    {
+        // For each '::', find the identifier before and after it
+        // Then group identifiers separated by '::' into sequences
+        // We'll build sequences of identifier indices separated by '::'
+        std::vector<std::vector<size_t>> sequences;
+
+        // Build a list of all identifier indices in order
+        std::vector<size_t> id_indices;
+        for (auto& idpos : identifier_positions)
+        {
+            id_indices.push_back(idpos.index);
+        }
+
+        // Build a map from token index to position in id_indices for quick lookup
+        std::unordered_map<size_t, size_t> tokenIndexToIdPos;
+        for (size_t i = 0; i < id_indices.size(); ++i)
+        {
+            tokenIndexToIdPos[id_indices[i]] = i;
+        }
+
+        // For each '::' punctuation, get identifiers before and after
+        // We'll mark identifiers connected by '::' as a sequence
+        // We'll iterate through id_indices and group consecutive identifiers separated by '::'
+        std::vector<size_t> current_sequence;
+        for (size_t i = 0; i < id_indices.size(); ++i)
+        {
+            size_t current_token_index = id_indices[i];
+            current_sequence.push_back(current_token_index);
+
+            // Check if next token is '::' and next identifier follows
+            bool has_next_scope = false;
+            if (i + 1 < id_indices.size())
+            {
+                size_t next_token_index = id_indices[i + 1];
+                // Check tokens between current_token_index and next_token_index for '::'
+                if (next_token_index > current_token_index + 1)
+                {
+                    if (tokens[current_token_index + 1].type == SigTokenType::Punctuation &&
+                        tokens[current_token_index + 1].text == ":" &&
+                        tokens[current_token_index + 2].type == SigTokenType::Punctuation &&
+                        tokens[current_token_index + 2].text == ":")
+                    {
+                        has_next_scope = true;
+                    }
+                }
+            }
+
+            if (!has_next_scope || i + 1 == id_indices.size())
+            {
+                // End of sequence
+                sequences.push_back(current_sequence);
+                current_sequence.clear();
+            }
+        }
+
+        // Now assign types
+        for (auto& seq : sequences)
+        {
+            if (seq.empty())
+                continue;
+            // Mark all but last two as Namespace
+            for (size_t i = 0; i + 2 < seq.size(); ++i)
+            {
+                tokens[seq[i]].type = SigTokenType::Namespace;
+            }
+            if (seq.size() >= 2)
+            {
+                // Second to last as Class
+                tokens[seq[seq.size() - 2]].type = SigTokenType::Class;
+            }
+            // Last as Method
+            tokens[seq.back()].type = SigTokenType::Method;
+        }
+    }
+    else
+    {
+        // No '::' found, apply heuristic:
+        // For each Identifier token:
+        // - If immediately followed by '(' punctuation token, mark as Method
+        // - Else if immediately followed by whitespace token or '<' punctuation token, mark as Class
+        for (auto& idpos : identifier_positions)
+        {
+            size_t idx = idpos.index;
+            size_t next_idx = idx + 1;
+            if (next_idx < token_count)
+            {
+                if (tokens[next_idx].type == SigTokenType::Punctuation &&
+                    tokens[next_idx].text == "(")
+                {
+                    tokens[idx].type = SigTokenType::Method;
+                }
+                else if (
+                    tokens[next_idx].type == SigTokenType::Whitespace ||
+                    (tokens[next_idx].type == SigTokenType::Punctuation && tokens[next_idx].text == "<"))
+                {
+                    tokens[idx].type = SigTokenType::Class;
+                }
+            }
+        }
+    }
+
+    // Removed heuristic marking identifiers preceded by 'class' or 'struct' as Class
+
+    return token_count;
+}
+
+ImVec4 GetColorForSigToken(SigTokenType type)
+{
+    // Gruvbox-inspired theme colors
+    // clang-format off
+    switch (type)
+    {
+        case SigTokenType::Keyword:     return ImVec4(0.99f, 0.59f, 0.22f, 1.0f);
+        case SigTokenType::Namespace:   return ImVec4(0.60f, 0.60f, 0.60f, 1.0f);
+        case SigTokenType::Class:       return ImVec4(0.20f, 0.64f, 0.80f, 1.0f);
+        case SigTokenType::Method:      return ImVec4(0.93f, 0.93f, 0.40f, 1.0f);
+        case SigTokenType::Identifier:  return ImVec4(0.90f, 0.86f, 0.79f, 1.0f);
+        case SigTokenType::Punctuation: return ImVec4(0.75f, 0.70f, 0.60f, 1.0f);
+        case SigTokenType::Whitespace:  return ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+        case SigTokenType::Number:      return ImVec4(0.98f, 0.69f, 0.30f, 1.0f);
+        case SigTokenType::Unknown:     return ImVec4(0.90f, 0.86f, 0.79f, 1.0f);
+        default:                        return ImVec4(0.90f, 0.86f, 0.79f, 1.0f);
+    }
+    // clang-format on
+}
+
+void RenderCppSignature(std::string_view line)
+{
+    Token tokens[MaxSigTokens];
+    size_t token_count = TokenizeCppSignature(line, tokens);
+
+    for (size_t i = 0; i < token_count; ++i)
+    {
+        if (i > 0)
+            ImGui::SameLine(0.0f, 0.0f);
+
+        ImVec4 color = GetColorForSigToken(tokens[i].type);
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
+        ImGui::TextUnformatted(tokens[i].text.data(), tokens[i].text.data() + tokens[i].text.size());
+        ImGui::PopStyleColor();
+
+        if (i < token_count - 1)
+            ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.x);
+    }
+}
+
+extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f);
+
+} // namespace UIHelpers
+
+void DebugLayer::RenderLogger()
+{
+    using Logger = Graphite::Core::Logger::Logger;
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text(ICON_CI_TASKLIST " Levels");
+    ImGui::SameLine();
+    UIHelpers::VerticalSeparator();
+
+    ImGui::SameLine();
+    ImGui::BeginChild(
+        "LevelsScroll",
+        ImVec2(0, ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y),
+        ImGuiChildFlags_None,
+        ImGuiWindowFlags_HorizontalScrollbar);
+    auto const levels{Logger::GetLevels()};
+    for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
+    {
+        auto const& [level, label] = levels[level_idx];
+
+        if (level_idx > 0)
+        {
+            ImGui::SameLine();
+        }
+
+        bool enabled{Logger::IsLevelEnabled(level)};
+        if (ImGui::Checkbox(label.data(), &enabled))
+        {
+            Logger::SetLevelState(level, enabled);
+        }
+
+        if (level_idx + 1 < levels.size())
+        {
+            ImGui::SameLine();
+            UIHelpers::VerticalSeparator();
+        }
+    }
+    ImGui::EndChild();
+
+    static char filter[128] = ".";
+    static std::string last_filter = "";
+    static std::vector<size_t> filtered_indices;
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text(ICON_CI_SEARCH_SPARKLE " Search");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::InputTextWithHint("##Search", "Type to filter scopes...", filter, sizeof(filter));
+
+    auto scopes = Logger::GetScopes();
+    static std::vector<std::pair<std::string_view, bool>> sorted_scopes{};
+    sorted_scopes.resize(scopes.size());
+    size_t scope_idx{0};
+    for (auto const& kv : scopes)
+    {
+        sorted_scopes[scope_idx++] = kv;
+    }
+    std::sort(sorted_scopes.begin(), sorted_scopes.end(), [](auto const& a, auto const& b) {
+        return a.first < b.first;
+    });
+
+    // Only recompute the filtered indices when the filter changes
+    std::string filter_str(filter);
+    if (filter_str != last_filter)
+    {
+        filtered_indices.clear();
+        // Use std::regex for matching, default regex is "." (matches everything)
+        try
+        {
+            std::string regex_pattern = filter_str.empty() ? "." : filter_str;
+            std::regex re(regex_pattern, std::regex_constants::icase);
+            for (size_t i = 0; i < sorted_scopes.size(); ++i)
+            {
+                const auto& [scope, _] = sorted_scopes[i];
+                if (std::regex_search(scope.begin(), scope.end(), re))
+                {
+                    filtered_indices.push_back(i);
+                }
+            }
+        }
+        catch (const std::regex_error&)
+        {
+            // If invalid regex, show nothing
+            filtered_indices.clear();
+        }
+        last_filter = filter_str;
+    }
+
+    if (ImGui::Button(ICON_CI_UNMUTE " Enable All"))
+    {
+        // Only enable scopes currently filtered and rendered
+        for (size_t idx : filtered_indices)
+        {
+            auto const& [scope, _] = sorted_scopes[idx];
+            Logger::SetScopeEnabled(std::string{scope}, true);
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_CI_MUTE " Disable All"))
+    {
+        // Only disable scopes currently filtered and rendered
+        for (size_t idx : filtered_indices)
+        {
+            auto const& [scope, _] = sorted_scopes[idx];
+            Logger::SetScopeEnabled(std::string{scope}, false);
+        }
+    }
+
+    ImGui::BeginChild("ScopesList", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+    if (ImGui::BeginTable(
+            "ScopesTable",
+            2,
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX))
+    {
+        // First column: frozen, width fixed, no resize/reorder, horizontally non-scrollable
+        ImGui::TableSetupColumn(
+            ICON_CI_VERIFIED " Enabled",
+            ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize |
+                ImGuiTableColumnFlags_NoReorder,
+            85.0f);
+        // Second column: scrollable horizontally
+        ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scope");
+        ImGui::TableSetupScrollFreeze(1, 1);
+        ImGui::TableHeadersRow();
+
+        ImGuiListClipper clipper;
+        clipper.Begin(static_cast<int>(filtered_indices.size()));
+        while (clipper.Step())
+        {
+            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
+            {
+                size_t i = filtered_indices[static_cast<std::size_t>(row)];
+                auto const& [scope, enabled] = sorted_scopes[i];
+
+                ImGui::PushID(scope.data());
+                ImGui::TableNextRow();
+
+                // Enabled checkbox (centered in frozen column)
+                ImGui::TableSetColumnIndex(0);
+                bool value = enabled;
+                ImGui::SetCursorPosY(
+                    ImGui::GetCursorPosY() +
+                    (ImGui::GetTextLineHeightWithSpacing() - ImGui::GetFrameHeight()) * 0.5f);
+                ImGui::SetNextItemWidth(-1); // Use full column width for centering
+                ImGui::SetCursorPosX(
+                    ImGui::GetCursorPosX() +
+                    (ImGui::GetColumnWidth() - ImGui::GetFrameHeight()) * 0.5f);
+                if (ImGui::Checkbox("##enabled", &value))
+                {
+                    Logger::SetScopeEnabled(std::string{scope}, value);
+                }
+
+                // Scope signature
+                ImGui::TableSetColumnIndex(1);
+                UIHelpers ::RenderCppSignature(scope);
+
+                ImGui::PopID();
+            }
+        }
+        ImGui::EndTable();
+    }
+
+    ImGui::EndChild(); // scollable list
+}
+
+} // namespace Fluxion::Application::Layers

@@ -25,6 +25,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_subdirectory(external)
 add_subdirectory(src/Api)
 add_subdirectory(src/Core)
 add_subdirectory(src/Application)
@@ -35,6 +36,10 @@ set(SOURCES
 )
 
 add_executable(fluxion ${SOURCES})
+
+target_compile_definitions(fluxion PRIVATE
+    $<$<CONFIG:Release>:GRAPHITE_NO_LOGGER>
+)
 
 set_target_properties(fluxion PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
