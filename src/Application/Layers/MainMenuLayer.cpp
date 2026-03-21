@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
@@ -76,6 +76,8 @@ void MainMenuLayer::RenderMenu()
                 }
                 app_state.debug_menu_open = !app_state.debug_menu_open;
             }
+
+            ImGui::Separator();
 
             if (ImGui::MenuItem(
                     app_state.logs_view_open ? ICON_CI_EYE " Logs" : ICON_CI_EYE_CLOSED " LogsView"))
