@@ -3,13 +3,13 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file FluxionBaseLayer.cpp
+/// @file BaseLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
-/// @brief Implementation of @see FluxionBaseLayer.hpp.
+/// @version 0.3
+/// @brief Implementation of @see BaseLayer.hpp.
 ///
 
-#include "FluxionBaseLayer.hpp"
+#include "BaseLayer.hpp"
 #include "FiltersLayer.hpp"
 #include "LogsViewLayer.hpp"
 
@@ -17,36 +17,36 @@
 
 namespace Fluxion::Application::Layers {
 
-std::string_view FluxionBaseLayer::GetLayerName() noexcept
+std::string_view BaseLayer::GetLayerName() noexcept
 {
-    return "FluxionBaseLayer";
+    return "BaseLayer";
 }
 
-std::string_view FluxionBaseLayer::GetName() const noexcept
+std::string_view BaseLayer::GetName() const noexcept
 {
-    return FluxionBaseLayer::GetLayerName();
+    return BaseLayer::GetLayerName();
 }
 
-FluxionBaseLayer::FluxionBaseLayer(
-    Fluxion::Application::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layer::ZIndex const z_index)
-    : BaseLayer{std::move(application), z_index}
-{
-    LOG_SCOPE("");
-}
-
-void FluxionBaseLayer::OnAdd()
+BaseLayer::BaseLayer(
+    FluxionApplication::FluxionApplication::Ptr application,
+    Graphite::Core::Application::Layers::ZIndex const z_index)
+    : TLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
 
-void FluxionBaseLayer::OnRender()
+void BaseLayer::OnAdd()
+{
+    LOG_SCOPE("");
+}
+
+void BaseLayer::OnRender()
 {
     LOG_SCOPE("");
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
 }
 
-void FluxionBaseLayer::OnRemove()
+void BaseLayer::OnRemove()
 {
     LOG_SCOPE("");
 }

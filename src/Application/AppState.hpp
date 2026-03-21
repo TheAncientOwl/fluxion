@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Application state.
 ///
 
@@ -22,15 +22,18 @@ struct AppState
 {
     std::unique_ptr<Fluxion::API::IFluxionPlugin> logs_logic{nullptr};
 
-    bool logs_view_open{true};
-    bool debug_menu_open{true};
-
     struct
     {
         Fluxion::API::Data::FiltersTabs tabs{};
-        bool menu_open{true};
         bool dirty{false};
     } filters{};
+
+    struct
+    {
+        bool logs_view{true};
+        bool debug{true};
+        bool filters{true};
+    } layers_active{};
 };
 
 } // namespace Fluxion::Application

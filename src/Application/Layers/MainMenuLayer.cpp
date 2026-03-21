@@ -5,11 +5,12 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
 #include "MainMenuLayer.hpp"
+#include "Core/Application/Layers/TSoftCloseableLayer.hpp"
 #include "DebugLayer.hpp"
 #include "FiltersLayer.hpp"
 #include "LogsViewLayer.hpp"
@@ -32,9 +33,9 @@ std::string_view MainMenuLayer::GetName() const noexcept
 }
 
 MainMenuLayer::MainMenuLayer(
-    Fluxion::Application::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layer::ZIndex const z_index)
-    : BaseLayer{std::move(application), z_index}
+    FluxionApplication::FluxionApplication::Ptr application,
+    Graphite::Core::Application::Layers::ZIndex const z_index)
+    : TLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
@@ -63,55 +64,41 @@ void MainMenuLayer::RenderMenu()
     {
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
-            auto& app_state{m_application->GetApplicationState()};
+            m_application->ForEachLayer<Graphite::Core::Application::Layers::TSoftMenuCloseableLayer<AppState>>(
+                [](Graphite::Core::Application::Layers::TSoftMenuCloseableLayer<AppState>& menu_item,
+                   bool const is_last) {
+                    static char display_name_buffer[64];
 
-            if (ImGui::MenuItem(
-                    app_state.debug_menu_open ? ICON_CI_EYE " Debug" : ICON_CI_EYE_CLOSED " Debug"))
-            {
-                if (!app_state.debug_menu_open)
-                {
-                    m_application->AddLayer<DebugLayer>(
-                        m_application->shared_from_this(),
-                        std::numeric_limits<Graphite::Core::Application::Layer::ZIndex>::max());
-                }
-                app_state.debug_menu_open = !app_state.debug_menu_open;
-            }
+                    const char* icon = menu_item.IsActive() ? ICON_CI_EYE : ICON_CI_EYE_CLOSED;
+                    std::snprintf(
+                        display_name_buffer,
+                        sizeof(display_name_buffer),
+                        "%s %.*s",
+                        icon,
+                        static_cast<int>(menu_item.GetDisplayName().size()),
+                        menu_item.GetDisplayName().data());
 
-            ImGui::Separator();
+                    if (ImGui::MenuItem(display_name_buffer))
+                    {
+                        menu_item.SetIsActive(!menu_item.IsActive());
+                    }
 
-            if (ImGui::MenuItem(
-                    app_state.logs_view_open ? ICON_CI_EYE " Logs" : ICON_CI_EYE_CLOSED " LogsView"))
-            {
-                if (!app_state.logs_view_open)
-                {
-                    m_application->AddLayer<LogsViewLayer>(m_application->shared_from_this(), 10);
-                }
-                app_state.logs_view_open = !app_state.logs_view_open;
-            }
-
-            ImGui::Separator();
-
-            if (ImGui::MenuItem(
-                    app_state.filters.menu_open ? ICON_CI_EYE " Filters"
-                                                : ICON_CI_EYE_CLOSED " Filters"))
-            {
-                if (!app_state.filters.menu_open)
-                {
-                    m_application->AddLayer<FiltersLayer>(m_application->shared_from_this(), 20);
-                }
-                app_state.filters.menu_open = !app_state.filters.menu_open;
-            }
+                    if (!is_last)
+                    {
+                        ImGui::Separator();
+                    }
+                });
 
             ImGui::EndMenu();
         }
 
         // --- Right Side Stats ---
         // 1. Calculate how much space the FPS text will take
-        char fps_text[32];
+        char fps_text[16];
         snprintf(
             fps_text, sizeof(fps_text), "%.1f FPS", static_cast<double>(ImGui::GetIO().Framerate));
 
-        float text_width = ImGui::CalcTextSize(fps_text).x;
+        auto const text_width = ImGui::CalcTextSize(fps_text).x;
 
         // 2. Set the cursor to the far right (minus the text width and some padding)
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - text_width - ImGui::GetStyle().ItemSpacing.x);

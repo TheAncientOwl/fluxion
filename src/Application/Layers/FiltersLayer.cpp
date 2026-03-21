@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -31,9 +31,9 @@ std::string_view FiltersLayer::GetName() const noexcept
 }
 
 FiltersLayer::FiltersLayer(
-    Fluxion::Application::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layer::ZIndex const z_index)
-    : BaseLayer{std::move(application), z_index}
+    FluxionApplication::FluxionApplication::Ptr application,
+    Graphite::Core::Application::Layers::ZIndex const z_index)
+    : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
@@ -49,23 +49,33 @@ void FiltersLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::Begin(ICON_CI_WAND " Filters", &app_state.filters.menu_open);
+    ImGui::Begin(ICON_CI_WAND " Filters", &app_state.layers_active.filters);
 
     RenderFiltersTabs();
 
     ImGui::End();
 
     HandleAction();
-
-    if (!m_application->GetApplicationState().filters.menu_open)
-    {
-        m_application->RemoveLayer(m_layer_id);
-    }
 }
 
 void FiltersLayer::OnRemove()
 {
     LOG_SCOPE("");
+}
+
+inline bool FiltersLayer::IsActive() const noexcept
+{
+    return m_application->GetApplicationState().layers_active.filters;
+}
+
+inline void FiltersLayer::SetIsActive(bool const open)
+{
+    m_application->GetApplicationState().layers_active.filters = open;
+}
+
+inline std::string_view FiltersLayer::GetDisplayName() const noexcept
+{
+    return "Filters";
 }
 
 namespace UIHelpers {

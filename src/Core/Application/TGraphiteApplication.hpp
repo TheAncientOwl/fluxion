@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.5
 /// @brief Main application.
 ///
 
@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <concepts>
+#include <functional>
 #include <memory>
 #include <string_view>
 #include <unordered_set>
@@ -21,7 +22,8 @@
 
 #include "Core/Logger/Logger.hpp"
 
-#include "BaseLayer.hpp"
+#include "Layers/TLayer.hpp"
+#include "Layers/TSoftCloseableLayer.hpp"
 #include "Renderer/Renderer.hpp"
 #include "WindowConfiguration.hpp"
 
@@ -45,31 +47,28 @@ public:
             new ApplicationImpl(std::move(window_configuration), std::move(app_state)));
     }
 
+public:
     void Run();
 
     inline ApplicationState& GetApplicationState() noexcept;
 
     template <typename LayerImpl, typename... Args>
-        requires std::derived_from<LayerImpl, BaseLayer<ApplicationState>> && requires {
+        requires std::derived_from<LayerImpl, Layers::TLayer<ApplicationState>> && requires {
             { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
         }
     Graphite::Core::Common::UniqueID const& AddLayer(Args&&... args);
 
-    void ActivateLayer(Graphite::Core::Common::UniqueID const& id);
-    void DeactivateLayer(Graphite::Core::Common::UniqueID const& id);
-    void RemoveLayer(Graphite::Core::Common::UniqueID const& id);
-    bool IsLayerPushed(Graphite::Core::Common::UniqueID const& id) const;
-    std::weak_ptr<BaseLayer<ApplicationState>> GetLayer(Graphite::Core::Common::UniqueID const& id);
-    std::weak_ptr<BaseLayer<ApplicationState>> const GetLayer(
-        Graphite::Core::Common::UniqueID const& id) const;
-
-private:
-    virtual void AppInit() = 0;
+    template <typename LayerType>
+        requires std::is_class_v<LayerType> &&
+                 std::derived_from<LayerType, Layers::TLayer<ApplicationState>>
+    void ForEachLayer(std::function<void(LayerType&, bool const)> func);
 
 protected:
     TGraphiteApplication(WindowConfiguration window_configuration, ApplicationState initial_state);
 
 private:
+    virtual void AppInit() = 0;
+
     void Init();
     void Render() override;
     void Shutdown();
@@ -81,7 +80,7 @@ protected:
     ApplicationState m_app_state{};
 
 private:
-    std::vector<typename BaseLayer<ApplicationState>::Ptr> m_layers{};
+    std::vector<typename Layers::TLayer<ApplicationState>::Ptr> m_layers{};
     std::unordered_set<Graphite::Core::Common::UniqueID, Graphite::Core::Common::UniqueID::Hash>
         m_removed_layers{};
     std::unique_ptr<Graphite::Core::Renderer::IRenderer> m_renderer{nullptr};
@@ -136,7 +135,7 @@ void TGraphiteApplication<ApplicationState>::Shutdown()
 
 template <typename ApplicationState>
 template <typename LayerImpl, typename... Args>
-    requires std::derived_from<LayerImpl, BaseLayer<ApplicationState>> && requires {
+    requires std::derived_from<LayerImpl, Layers::TLayer<ApplicationState>> && requires {
         { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
     }
 Graphite::Core::Common::UniqueID const& TGraphiteApplication<ApplicationState>::AddLayer(Args&&... args)
@@ -165,54 +164,22 @@ Graphite::Core::Common::UniqueID const& TGraphiteApplication<ApplicationState>::
 }
 
 template <typename ApplicationState>
-void TGraphiteApplication<ApplicationState>::ActivateLayer(Graphite::Core::Common::UniqueID const& id)
+template <typename LayerType>
+    requires std::is_class_v<LayerType> &&
+             std::derived_from<LayerType, Layers::TLayer<ApplicationState>>
+inline void TGraphiteApplication<ApplicationState>::ForEachLayer(
+    std::function<void(LayerType&, bool const)> func)
 {
-    auto it = std::find_if(m_layers.begin(), m_layers.end(), [id](auto const& layer_ptr) {
-        return layer_ptr->GetID() == id;
-    });
-
-    if (it != m_layers.end())
+    LOG_SCOPE("");
+    for (std::size_t idx = 0; idx < m_layers.size(); ++idx)
     {
-        it->Activate();
+        auto& layer{m_layers[idx]};
+        if (auto* casted = dynamic_cast<LayerType*>(layer.get()))
+        {
+            LOG_TRACE("Applied to layer ID {}", layer->GetID());
+            func(*casted, idx + 1 == m_layers.size());
+        }
     }
-}
-
-template <typename ApplicationState>
-void TGraphiteApplication<ApplicationState>::DeactivateLayer(Graphite::Core::Common::UniqueID const& id)
-{
-    auto it = std::find_if(m_layers.begin(), m_layers.end(), [id](auto const& layer_ptr) {
-        return layer_ptr->GetID() == id;
-    });
-
-    if (it != m_layers.end())
-    {
-        it->Deactivate();
-    }
-}
-
-template <typename ApplicationState>
-void TGraphiteApplication<ApplicationState>::RemoveLayer(Graphite::Core::Common::UniqueID const& id)
-{
-    m_removed_layers.insert(id);
-}
-
-template <typename ApplicationState>
-bool TGraphiteApplication<ApplicationState>::IsLayerPushed(Graphite::Core::Common::UniqueID const& id) const
-{
-    return std::find_if(m_layers.begin(), m_layers.end(), [id](auto const& layer_ptr) {
-               return layer_ptr->GetID() == id;
-           }) != m_layers.end();
-}
-
-template <typename ApplicationState>
-inline std::weak_ptr<BaseLayer<ApplicationState>> TGraphiteApplication<ApplicationState>::GetLayer(
-    Graphite::Core::Common::UniqueID const& id)
-{
-    auto it = std::find_if(m_layers.cbegin(), m_layers.cend(), [id](auto const& layer_ptr) {
-        return layer_ptr->GetID() == id;
-    });
-
-    return it != m_layers.cend() ? *it : nullptr;
 }
 
 template <typename ApplicationState>
@@ -226,12 +193,13 @@ void TGraphiteApplication<ApplicationState>::RenderLayers()
 {
     LOG_SCOPE("");
     m_removed_layers.clear();
-    std::for_each(m_layers.begin(), m_layers.end(), [](BaseLayer<ApplicationState>::Ptr& layer_ptr) {
-        if (layer_ptr->IsActive())
-        {
-            layer_ptr->OnRender();
-        }
-    });
+    std::for_each(
+        m_layers.begin(), m_layers.end(), [](Layers::TLayer<ApplicationState>::Ptr& layer_ptr) {
+            if (layer_ptr->IsActive())
+            {
+                layer_ptr->OnRender();
+            }
+        });
 
     m_layers.erase(
         std::remove_if(

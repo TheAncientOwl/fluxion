@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Render App's menu.
 ///
 
@@ -13,11 +13,11 @@
 
 #include "Application/AppState.hpp"
 #include "Application/Fluxion.hpp"
-#include "Core/Application/BaseLayer.hpp"
+#include "Core/Application/Layers/TLayer.hpp"
 
 namespace Fluxion::Application::Layers {
 
-class MainMenuLayer : public Graphite::Core::Application::BaseLayer<AppState>
+class MainMenuLayer : public Graphite::Core::Application::Layers::TLayer<AppState>
 {
 public:
     static std::string_view GetLayerName() noexcept;
@@ -25,7 +25,7 @@ public:
 
     MainMenuLayer(
         Fluxion::Application::FluxionApplication::Ptr application,
-        Graphite::Core::Application::Layer::ZIndex const z_index);
+        Graphite::Core::Application::Layers::ZIndex const z_index);
 
     void OnAdd() override;
     void OnRender() override;

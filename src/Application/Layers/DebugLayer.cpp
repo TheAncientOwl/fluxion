@@ -5,7 +5,7 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
@@ -31,9 +31,9 @@ std::string_view DebugLayer::GetName() const noexcept
 }
 
 DebugLayer::DebugLayer(
-    Fluxion::Application::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layer::ZIndex const z_index)
-    : BaseLayer{std::move(application), z_index}
+    FluxionApplication::FluxionApplication::Ptr application,
+    Graphite::Core::Application::Layers::ZIndex const z_index)
+    : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
@@ -49,7 +49,7 @@ void DebugLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::Begin(ICON_CI_SYMBOL_EVENT " Debug", &app_state.debug_menu_open);
+    ImGui::Begin(ICON_CI_SYMBOL_EVENT " Debug", &app_state.layers_active.debug);
 
     if (ImGui::BeginTabBar("Debug"))
     {
@@ -63,16 +63,26 @@ void DebugLayer::OnRender()
     }
 
     ImGui::End();
-
-    if (!m_application->GetApplicationState().debug_menu_open)
-    {
-        m_application->RemoveLayer(m_layer_id);
-    }
 }
 
 void DebugLayer::OnRemove()
 {
     LOG_SCOPE("");
+}
+
+inline bool DebugLayer::IsActive() const noexcept
+{
+    return m_application->GetApplicationState().layers_active.debug;
+}
+
+inline void DebugLayer::SetIsActive(bool const open)
+{
+    m_application->GetApplicationState().layers_active.debug = open;
+}
+
+inline std::string_view DebugLayer::GetDisplayName() const noexcept
+{
+    return "Debug";
 }
 
 namespace UIHelpers {

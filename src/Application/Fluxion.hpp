@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -20,7 +20,7 @@ class FluxionApplication
     : public Graphite::Core::Application::TGraphiteApplication<Fluxion::Application::AppState>
 {
 public:
-    using Graphite::Core::Application::TGraphiteApplication<AppState>::Ptr;
+    using Ptr = Graphite::Core::Application::TGraphiteApplication<AppState>::Ptr;
 
     ~FluxionApplication();
 

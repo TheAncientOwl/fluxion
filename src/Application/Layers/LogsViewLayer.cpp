@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -27,9 +27,9 @@ std::string_view LogsViewLayer::GetName() const noexcept
 }
 
 LogsViewLayer::LogsViewLayer(
-    Fluxion::Application::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layer::ZIndex const z_index)
-    : BaseLayer{std::move(application), z_index}
+    FluxionApplication::FluxionApplication::Ptr application,
+    Graphite::Core::Application::Layers::ZIndex const z_index)
+    : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
 }
@@ -45,16 +45,26 @@ void LogsViewLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::Begin(ICON_CI_OUTPUT " Logs", &app_state.logs_view_open);
+    ImGui::Begin(ICON_CI_OUTPUT " Logs", &app_state.layers_active.logs_view);
 
     RenderLogsTable();
 
     ImGui::End();
+}
 
-    if (!m_application->GetApplicationState().logs_view_open)
-    {
-        m_application->RemoveLayer(m_layer_id);
-    }
+inline bool LogsViewLayer::IsActive() const noexcept
+{
+    return m_application->GetApplicationState().layers_active.logs_view;
+}
+
+inline void LogsViewLayer::SetIsActive(bool const open)
+{
+    m_application->GetApplicationState().layers_active.logs_view = open;
+}
+
+inline std::string_view LogsViewLayer::GetDisplayName() const noexcept
+{
+    return "Logs";
 }
 
 void LogsViewLayer::RenderLogsTable()
