@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.7
+/// @version 1.8
 /// @brief Logging utilities
 ///
 
@@ -25,6 +25,8 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+
+#include "imgui/imgui.h"
 
 #include "Core/Common/TWithFlags.hpp"
 
@@ -134,11 +136,12 @@ public:
 
     struct LogLevel
     {
-        LogLevel(ELogLevel const value, std::string icon, std::string label);
+        LogLevel(ELogLevel const value, std::string icon, std::string label, ImVec4 const color);
         ELogLevel value{};
         std::string icon{};
         std::string label{};
         std::string display{};
+        ImVec4 color{};
     };
     using LogLevels = std::array<LogLevel, 7>;
     static LogLevels const& GetLevels();

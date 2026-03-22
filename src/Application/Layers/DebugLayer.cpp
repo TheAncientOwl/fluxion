@@ -5,7 +5,7 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
@@ -405,11 +405,23 @@ void DebugLayer::RenderLogger()
             ImGui::SameLine();
         }
 
+        auto const bg_color = log_level.color;
+        auto const bg_hover = ImVec4(
+            log_level.color.x + 0.2f, log_level.color.y + 0.2f, log_level.color.z + 0.2f, 0.70f);
+        ImVec4 bg_active = bg_color;
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, bg_color);
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, bg_hover);
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, bg_active);
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4{0.15f, 0.15f, 0.15f, 1.00f});
+
         bool enabled{Logger::IsLevelEnabled(log_level.value)};
-        if (ImGui::Checkbox(log_level.label.data(), &enabled))
+        if (ImGui::Checkbox(log_level.display.data(), &enabled))
         {
             Logger::SetLevelState(log_level.value, enabled);
         }
+
+        ImGui::PopStyleColor(4);
 
         if (level_idx + 1 < levels.size())
         {
@@ -509,7 +521,7 @@ void DebugLayer::RenderLogger()
     {
         ImGui::TableSetupColumn(ICON_CI_TASKLIST " Levels");
         ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scope");
-        ImGui::TableSetupScrollFreeze(static_cast<int>(levels.size()), 1);
+        ImGui::TableSetupScrollFreeze(1, 1);
         ImGui::TableHeadersRow();
 
         ImGuiListClipper clipper;
@@ -530,6 +542,20 @@ void DebugLayer::RenderLogger()
                     auto const& log_level = levels[level_idx];
 
                     bool value = flags[log_level.value];
+
+                    auto const bg_color = log_level.color;
+                    auto const bg_hover = ImVec4(
+                        log_level.color.x + 0.2f,
+                        log_level.color.y + 0.2f,
+                        log_level.color.z + 0.2f,
+                        0.70f);
+                    ImVec4 bg_active = bg_color;
+
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, bg_color);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, bg_hover);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, bg_active);
+                    ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4{0.15f, 0.15f, 0.15f, 1.00f});
+
                     ImGui::SameLine();
                     ImGui::PushID(static_cast<int>(level_idx));
                     if (ImGui::Checkbox("##level", &value))
@@ -537,6 +563,8 @@ void DebugLayer::RenderLogger()
                         Logger::SetScopeLevelState(std::string{scope}, log_level.value, value);
                     }
                     ImGui::PopID();
+
+                    ImGui::PopStyleColor(4);
                 }
 
                 ImGui::TableSetColumnIndex(1);

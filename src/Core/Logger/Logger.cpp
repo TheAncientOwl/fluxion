@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -35,8 +35,8 @@ Logger& Logger::Instance()
     return logger;
 }
 
-Logger::LogLevel::LogLevel(ELogLevel const level, std::string icon, std::string label)
-    : value{level}, icon{std::move(icon)}, label{std::move(label)}
+Logger::LogLevel::LogLevel(ELogLevel const level, std::string icon, std::string label, ImVec4 const color)
+    : value{level}, icon{std::move(icon)}, label{std::move(label)}, color{color}
 {
     this->display = this->icon + " " + this->label;
 }
@@ -218,13 +218,13 @@ Logger::ScopeEnabledMap Logger::GetScopes()
 Logger::LogLevels const& Logger::GetLevels()
 {
     static LogLevels s_levels{
-        LogLevel(ELogLevel::Trace, ICON_CI_SURROUND_WITH, "Trace"),
-        LogLevel(ELogLevel::Info, ICON_CI_INFO, "Info"),
-        LogLevel(ELogLevel::Warn, ICON_CI_WARNING, "Warn"),
-        LogLevel(ELogLevel::Error, ICON_CI_ERROR, "Error"),
-        LogLevel(ELogLevel::Critical, ICON_CI_CIRCLE_SLASH, "Critical"),
-        LogLevel(ELogLevel::Debug, ICON_CI_DEBUG, "Debug"),
-        LogLevel(ELogLevel::Scope, ICON_CI_SEARCH, "Scope"),
+        LogLevel(ELogLevel::Trace, ICON_CI_SURROUND_WITH, "Trace", {0.50f, 0.50f, 0.50f, 0.60f}),
+        LogLevel(ELogLevel::Info, ICON_CI_INFO, "Info", {0.00f, 0.75f, 1.00f, 0.60f}),
+        LogLevel(ELogLevel::Warn, ICON_CI_WARNING, "Warn", {1.00f, 0.65f, 0.00f, 0.60f}),
+        LogLevel(ELogLevel::Error, ICON_CI_ERROR, "Error", {1.00f, 0.25f, 0.25f, 0.60f}),
+        LogLevel(ELogLevel::Critical, ICON_CI_CIRCLE_SLASH, "Critical", {0.75f, 0.00f, 0.00f, 0.60f}),
+        LogLevel(ELogLevel::Debug, ICON_CI_DEBUG, "Debug", {0.50f, 0.75f, 0.50f, 0.60f}),
+        LogLevel(ELogLevel::Scope, ICON_CI_SEARCH, "Scope", {0.75f, 0.75f, 0.25f, 0.60f}),
     };
     return s_levels;
 }
