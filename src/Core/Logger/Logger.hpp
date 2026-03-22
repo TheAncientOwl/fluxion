@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief Logging utilities
 ///
 
@@ -73,28 +73,32 @@ public:
     template <typename... Args>
     static void log(ELogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
     {
+        {
+            std::string key(scope);
+            std::lock_guard lock(s_scope_mutex);
+
+            auto it = s_scope_enabled.find(key);
+            if (it == s_scope_enabled.end())
+            {
+                auto flags = GetDefaultScopeFlags();
+                s_scope_enabled.emplace(key, flags);
+            }
+        }
+
         if (!IsLevelEnabled(level))
         {
             return;
         }
 
         {
-            std::string key(scope); // convert string to string
+            std::string key(scope);
             std::lock_guard lock(s_scope_mutex);
-            if (auto it = s_scope_enabled.find(key); it != s_scope_enabled.end())
+
+            auto it = s_scope_enabled.find(key);
+            if (it != s_scope_enabled.end())
             {
                 if (!it->second[level])
                     return;
-            }
-            else
-            {
-                auto flags = GetDefaultScopeFlags();
-                if (!flags[level])
-                {
-                    return;
-                }
-
-                s_scope_enabled.emplace(std::move(key), flags);
             }
         }
 
@@ -128,7 +132,15 @@ public:
     static void SetScopeEnabled(std::string scope, bool enabled);
     static void SetScopeLevelState(std::string scope, ELogLevel const level, bool const enabled);
 
-    using LogLevels = std::array<std::pair<ELogLevel, std::string>, 7>;
+    struct LogLevel
+    {
+        LogLevel(ELogLevel const value, std::string icon, std::string label);
+        ELogLevel value{};
+        std::string icon{};
+        std::string label{};
+        std::string display{};
+    };
+    using LogLevels = std::array<LogLevel, 7>;
     static LogLevels const& GetLevels();
     static void SetLevelState(ELogLevel const level, bool const enabled);
     static bool IsLevelEnabled(ELogLevel const level);

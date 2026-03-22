@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.5
+/// @version 1.6
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -33,6 +33,12 @@ Logger& Logger::Instance()
 {
     static Logger logger{};
     return logger;
+}
+
+Logger::LogLevel::LogLevel(ELogLevel const level, std::string icon, std::string label)
+    : value{level}, icon{std::move(icon)}, label{std::move(label)}
+{
+    this->display = this->icon + " " + this->label;
 }
 
 void Logger::SaveConfig()
@@ -138,9 +144,9 @@ void Logger::Enqueue(LogMessage&& msg)
 LogScopeFlags Logger::GetDefaultScopeFlags()
 {
     LogScopeFlags flags;
-    for (auto const& [level, _] : GetLevels())
+    for (auto const& log_level : GetLevels())
     {
-        flags[level] = true;
+        flags[log_level.value] = true;
     }
 
     return flags;
@@ -187,9 +193,9 @@ void Logger::SetScopeEnabled(std::string scope, bool enabled)
         flags = GetDefaultScopeFlags();
     }
 
-    for (auto const& [level, _] : GetLevels())
+    for (auto const& log_level : GetLevels())
     {
-        flags[level] = enabled;
+        flags[log_level.value] = enabled;
     }
 }
 
@@ -211,15 +217,14 @@ Logger::ScopeEnabledMap Logger::GetScopes()
 
 Logger::LogLevels const& Logger::GetLevels()
 {
-    using namespace std::string_literals;
     static LogLevels s_levels{
-        std::make_pair(ELogLevel::Trace, ICON_CI_SURROUND_WITH " Trace"s),
-        std::make_pair(ELogLevel::Info, ICON_CI_INFO " Info"s),
-        std::make_pair(ELogLevel::Warn, ICON_CI_WARNING " Warn"s),
-        std::make_pair(ELogLevel::Error, ICON_CI_ERROR " Error"s),
-        std::make_pair(ELogLevel::Critical, ICON_CI_CIRCLE_SLASH " Critical"s),
-        std::make_pair(ELogLevel::Debug, ICON_CI_DEBUG " Debug"s),
-        std::make_pair(ELogLevel::Scope, ICON_CI_SEARCH " Scope"s),
+        LogLevel(ELogLevel::Trace, ICON_CI_SURROUND_WITH, "Trace"),
+        LogLevel(ELogLevel::Info, ICON_CI_INFO, "Info"),
+        LogLevel(ELogLevel::Warn, ICON_CI_WARNING, "Warn"),
+        LogLevel(ELogLevel::Error, ICON_CI_ERROR, "Error"),
+        LogLevel(ELogLevel::Critical, ICON_CI_CIRCLE_SLASH, "Critical"),
+        LogLevel(ELogLevel::Debug, ICON_CI_DEBUG, "Debug"),
+        LogLevel(ELogLevel::Scope, ICON_CI_SEARCH, "Scope"),
     };
     return s_levels;
 }

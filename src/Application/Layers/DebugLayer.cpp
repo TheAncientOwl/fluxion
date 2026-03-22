@@ -5,7 +5,7 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
@@ -394,17 +394,17 @@ void DebugLayer::RenderLogger()
     auto const levels{Logger::GetLevels()};
     for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
     {
-        auto const& [level, label] = levels[level_idx];
+        auto const& log_level{levels[level_idx]};
 
         if (level_idx > 0)
         {
             ImGui::SameLine();
         }
 
-        bool enabled{Logger::IsLevelEnabled(level)};
-        if (ImGui::Checkbox(label.data(), &enabled))
+        bool enabled{Logger::IsLevelEnabled(log_level.value)};
+        if (ImGui::Checkbox(log_level.label.data(), &enabled))
         {
-            Logger::SetLevelState(level, enabled);
+            Logger::SetLevelState(log_level.value, enabled);
         }
 
         if (level_idx + 1 < levels.size())
@@ -445,7 +445,7 @@ void DebugLayer::RenderLogger()
         // Use std::regex for matching, default regex is "." (matches everything)
         try
         {
-            std::string regex_pattern = filter_str.empty() ? "." : filter_str;
+            std::string regex_pattern = filter_str.empty() ? ".*" : filter_str;
             std::regex re(regex_pattern, std::regex_constants::icase);
             for (size_t i = 0; i < sorted_scopes.size(); ++i)
             {
@@ -489,19 +489,11 @@ void DebugLayer::RenderLogger()
 
     if (ImGui::BeginTable(
             "ScopesTable",
-            static_cast<int>(levels.size() + 1),
+            2,
             ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable |
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX))
     {
-        for (auto const& [level, label] : levels)
-        {
-            ImGui::TableSetupColumn(
-                label.c_str(),
-                ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize |
-                    ImGuiTableColumnFlags_NoReorder,
-                0.0f,
-                static_cast<ImGuiID>(level));
-        }
+        ImGui::TableSetupColumn(ICON_CI_TASKLIST " Levels");
         ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scope");
         ImGui::TableSetupScrollFreeze(static_cast<int>(levels.size()), 1);
         ImGui::TableHeadersRow();
@@ -518,29 +510,22 @@ void DebugLayer::RenderLogger()
                 ImGui::PushID(scope.data());
                 ImGui::TableNextRow();
 
+                ImGui::TableSetColumnIndex(0);
                 for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
                 {
-                    auto const& [level, _] = levels[level_idx];
+                    auto const& log_level = levels[level_idx];
 
-                    ImGui::TableSetColumnIndex(static_cast<int>(level_idx));
-                    ImGui::SetCursorPosY(
-                        ImGui::GetCursorPosY() +
-                        (ImGui::GetTextLineHeightWithSpacing() - ImGui::GetFrameHeight()) * 0.5f);
-                    ImGui::SetCursorPosX(
-                        ImGui::GetCursorPosX() +
-                        (ImGui::GetColumnWidth() - ImGui::GetFrameHeight()) * 0.5f);
-
-                    bool value = flags[level];
+                    bool value = flags[log_level.value];
+                    ImGui::SameLine();
                     ImGui::PushID(static_cast<int>(level_idx));
                     if (ImGui::Checkbox("##level", &value))
                     {
-                        Logger::SetScopeLevelState(std::string{scope}, level, value);
+                        Logger::SetScopeLevelState(std::string{scope}, log_level.value, value);
                     }
                     ImGui::PopID();
                 }
 
-                // Scope signature
-                ImGui::TableSetColumnIndex(static_cast<int>(levels.size()));
+                ImGui::TableSetColumnIndex(1);
                 UIHelpers::RenderCppSignature(scope);
 
                 ImGui::PopID();
