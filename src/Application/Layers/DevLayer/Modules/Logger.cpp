@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -461,7 +461,7 @@ void RenderLogger()
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit))
     {
         ImGui::TableSetupColumn(ICON_CI_TASKLIST " Levels");
-        ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scope");
+        ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scopes");
         ImGui::TableSetupScrollFreeze(1, 1);
         ImGui::TableHeadersRow();
 
