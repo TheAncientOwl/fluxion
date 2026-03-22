@@ -5,7 +5,7 @@
 ///
 /// @file Theme.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see Theme.hpp.
 ///
 
@@ -168,6 +168,7 @@ void SetupForestGreenTheme()
 
 void SetupImGuiAmethystTheme()
 {
+    LOG_SCOPE("");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -265,6 +266,7 @@ void SetupImGuiAmethystTheme()
 
 void SetupImGuiSapphireTheme()
 {
+    LOG_SCOPE("");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -357,6 +359,7 @@ void SetupImGuiSapphireTheme()
 
 void SetupImGuiAmberYellowTheme()
 {
+    LOG_SCOPE("");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
