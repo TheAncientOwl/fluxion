@@ -5,10 +5,11 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.7
+/// @version 1.8
 /// @brief Implementation of @see Logger.hpp.
 ///
 
+#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
@@ -117,7 +118,25 @@ void Logger::LoadConfig()
 
 std::filesystem::path Logger::GetConfigFilePath()
 {
-    return std::filesystem::current_path() / "app.graphite.logger.cfg";
+    // TODO: Move home path to general utils
+    const char* home = std::getenv("HOME");
+    if (!home)
+    {
+        home = std::getenv("USERPROFILE"); // Windows fallback
+        if (!home)
+        {
+            throw std::runtime_error("Cannot determine home directory for config file");
+        }
+    }
+    std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+    std::error_code ec;
+    std::filesystem::create_directories(config_dir, ec);
+    if (ec)
+    {
+        std::cerr << "Failed to create config directory: " << config_dir
+                  << " error: " << ec.message() << std::endl;
+    }
+    return config_dir / "app.graphite.logger.cfg";
 }
 
 void Logger::Enqueue(LogMessage&& msg)
@@ -240,7 +259,25 @@ Logger::~Logger()
 
 std::filesystem::path Logger::GetLogFilePath()
 {
-    return std::filesystem::current_path() / "app.graphite.log";
+    // TODO: Move home path to general utils
+    const char* home = std::getenv("HOME");
+    if (!home)
+    {
+        home = std::getenv("USERPROFILE"); // Windows fallback
+        if (!home)
+        {
+            throw std::runtime_error("Cannot determine home directory for log file");
+        }
+    }
+    std::filesystem::path log_dir = std::filesystem::path(home) / ".fluxion";
+    std::error_code ec;
+    std::filesystem::create_directories(log_dir, ec);
+    if (ec)
+    {
+        std::cerr << "Failed to create log directory: " << log_dir << " error: " << ec.message()
+                  << std::endl;
+    }
+    return log_dir / "app.graphite.log";
 }
 
 Logger::Logger()
