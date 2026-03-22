@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -301,6 +301,7 @@ void RenderCppSignature(std::string_view line)
     Token tokens[MaxSigTokens];
     size_t token_count = TokenizeCppSignature(line, tokens);
 
+    ImGui::BeginGroup();
     for (size_t i = 0; i < token_count; ++i)
     {
         if (i > 0)
@@ -314,12 +315,14 @@ void RenderCppSignature(std::string_view line)
         if (i < token_count - 1)
             ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.x);
     }
+    ImGui::EndGroup();
 }
 
 } // namespace CPPRenderer
 
 void RenderLogger()
 {
+    LOG_SCOPE("");
     using Logger = Graphite::Logger::Logger;
 
     ImGui::AlignTextToFramePadding();
@@ -506,7 +509,45 @@ void RenderLogger()
                 }
 
                 ImGui::TableSetColumnIndex(1);
-                Modules::DebugLayer::CPPRenderer::RenderCppSignature(scope);
+                std::string_view name = scope;
+
+                auto const space = name.find(' ');
+                if (space != std::string_view::npos)
+                {
+                    auto possible_name = name.substr(space + 1);
+                    if (possible_name.find('(') != std::string_view::npos)
+                    {
+                        name = possible_name;
+                    }
+                }
+
+                auto const first_scope = name.find("::");
+                if (first_scope != std::string_view::npos)
+                {
+                    auto s = name.rfind(' ', first_scope);
+                    if (s != std::string_view::npos)
+                    {
+                        name.remove_prefix(s + 1);
+                    }
+                }
+
+                auto const open_paren = name.find('(');
+                if (open_paren != std::string_view::npos)
+                {
+                    name = name.substr(0, open_paren);
+                }
+
+                Modules::DebugLayer::CPPRenderer::RenderCppSignature(name);
+                // ? Maybe in the future xD
+                // if (ImGui::IsItemHovered())
+                // {
+                //     ImGui::BeginTooltip();
+                //     ImGui::PushTextWrapPos(ImGui::GetMainViewport()->Size.x - 40.0f);
+                //     // Modules::DebugLayer::CPPRenderer::RenderCppSignature(scope);
+                //     ImGui::TextUnformatted(scope.data(), scope.data() + scope.size());
+                //     ImGui::PopTextWrapPos();
+                //     ImGui::EndTooltip();
+                // }
 
                 ImGui::PopID();
             }
