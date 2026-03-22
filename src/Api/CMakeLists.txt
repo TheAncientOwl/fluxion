@@ -8,7 +8,7 @@ set_target_properties(fluxion_api PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
-target_precompile_headers(fluxion_api REUSE_FROM fluxion_pch)
+# target_precompile_headers(fluxion_api REUSE_FROM fluxion_pch)
 
 target_link_libraries(fluxion_api PRIVATE
     fluxion_compile_options

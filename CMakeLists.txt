@@ -54,7 +54,7 @@ target_link_libraries(fluxion PRIVATE
     fluxion_pch
 )
 
-target_precompile_headers(fluxion REUSE_FROM fluxion_pch)
+# target_precompile_headers(fluxion REUSE_FROM fluxion_pch)
 
 # Include directories
 target_include_directories(fluxion PRIVATE
