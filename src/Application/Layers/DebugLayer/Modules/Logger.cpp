@@ -3,90 +3,30 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file DebugLayer.cpp
+/// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
-/// @brief Implementation of @see DebugLayer.hpp.
+/// @version 0.1
+/// @brief Implementation of @see Logger.hpp.
 ///
 
 #include <algorithm>
 #include <regex>
-
-#include "DebugLayer.hpp"
-#include "FiltersLayer.hpp"
-#include "LogsViewLayer.hpp"
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 #include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
 
-namespace Fluxion::Application::Layers {
+#include "Graphite/Logger/Logger.hpp"
 
-std::string_view DebugLayer::GetLayerName() noexcept
-{
-    return "DebugLayer";
-}
+namespace Fluxion::Application::Layers::UIHelpers {
 
-std::string_view DebugLayer::GetName() const noexcept
-{
-    return DebugLayer::GetLayerName();
-}
+extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f);
 
-DebugLayer::DebugLayer(
-    FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Application::Layers::ZIndex const z_index)
-    : TSoftMenuCloseableLayer{std::move(application), z_index}
-{
-    LOG_SCOPE("");
-}
+} // namespace Fluxion::Application::Layers::UIHelpers
 
-void DebugLayer::OnAdd()
-{
-    LOG_SCOPE("");
-}
-
-void DebugLayer::OnRender()
-{
-    LOG_SCOPE("");
-
-    auto& app_state{m_application->GetApplicationState()};
-
-    ImGui::Begin(ICON_CI_SYMBOL_EVENT " Debug", &app_state.layers_active.debug);
-
-    if (ImGui::BeginTabBar("Debug"))
-    {
-        if (ImGui::BeginTabItem(ICON_CI_OUTPUT " Logger"))
-        {
-            RenderLogger();
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
-
-    ImGui::End();
-}
-
-void DebugLayer::OnRemove()
-{
-    LOG_SCOPE("");
-}
-
-inline bool DebugLayer::IsActive() const noexcept
-{
-    return m_application->GetApplicationState().layers_active.debug;
-}
-
-inline void DebugLayer::SetIsActive(bool const open)
-{
-    m_application->GetApplicationState().layers_active.debug = open;
-}
-
-inline std::string_view DebugLayer::GetDisplayName() const noexcept
-{
-    return "Debug";
-}
-
-namespace UIHelpers {
+namespace Fluxion::Application::Layers::Modules::DebugLayer {
 
 namespace CPPRenderer {
 
@@ -111,7 +51,7 @@ struct Token
 
 constexpr size_t MaxSigTokens = 200;
 
-bool IsKeyword(std::string_view word)
+bool IsKeyword(std::string_view const word) noexcept
 {
     static constexpr const char* keywords[] = {
         "auto",   "bool",   "char",     "class",    "const",    "constexpr", "default",
@@ -123,12 +63,14 @@ bool IsKeyword(std::string_view word)
     for (auto k : keywords)
     {
         if (word == k)
+        {
             return true;
+        }
     }
     return false;
 }
 
-bool IsIdentifierChar(char c)
+bool IsIdentifierChar(char const c) noexcept
 {
     return (c == '_') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
 }
@@ -376,11 +318,7 @@ void RenderCppSignature(std::string_view line)
 
 } // namespace CPPRenderer
 
-extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f);
-
-} // namespace UIHelpers
-
-void DebugLayer::RenderLogger()
+void RenderLogger()
 {
     using Logger = Graphite::Logger::Logger;
 
@@ -568,7 +506,7 @@ void DebugLayer::RenderLogger()
                 }
 
                 ImGui::TableSetColumnIndex(1);
-                UIHelpers::CPPRenderer::RenderCppSignature(scope);
+                Modules::DebugLayer::CPPRenderer::RenderCppSignature(scope);
 
                 ImGui::PopID();
             }
@@ -579,4 +517,4 @@ void DebugLayer::RenderLogger()
     ImGui::EndChild(); // scollable list
 }
 
-} // namespace Fluxion::Application::Layers
+} // namespace Fluxion::Application::Layers::Modules::DebugLayer

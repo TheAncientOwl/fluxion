@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -14,7 +14,7 @@
 #include "icons/IconsCodicons.h"
 
 #include "Layers/BaseLayer.hpp"
-#include "Layers/DebugLayer.hpp"
+#include "Layers/DebugLayer/DebugLayer.hpp"
 #include "Layers/FiltersLayer.hpp"
 #include "Layers/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"

@@ -5,12 +5,12 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
 #include "MainMenuLayer.hpp"
-#include "DebugLayer.hpp"
+#include "DebugLayer/DebugLayer.hpp"
 #include "FiltersLayer.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "LogsViewLayer.hpp"

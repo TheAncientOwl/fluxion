@@ -5,7 +5,6 @@
       "defines": ["GRAPHITE_USE_METAL_API"],
       "includePath": [
         "${workspaceFolder}/src",
-        "${workspaceFolder}/src/Graphite/Application",
         "${workspaceFolder}/external",
         "${workspaceFolder}/external/imgui",
         "${workspaceFolder}/external/imgui/backends",
@@ -20,7 +19,6 @@
       "defines": ["GRAPHITE_USE_VULKAN_API"],
       "includePath": [
         "${workspaceFolder}/src",
-        "${workspaceFolder}/src/Graphite/Application",
         "${workspaceFolder}/external",
         "${workspaceFolder}/external/imgui",
         "${workspaceFolder}/external/imgui/backends",
@@ -35,7 +33,6 @@
       "defines": ["GRAPHITE_USE_VULKAN_API", "_WINDOWS"],
       "includePath": [
         "${workspaceFolder}/src",
-        "${workspaceFolder}/src/Graphite/Application",
         "${workspaceFolder}/external",
         "${workspaceFolder}/external/imgui",
         "${workspaceFolder}/external/imgui/backends",

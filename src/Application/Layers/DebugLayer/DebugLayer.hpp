@@ -5,7 +5,7 @@
 ///
 /// @file DebugLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Debug menus.
 ///
 
@@ -13,6 +13,7 @@
 
 #include "Application/AppState.hpp"
 #include "Application/Fluxion.hpp"
+
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 
 namespace Fluxion::Application::Layers {
