@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file DebugLayer.hpp
+/// @file DevLayer.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.3
 /// @brief Debug menus.
@@ -18,13 +18,13 @@
 
 namespace Fluxion::Application::Layers {
 
-class DebugLayer : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>
+class DevLayer : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>
 {
 public:
     static std::string_view GetLayerName() noexcept;
     std::string_view GetName() const noexcept override;
 
-    DebugLayer(
+    DevLayer(
         FluxionApplication::FluxionApplication::Ptr application,
         Graphite::Application::Layers::ZIndex const z_index);
 

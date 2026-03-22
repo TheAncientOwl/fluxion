@@ -3,13 +3,13 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file DebugLayer.cpp
+/// @file DevLayer.cpp
 /// @author Alexandru Delegeanu
 /// @version 0.9
-/// @brief Implementation of @see DebugLayer.hpp.
+/// @brief Implementation of @see DevLayer.hpp.
 ///
 
-#include "DebugLayer.hpp"
+#include "DevLayer.hpp"
 #include "Modules/Logger.hpp"
 #include "Modules/Theme.hpp"
 
@@ -18,17 +18,17 @@
 
 namespace Fluxion::Application::Layers {
 
-std::string_view DebugLayer::GetLayerName() noexcept
+std::string_view DevLayer::GetLayerName() noexcept
 {
-    return "DebugLayer";
+    return "DevLayer";
 }
 
-std::string_view DebugLayer::GetName() const noexcept
+std::string_view DevLayer::GetName() const noexcept
 {
-    return DebugLayer::GetLayerName();
+    return DevLayer::GetLayerName();
 }
 
-DebugLayer::DebugLayer(
+DevLayer::DevLayer(
     FluxionApplication::FluxionApplication::Ptr application,
     Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
@@ -36,30 +36,30 @@ DebugLayer::DebugLayer(
     LOG_SCOPE("");
 }
 
-void DebugLayer::OnAdd()
+void DevLayer::OnAdd()
 {
     LOG_SCOPE("");
 }
 
-void DebugLayer::OnRender()
+void DevLayer::OnRender()
 {
     LOG_SCOPE("");
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::Begin(ICON_CI_SYMBOL_EVENT " Debug", &app_state.layers_active.debug);
+    ImGui::Begin(ICON_CI_SYMBOL_EVENT " Dev", &app_state.layers_active.debug);
 
-    if (ImGui::BeginTabBar("Debug"))
+    if (ImGui::BeginTabBar("Dev"))
     {
         if (ImGui::BeginTabItem(ICON_CI_OUTPUT " Logger"))
         {
-            Modules::DebugLayer::RenderLogger();
+            Modules::DevLayer::RenderLogger();
             ImGui::EndTabItem();
         }
 
         if (ImGui::BeginTabItem(ICON_CI_SYMBOL_COLOR " Theme"))
         {
-            Modules::DebugLayer::RenderTheme();
+            Modules::DevLayer::RenderTheme();
             ImGui::EndTabItem();
         }
 
@@ -69,22 +69,22 @@ void DebugLayer::OnRender()
     ImGui::End();
 }
 
-void DebugLayer::OnRemove()
+void DevLayer::OnRemove()
 {
     LOG_SCOPE("");
 }
 
-inline bool DebugLayer::IsActive() const noexcept
+inline bool DevLayer::IsActive() const noexcept
 {
     return m_application->GetApplicationState().layers_active.debug;
 }
 
-inline void DebugLayer::SetIsActive(bool const open)
+inline void DevLayer::SetIsActive(bool const open)
 {
     m_application->GetApplicationState().layers_active.debug = open;
 }
 
-inline std::string_view DebugLayer::GetDisplayName() const noexcept
+inline std::string_view DevLayer::GetDisplayName() const noexcept
 {
     return "Debug";
 }

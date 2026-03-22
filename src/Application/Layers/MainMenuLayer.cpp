@@ -10,7 +10,7 @@
 ///
 
 #include "MainMenuLayer.hpp"
-#include "DebugLayer/DebugLayer.hpp"
+#include "DevLayer/DevLayer.hpp"
 #include "FiltersLayer.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "LogsViewLayer.hpp"

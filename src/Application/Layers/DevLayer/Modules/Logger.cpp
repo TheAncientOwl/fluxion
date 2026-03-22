@@ -26,7 +26,7 @@ extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float
 
 } // namespace Fluxion::Application::Layers::UIHelpers
 
-namespace Fluxion::Application::Layers::Modules::DebugLayer {
+namespace Fluxion::Application::Layers::Modules::DevLayer {
 
 namespace CPPRenderer {
 
@@ -537,13 +537,13 @@ void RenderLogger()
                     name = name.substr(0, open_paren);
                 }
 
-                Modules::DebugLayer::CPPRenderer::RenderCppSignature(name);
+                Modules::DevLayer::CPPRenderer::RenderCppSignature(name);
                 // ? Maybe in the future xD
                 // if (ImGui::IsItemHovered())
                 // {
                 //     ImGui::BeginTooltip();
                 //     ImGui::PushTextWrapPos(ImGui::GetMainViewport()->Size.x - 40.0f);
-                //     // Modules::DebugLayer::CPPRenderer::RenderCppSignature(scope);
+                //     // Modules::DevLayer::CPPRenderer::RenderCppSignature(scope);
                 //     ImGui::TextUnformatted(scope.data(), scope.data() + scope.size());
                 //     ImGui::PopTextWrapPos();
                 //     ImGui::EndTooltip();
@@ -558,4 +558,4 @@ void RenderLogger()
     ImGui::EndChild(); // scollable list
 }
 
-} // namespace Fluxion::Application::Layers::Modules::DebugLayer
+} // namespace Fluxion::Application::Layers::Modules::DevLayer

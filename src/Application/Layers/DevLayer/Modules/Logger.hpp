@@ -6,7 +6,7 @@
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.1
-/// @brief Logger module of @see DebugLayer.hpp.
+/// @brief Logger module of @see DevLayer.hpp.
 ///
 
 #pragma once
@@ -15,7 +15,7 @@
 
 #include "imgui/imgui.h"
 
-namespace Fluxion::Application::Layers::Modules::DebugLayer {
+namespace Fluxion::Application::Layers::Modules::DevLayer {
 
 namespace CPPRenderer {
 
@@ -51,4 +51,4 @@ void RenderCppSignature(std::string_view line);
 
 void RenderLogger();
 
-} // namespace Fluxion::Application::Layers::Modules::DebugLayer
+} // namespace Fluxion::Application::Layers::Modules::DevLayer

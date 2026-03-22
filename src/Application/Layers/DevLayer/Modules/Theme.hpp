@@ -9,8 +9,8 @@
 /// @brief Dev version of app theme.
 ///
 
-namespace Fluxion::Application::Layers::Modules::DebugLayer {
+namespace Fluxion::Application::Layers::Modules::DevLayer {
 
 void RenderTheme();
 
-} // namespace Fluxion::Application::Layers::Modules::DebugLayer
+} // namespace Fluxion::Application::Layers::Modules::DevLayer

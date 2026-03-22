@@ -14,7 +14,7 @@
 #include "icons/IconsCodicons.h"
 
 #include "Layers/BaseLayer.hpp"
-#include "Layers/DebugLayer/DebugLayer.hpp"
+#include "Layers/DevLayer/DevLayer.hpp"
 #include "Layers/FiltersLayer.hpp"
 #include "Layers/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"
@@ -52,7 +52,7 @@ void FluxionApplication::AppInit()
     m_app_state.logs_logic = std::make_unique<DummyPlugin>();
 
     AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
-    AddLayer<Layers::DebugLayer>(
+    AddLayer<Layers::DevLayer>(
         shared_from_this(), std::numeric_limits<Graphite::Application::Layers::ZIndex>::max());
     AddLayer<Layers::MainMenuLayer>(shared_from_this(), 1);
     AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);

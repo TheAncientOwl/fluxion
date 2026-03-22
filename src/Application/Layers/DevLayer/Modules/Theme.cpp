@@ -11,7 +11,7 @@
 
 #include "Graphite/Logger/Logger.hpp"
 
-namespace Fluxion::Application::Layers::Modules::DebugLayer {
+namespace Fluxion::Application::Layers::Modules::DevLayer {
 
 void SetupDarkTheme()
 {
@@ -493,4 +493,4 @@ void RenderTheme()
     }
 }
 
-} // namespace Fluxion::Application::Layers::Modules::DebugLayer
+} // namespace Fluxion::Application::Layers::Modules::DevLayer
