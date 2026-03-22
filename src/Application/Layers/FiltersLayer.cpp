@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -346,6 +346,14 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     }
     UIHelpers::Styles::PopRedButton();
     UIHelpers::ItemHoverTooltip("Delete Tab");
+
+    ImGui::SameLine();
+    bool is_active{tab[API::Data::EFiltersTabFlag::IsActive]};
+    if (ImGui::Checkbox("Active", &is_active))
+    {
+        dirty = true;
+        tab[API::Data::EFiltersTabFlag::IsActive] = is_active;
+    }
 
     ImGui::SameLine();
     UIHelpers::InputText<128>("##tab_name", tab.name, dirty);

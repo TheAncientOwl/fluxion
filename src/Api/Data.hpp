@@ -13,9 +13,7 @@
 
 #include <memory>
 #include <ostream>
-#include <sstream>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include "Graphite/Common/TWithFlags.hpp"
