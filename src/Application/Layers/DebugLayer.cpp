@@ -5,10 +5,11 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
+#include <algorithm>
 #include <regex>
 
 #include "DebugLayer.hpp"
@@ -488,19 +489,21 @@ void DebugLayer::RenderLogger()
 
     if (ImGui::BeginTable(
             "ScopesTable",
-            2,
+            static_cast<int>(levels.size() + 1),
             ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable |
                 ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX))
     {
-        // First column: frozen, width fixed, no resize/reorder, horizontally non-scrollable
-        ImGui::TableSetupColumn(
-            ICON_CI_VERIFIED " Enabled",
-            ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize |
-                ImGuiTableColumnFlags_NoReorder,
-            85.0f);
-        // Second column: scrollable horizontally
+        for (auto const& [level, label] : levels)
+        {
+            ImGui::TableSetupColumn(
+                label.c_str(),
+                ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize |
+                    ImGuiTableColumnFlags_NoReorder,
+                0.0f,
+                static_cast<ImGuiID>(level));
+        }
         ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scope");
-        ImGui::TableSetupScrollFreeze(1, 1);
+        ImGui::TableSetupScrollFreeze(static_cast<int>(levels.size()), 1);
         ImGui::TableHeadersRow();
 
         ImGuiListClipper clipper;
@@ -515,28 +518,30 @@ void DebugLayer::RenderLogger()
                 ImGui::PushID(scope.data());
                 ImGui::TableNextRow();
 
-                // Enabled checkbox (centered in frozen column)
-                ImGui::TableSetColumnIndex(0);
-                bool value = true;
-                for (auto const& [level, _] : levels)
+                for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
                 {
-                    value = value && flags[level];
-                }
-                ImGui::SetCursorPosY(
-                    ImGui::GetCursorPosY() +
-                    (ImGui::GetTextLineHeightWithSpacing() - ImGui::GetFrameHeight()) * 0.5f);
-                ImGui::SetNextItemWidth(-1); // Use full column width for centering
-                ImGui::SetCursorPosX(
-                    ImGui::GetCursorPosX() +
-                    (ImGui::GetColumnWidth() - ImGui::GetFrameHeight()) * 0.5f);
-                if (ImGui::Checkbox("##enabled", &value))
-                {
-                    Logger::SetScopeEnabled(std::string{scope}, value);
+                    auto const& [level, _] = levels[level_idx];
+
+                    ImGui::TableSetColumnIndex(static_cast<int>(level_idx));
+                    ImGui::SetCursorPosY(
+                        ImGui::GetCursorPosY() +
+                        (ImGui::GetTextLineHeightWithSpacing() - ImGui::GetFrameHeight()) * 0.5f);
+                    ImGui::SetCursorPosX(
+                        ImGui::GetCursorPosX() +
+                        (ImGui::GetColumnWidth() - ImGui::GetFrameHeight()) * 0.5f);
+
+                    bool value = flags[level];
+                    ImGui::PushID(static_cast<int>(level_idx));
+                    if (ImGui::Checkbox("##level", &value))
+                    {
+                        Logger::SetScopeLevelState(std::string{scope}, level, value);
+                    }
+                    ImGui::PopID();
                 }
 
                 // Scope signature
-                ImGui::TableSetColumnIndex(1);
-                UIHelpers ::RenderCppSignature(scope);
+                ImGui::TableSetColumnIndex(static_cast<int>(levels.size()));
+                UIHelpers::RenderCppSignature(scope);
 
                 ImGui::PopID();
             }

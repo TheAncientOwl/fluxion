@@ -21,4 +21,5 @@ target_link_libraries(graphite_core_logger PRIVATE
 target_include_directories(graphite_core_logger
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/external
 )

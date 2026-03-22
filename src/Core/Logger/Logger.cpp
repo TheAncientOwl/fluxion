@@ -5,18 +5,20 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.5
 /// @brief Implementation of @see Logger.hpp.
 ///
-
-#include "Logger.hpp"
-#include "Ansi.hpp"
-#include "LogFormatter.hpp"
 
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+
+#include "icons/IconsCodicons.h"
+
+#include "Ansi.hpp"
+#include "LogFormatter.hpp"
+#include "Logger.hpp"
 
 using namespace std::string_literals;
 
@@ -191,6 +193,14 @@ void Logger::SetScopeEnabled(std::string scope, bool enabled)
     }
 }
 
+void Logger::SetScopeLevelState(std::string scope, ELogLevel const level, bool const enabled)
+{
+    std::lock_guard lock{s_scope_mutex};
+    auto& flags = s_scope_enabled[std::move(scope)];
+
+    flags[level] = enabled;
+}
+
 Logger::ScopeEnabledMap Logger::GetScopes()
 {
     std::lock_guard lock{s_scope_mutex};
@@ -203,13 +213,13 @@ Logger::LogLevels const& Logger::GetLevels()
 {
     using namespace std::string_literals;
     static LogLevels s_levels{
-        std::make_pair(ELogLevel::Trace, "Trace"s),
-        std::make_pair(ELogLevel::Info, "Info"s),
-        std::make_pair(ELogLevel::Warn, "Warn"s),
-        std::make_pair(ELogLevel::Error, "Error"s),
-        std::make_pair(ELogLevel::Critical, "Critical"s),
-        std::make_pair(ELogLevel::Debug, "Debug"s),
-        std::make_pair(ELogLevel::Scope, "Scope"s),
+        std::make_pair(ELogLevel::Trace, ICON_CI_SURROUND_WITH " Trace"s),
+        std::make_pair(ELogLevel::Info, ICON_CI_INFO " Info"s),
+        std::make_pair(ELogLevel::Warn, ICON_CI_WARNING " Warn"s),
+        std::make_pair(ELogLevel::Error, ICON_CI_ERROR " Error"s),
+        std::make_pair(ELogLevel::Critical, ICON_CI_CIRCLE_SLASH " Critical"s),
+        std::make_pair(ELogLevel::Debug, ICON_CI_DEBUG " Debug"s),
+        std::make_pair(ELogLevel::Scope, ICON_CI_SEARCH " Scope"s),
     };
     return s_levels;
 }

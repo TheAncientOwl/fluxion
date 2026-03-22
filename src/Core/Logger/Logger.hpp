@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.5
+/// @version 1.6
 /// @brief Logging utilities
 ///
 
@@ -126,6 +126,7 @@ public:
     using ScopeEnabledMap = std::unordered_map<std::string, LogScopeFlags>;
     static ScopeEnabledMap GetScopes();
     static void SetScopeEnabled(std::string scope, bool enabled);
+    static void SetScopeLevelState(std::string scope, ELogLevel const level, bool const enabled);
 
     using LogLevels = std::array<std::pair<ELogLevel, std::string>, 7>;
     static LogLevels const& GetLevels();
