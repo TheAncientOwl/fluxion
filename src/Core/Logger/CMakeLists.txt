@@ -13,7 +13,10 @@ set_target_properties(graphite_core_logger PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
-target_link_libraries(graphite_core_logger PRIVATE fluxion_compile_options)
+target_link_libraries(graphite_core_logger PRIVATE
+    graphite_core_common
+    fluxion_compile_options
+)
 
 target_include_directories(graphite_core_logger
     PUBLIC

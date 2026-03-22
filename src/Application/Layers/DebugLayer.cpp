@@ -5,7 +5,7 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
@@ -424,7 +424,8 @@ void DebugLayer::RenderLogger()
     ImGui::InputTextWithHint("##Search", "Type to filter scopes...", filter, sizeof(filter));
 
     auto scopes = Logger::GetScopes();
-    static std::vector<std::pair<std::string_view, bool>> sorted_scopes{};
+    using LogScopeFlags = Graphite::Core::Logger::LogScopeFlags;
+    static std::vector<std::pair<std::string_view, LogScopeFlags>> sorted_scopes{};
     sorted_scopes.resize(scopes.size());
     size_t scope_idx{0};
     for (auto const& kv : scopes)
@@ -509,14 +510,18 @@ void DebugLayer::RenderLogger()
             for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
             {
                 size_t i = filtered_indices[static_cast<std::size_t>(row)];
-                auto const& [scope, enabled] = sorted_scopes[i];
+                auto const& [scope, flags] = sorted_scopes[i];
 
                 ImGui::PushID(scope.data());
                 ImGui::TableNextRow();
 
                 // Enabled checkbox (centered in frozen column)
                 ImGui::TableSetColumnIndex(0);
-                bool value = enabled;
+                bool value = true;
+                for (auto const& [level, _] : levels)
+                {
+                    value = value && flags[level];
+                }
                 ImGui::SetCursorPosY(
                     ImGui::GetCursorPosY() +
                     (ImGui::GetTextLineHeightWithSpacing() - ImGui::GetFrameHeight()) * 0.5f);

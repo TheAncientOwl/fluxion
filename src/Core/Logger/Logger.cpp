@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -26,7 +26,6 @@ static std::mutex g_write_mutex;
 
 Logger::ScopeEnabledMap Logger::s_scope_enabled{};
 std::mutex Logger::s_scope_mutex{};
-std::array<std::atomic<bool>, 7> Logger::s_level_enabled{true, true, true, true, true, true, true};
 
 Logger& Logger::Instance()
 {
@@ -45,19 +44,12 @@ void Logger::SaveConfig()
         return;
     }
 
-    // Save levels
-    for (auto const& [level, name] : GetLevels())
-    {
-        bool enabled = IsLevelEnabled(level);
-        ofs << (enabled ? '1' : '0') << " Level " << name << "\n";
-    }
-
-    // Save scopes
     {
         std::lock_guard lock{s_scope_mutex};
+
         for (auto const& [scope, enabled] : s_scope_enabled)
         {
-            ofs << (enabled ? '1' : '0') << " Scope " << scope << "\n";
+            ofs << static_cast<int>(enabled.GetStorage()) << " " << scope << "\n";
         }
     }
 }
@@ -72,43 +64,45 @@ void Logger::LoadConfig()
         return;
     }
 
-    std::string line;
+    std::string line{};
+    std::string state{};
+    std::string name{};
+
+    std::lock_guard lock{s_scope_mutex};
     while (std::getline(ifs, line))
     {
         std::istringstream iss(line);
-        char enabled_char = 0;
-        std::string type;
-        std::string name;
 
-        if (!(iss >> enabled_char >> type))
+        if (!(iss >> state))
+        {
             continue;
+        }
 
         std::getline(iss, name);
-        // Trim leading spaces from name
-        size_t start = name.find_first_not_of(" \t");
+        auto const start = name.find_first_not_of(" \t");
         if (start != std::string::npos)
+        {
             name = name.substr(start);
+        }
         else
+        {
             name.clear();
-
-        bool enabled = (enabled_char == '1');
-
-        if (type == "Level")
-        {
-            // Find level by name and set enabled
-            for (auto const& [level, lvl_name] : GetLevels())
-            {
-                if (lvl_name == name)
-                {
-                    SetLevelState(level, enabled);
-                    break;
-                }
-            }
         }
-        else if (type == "Scope")
+
+        LogScopeFlags flags = GetDefaultScopeFlags();
+        int storage{0};
+        try
         {
-            SetScopeEnabled(name, enabled);
+            storage = std::stoi(state);
         }
+        catch (...)
+        {
+            continue;
+        }
+
+        flags.SetStorage(static_cast<LogScopeFlags::Storage>(storage));
+
+        s_scope_enabled[std::move(name)] = flags;
     }
 }
 
@@ -139,26 +133,70 @@ void Logger::Enqueue(LogMessage&& msg)
     m_cv.notify_one();
 }
 
+LogScopeFlags Logger::GetDefaultScopeFlags()
+{
+    LogScopeFlags flags;
+    for (auto const& [level, _] : GetLevels())
+    {
+        flags[level] = true;
+    }
+
+    return flags;
+}
+
+std::string const& Logger::GetGlobalScopeKey()
+{
+    static const std::string key{"__graphite.global.scopes__"};
+    return key;
+}
+
 void Logger::SetLevelState(ELogLevel const level, bool const enabled)
 {
-    s_level_enabled[static_cast<std::uint8_t>(level)].store(enabled, std::memory_order_relaxed);
+    std::lock_guard lock{s_scope_mutex};
+    auto& flags = s_scope_enabled[GetGlobalScopeKey()];
+    if (flags.GetStorage() == 0)
+    {
+        flags = GetDefaultScopeFlags();
+    }
+
+    flags[level] = enabled;
 }
 
 bool Logger::IsLevelEnabled(ELogLevel level)
 {
-    return s_level_enabled[static_cast<std::uint8_t>(level)].load(std::memory_order_relaxed);
+    std::lock_guard lock{s_scope_mutex};
+    auto it = s_scope_enabled.find(GetGlobalScopeKey());
+    if (it == s_scope_enabled.end())
+    {
+        auto const flags = GetDefaultScopeFlags();
+        s_scope_enabled.emplace(GetGlobalScopeKey(), flags);
+        return flags[level];
+    }
+
+    return it->second[level];
 }
 
 void Logger::SetScopeEnabled(std::string scope, bool enabled)
 {
     std::lock_guard lock{s_scope_mutex};
-    s_scope_enabled[std::move(scope)] = enabled;
+    auto& flags = s_scope_enabled[std::move(scope)];
+    if (flags.GetStorage() == 0)
+    {
+        flags = GetDefaultScopeFlags();
+    }
+
+    for (auto const& [level, _] : GetLevels())
+    {
+        flags[level] = enabled;
+    }
 }
 
 Logger::ScopeEnabledMap Logger::GetScopes()
 {
     std::lock_guard lock{s_scope_mutex};
-    return s_scope_enabled;
+    auto scopes = s_scope_enabled;
+    scopes.erase(GetGlobalScopeKey());
+    return scopes;
 }
 
 Logger::LogLevels const& Logger::GetLevels()

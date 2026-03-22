@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.5
 /// @brief Logging utilities
 ///
 
@@ -26,18 +26,20 @@
 #include <thread>
 #include <unordered_map>
 
+#include "Core/Common/TWithFlags.hpp"
+
 namespace Graphite::Core::Logger {
 
 // clang-format off
 enum class ELogLevel : std::uint8_t
 {
-    Trace    = 0,
-    Info     = 1,
-    Warn     = 2,
-    Error    = 3,
-    Critical = 4,
-    Debug    = 5,
-    Scope    = 6,
+    Trace    = 1 << 0, // 00000001
+    Info     = 1 << 1, // 00000010
+    Warn     = 1 << 2, // 00000100
+    Error    = 1 << 3, // 00001000
+    Critical = 1 << 4, // 00010000
+    Debug    = 1 << 5, // 00100000
+    Scope    = 1 << 6, // 01000000
 };
 // clang-format on
 
@@ -47,6 +49,20 @@ struct LogMessage
     std::string scope;
     std::string message;
     std::chrono::system_clock::time_point time;
+};
+
+struct LogScopeFlags : public Graphite::Common::TWithFlags<LogScopeFlags, ELogLevel>
+{
+    using Base = Graphite::Common::TWithFlags<LogScopeFlags, ELogLevel>;
+    using Storage = Base::Storage;
+
+    [[nodiscard]]
+    Storage GetStorage() const noexcept
+    {
+        return this->flags;
+    }
+
+    void SetStorage(Storage storage) noexcept { this->flags = storage; }
 };
 
 class Logger
@@ -67,12 +83,18 @@ public:
             std::lock_guard lock(s_scope_mutex);
             if (auto it = s_scope_enabled.find(key); it != s_scope_enabled.end())
             {
-                if (!it->second)
+                if (!it->second[level])
                     return;
             }
             else
             {
-                s_scope_enabled.emplace(std::move(key), true);
+                auto flags = GetDefaultScopeFlags();
+                if (!flags[level])
+                {
+                    return;
+                }
+
+                s_scope_enabled.emplace(std::move(key), flags);
             }
         }
 
@@ -97,9 +119,11 @@ private:
     void Enqueue(LogMessage&& msg);
     void ProcessQueue();
     void PrintMessage(LogMessage const& msg);
+    static LogScopeFlags GetDefaultScopeFlags();
+    static std::string const& GetGlobalScopeKey();
 
 public:
-    using ScopeEnabledMap = std::unordered_map<std::string, bool>;
+    using ScopeEnabledMap = std::unordered_map<std::string, LogScopeFlags>;
     static ScopeEnabledMap GetScopes();
     static void SetScopeEnabled(std::string scope, bool enabled);
 
@@ -116,9 +140,8 @@ private:
     std::thread m_worker;
     std::ofstream m_log_file;
 
-    static ScopeEnabledMap s_scope_enabled;
     static std::mutex s_scope_mutex;
-    static std::array<std::atomic<bool>, 7> s_level_enabled;
+    static ScopeEnabledMap s_scope_enabled;
 };
 
 class ScopeLogger
