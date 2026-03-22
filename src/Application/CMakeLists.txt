@@ -1,5 +1,6 @@
 add_library(fluxion_app STATIC
     Fluxion.cpp
+    AppState.cpp
 
     layers/DebugLayer/DebugLayer.cpp
     layers/DebugLayer/Modules/Logger.cpp

@@ -5,11 +5,9 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
-
-#include <optional>
 
 #include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
@@ -859,6 +857,11 @@ void FiltersLayer::HandleAction()
             m_current_action.component ? m_current_action.component->id.toString() : "nullptr");
         break;
     }
+    }
+
+    if (application_state.filters.tabs.empty())
+    {
+        application_state.filters.tabs = DefaultState::MakeDefaultTabs();
     }
 
     m_current_action = {};

@@ -36,4 +36,12 @@ struct AppState
     } layers_active{};
 };
 
+namespace DefaultState {
+
+AppState Make();
+
+Fluxion::API::Data::FiltersTabs MakeDefaultTabs();
+
+} // namespace DefaultState
+
 } // namespace Fluxion::Application
