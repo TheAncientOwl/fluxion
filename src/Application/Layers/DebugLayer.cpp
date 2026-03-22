@@ -88,6 +88,8 @@ inline std::string_view DebugLayer::GetDisplayName() const noexcept
 
 namespace UIHelpers {
 
+namespace CPPRenderer {
+
 enum class SigTokenType
 {
     Keyword,
@@ -372,6 +374,8 @@ void RenderCppSignature(std::string_view line)
     }
 }
 
+} // namespace CPPRenderer
+
 extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f);
 
 } // namespace UIHelpers
@@ -536,7 +540,7 @@ void DebugLayer::RenderLogger()
                 }
 
                 ImGui::TableSetColumnIndex(1);
-                UIHelpers::RenderCppSignature(scope);
+                UIHelpers::CPPRenderer::RenderCppSignature(scope);
 
                 ImGui::PopID();
             }
