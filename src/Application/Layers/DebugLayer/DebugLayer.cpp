@@ -5,17 +5,13 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
-#include <algorithm>
-#include <regex>
-
-#include "Application/Layers/FiltersLayer.hpp"
-#include "Application/Layers/LogsViewLayer.hpp"
 #include "DebugLayer.hpp"
 #include "Modules/Logger.hpp"
+#include "Modules/Theme.hpp"
 
 #include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
@@ -58,6 +54,12 @@ void DebugLayer::OnRender()
         if (ImGui::BeginTabItem(ICON_CI_OUTPUT " Logger"))
         {
             Modules::DebugLayer::RenderLogger();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem(ICON_CI_SYMBOL_COLOR " Theme"))
+        {
+            Modules::DebugLayer::RenderTheme();
             ImGui::EndTabItem();
         }
 

@@ -12,8 +12,6 @@
 #pragma once
 
 #include <string_view>
-#include <unordered_map>
-#include <vector>
 
 #include "imgui/imgui.h"
 
