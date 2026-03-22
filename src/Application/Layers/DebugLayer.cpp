@@ -5,7 +5,7 @@
 ///
 /// @file DebugLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see DebugLayer.hpp.
 ///
 
@@ -416,60 +416,70 @@ void DebugLayer::RenderLogger()
     ImGui::EndChild();
 
     static char filter[128] = ".";
-    static std::string last_filter = "";
-    static std::vector<size_t> filtered_indices;
+    static std::string s_last_filter = "";
+    static std::vector<size_t> s_filtered_indices;
     ImGui::AlignTextToFramePadding();
     ImGui::Text(ICON_CI_SEARCH_SPARKLE " Search");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     ImGui::InputTextWithHint("##Search", "Type to filter scopes...", filter, sizeof(filter));
 
+    static std::size_t s_last_scopes_count{0};
     auto scopes = Logger::GetScopes();
-    using LogScopeFlags = Graphite::Core::Logger::LogScopeFlags;
-    static std::vector<std::pair<std::string_view, LogScopeFlags>> sorted_scopes{};
-    sorted_scopes.resize(scopes.size());
-    size_t scope_idx{0};
-    for (auto const& kv : scopes)
+    static std::vector<std::pair<std::string_view, Graphite::Core::Logger::LogScopeFlags>> s_sorted_scopes{};
     {
-        sorted_scopes[scope_idx++] = kv;
+        s_sorted_scopes.resize(scopes.size());
+        size_t scope_idx{0};
+        for (auto const& kv : scopes)
+        {
+            s_sorted_scopes[scope_idx++] = kv;
+        }
+        std::sort(s_sorted_scopes.begin(), s_sorted_scopes.end(), [](auto const& a, auto const& b) {
+            return a.first < b.first;
+        });
     }
-    std::sort(sorted_scopes.begin(), sorted_scopes.end(), [](auto const& a, auto const& b) {
-        return a.first < b.first;
-    });
 
     // Only recompute the filtered indices when the filter changes
     std::string filter_str(filter);
-    if (filter_str != last_filter)
+    if (filter_str != s_last_filter || s_last_scopes_count != scopes.size())
     {
-        filtered_indices.clear();
+        LOG_INFO(
+            "Computing filtered indices | filter_str != s_last_filter == {} | "
+            "s_last_scopes_count != scopes.size() == {}",
+            filter_str != s_last_filter,
+            s_last_scopes_count != scopes.size());
+
+        s_filtered_indices.clear();
         // Use std::regex for matching, default regex is "." (matches everything)
         try
         {
-            std::string regex_pattern = filter_str.empty() ? ".*" : filter_str;
+            std::string regex_pattern = filter_str.empty() ? "." : filter_str;
             std::regex re(regex_pattern, std::regex_constants::icase);
-            for (size_t i = 0; i < sorted_scopes.size(); ++i)
+            for (size_t i = 0; i < s_sorted_scopes.size(); ++i)
             {
-                const auto& [scope, _] = sorted_scopes[i];
+                const auto& [scope, _] = s_sorted_scopes[i];
                 if (std::regex_search(scope.begin(), scope.end(), re))
                 {
-                    filtered_indices.push_back(i);
+                    s_filtered_indices.push_back(i);
                 }
             }
         }
         catch (const std::regex_error&)
         {
             // If invalid regex, show nothing
-            filtered_indices.clear();
+            s_filtered_indices.clear();
         }
-        last_filter = filter_str;
+
+        s_last_filter = std::move(filter_str);
+        s_last_scopes_count = scopes.size();
     }
 
     if (ImGui::Button(ICON_CI_UNMUTE " Enable All"))
     {
         // Only enable scopes currently filtered and rendered
-        for (size_t idx : filtered_indices)
+        for (size_t idx : s_filtered_indices)
         {
-            auto const& [scope, _] = sorted_scopes[idx];
+            auto const& [scope, _] = s_sorted_scopes[idx];
             Logger::SetScopeEnabled(std::string{scope}, true);
         }
     }
@@ -478,9 +488,9 @@ void DebugLayer::RenderLogger()
     if (ImGui::Button(ICON_CI_MUTE " Disable All"))
     {
         // Only disable scopes currently filtered and rendered
-        for (size_t idx : filtered_indices)
+        for (size_t idx : s_filtered_indices)
         {
-            auto const& [scope, _] = sorted_scopes[idx];
+            auto const& [scope, _] = s_sorted_scopes[idx];
             Logger::SetScopeEnabled(std::string{scope}, false);
         }
     }
@@ -499,13 +509,13 @@ void DebugLayer::RenderLogger()
         ImGui::TableHeadersRow();
 
         ImGuiListClipper clipper;
-        clipper.Begin(static_cast<int>(filtered_indices.size()));
+        clipper.Begin(static_cast<int>(s_filtered_indices.size()));
         while (clipper.Step())
         {
             for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
             {
-                size_t i = filtered_indices[static_cast<std::size_t>(row)];
-                auto const& [scope, flags] = sorted_scopes[i];
+                size_t i = s_filtered_indices[static_cast<std::size_t>(row)];
+                auto const& [scope, flags] = s_sorted_scopes[i];
 
                 ImGui::PushID(scope.data());
                 ImGui::TableNextRow();
