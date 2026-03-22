@@ -458,7 +458,7 @@ void RenderLogger()
             "ScopesTable",
             2,
             ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable |
-                ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX))
+                ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit))
     {
         ImGui::TableSetupColumn(ICON_CI_TASKLIST " Levels");
         ImGui::TableSetupColumn(ICON_CI_TELESCOPE " Scope");
