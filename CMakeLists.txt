@@ -36,7 +36,35 @@ set(SOURCES
     src/main.cpp
 )
 
-add_executable(fluxion ${SOURCES})
+
+if (APPLE)
+    add_executable(fluxion MACOSX_BUNDLE ${SOURCES})
+
+    # Copy the icon to Resources folder before the bundle is finalized
+    set(ICON_SRC ${CMAKE_SOURCE_DIR}/assets/icons/fluxion725x725.icns)
+    set(ICON_DST $<TARGET_FILE_DIR:fluxion>/../Resources/fluxion725x725.icns)
+
+    add_custom_command(TARGET fluxion PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:fluxion>/../Resources
+        COMMAND ${CMAKE_COMMAND} -E copy ${ICON_SRC} ${ICON_DST}
+        COMMENT "Copying fluxion icon to Resources folder before build"
+    )
+
+    # Set the icon filename only
+    set_target_properties(fluxion PROPERTIES
+        MACOSX_BUNDLE_ICON_FILE fluxion725x725.icns
+    )
+
+    # Copy the rest of the assets folder after build
+    add_custom_command(TARGET fluxion POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:fluxion>/../Resources/assets
+        COMMENT "Copying remaining assets folder to Resources directory"
+    )
+else()
+    add_executable(fluxion ${SOURCES})
+endif()
 
 target_compile_definitions(fluxion PRIVATE
     $<$<CONFIG:Release>:GRAPHITE_NO_LOGGER>
