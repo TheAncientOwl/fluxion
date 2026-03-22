@@ -12,14 +12,14 @@
 #include <stdlib.h>
 
 #include "Application/Fluxion.hpp"
-#include "Core/Logger/Logger.hpp"
+#include "Graphite/Logger/Logger.hpp"
 
 Fluxion::Application::AppState MakeDefaultAppState()
 {
     Fluxion::Application::AppState app_state{};
 
     using namespace Fluxion::API::Data;
-    using UniqueID = Graphite::Core::Common::UniqueID;
+    using UniqueID = Graphite::Common::UniqueID;
 
     auto& tabs{app_state.filters.tabs};
     {
@@ -171,23 +171,23 @@ Fluxion::Application::AppState MakeDefaultAppState()
 
 int main()
 {
-    Graphite::Core::Logger::Logger::LoadConfig();
+    Graphite::Logger::Logger::LoadConfig();
 
     LOG_SCOPE("");
 
-    Graphite::Core::Application::WindowConfiguration window_configuration{};
+    Graphite::Application::WindowConfiguration window_configuration{};
     window_configuration.width = 950;
     window_configuration.height = 750;
     window_configuration.title = "Fluxion";
 
     auto app =
-        Graphite::Core::Application::TGraphiteApplication<Fluxion::Application::AppState>::CreateApplication<
+        Graphite::Application::TGraphiteApplication<Fluxion::Application::AppState>::CreateApplication<
             Fluxion::Application::FluxionApplication>(
             std::move(window_configuration), MakeDefaultAppState());
 
     app->Run();
 
-    Graphite::Core::Logger::Logger::SaveConfig();
+    Graphite::Logger::Logger::SaveConfig();
 
     return EXIT_SUCCESS;
 }

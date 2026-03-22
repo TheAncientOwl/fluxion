@@ -1,0 +1,218 @@
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file TGraphiteApplication.hpp
+/// @author Alexandru Delegeanu
+/// @version 1.5
+/// @brief Main application.
+///
+
+#pragma once
+
+#include <algorithm>
+#include <concepts>
+#include <functional>
+#include <memory>
+#include <string_view>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "Graphite/Logger/Logger.hpp"
+
+#include "Layers/TLayer.hpp"
+#include "Layers/TSoftCloseableLayer.hpp"
+#include "Renderer/Renderer.hpp"
+#include "WindowConfiguration.hpp"
+
+namespace Graphite::Application {
+
+template <typename ApplicationState>
+class TGraphiteApplication
+    : public Graphite::Application::Renderer::IRenderable
+    , public std::enable_shared_from_this<TGraphiteApplication<ApplicationState>>
+{
+public:
+    using Ptr = std::shared_ptr<TGraphiteApplication<ApplicationState>>;
+
+    template <typename ApplicationImpl>
+        requires std::derived_from<ApplicationImpl, TGraphiteApplication<ApplicationState>>
+    static std::shared_ptr<ApplicationImpl> CreateApplication(
+        WindowConfiguration window_configuration,
+        ApplicationState app_state)
+    {
+        return std::shared_ptr<ApplicationImpl>(
+            new ApplicationImpl(std::move(window_configuration), std::move(app_state)));
+    }
+
+public:
+    void Run();
+
+    inline ApplicationState& GetApplicationState() noexcept;
+
+    template <typename LayerImpl, typename... Args>
+        requires std::derived_from<LayerImpl, Layers::TLayer<ApplicationState>> && requires {
+            { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
+        }
+    Graphite::Common::UniqueID const& AddLayer(Args&&... args);
+
+    template <typename LayerType>
+        requires std::is_class_v<LayerType> &&
+                 std::derived_from<LayerType, Layers::TLayer<ApplicationState>>
+    void ForEachLayer(std::function<void(LayerType&, bool const)> func);
+
+protected:
+    TGraphiteApplication(WindowConfiguration window_configuration, ApplicationState initial_state);
+
+private:
+    virtual void AppInit() = 0;
+
+    void Init();
+    void Render() override;
+    void Shutdown();
+
+    void RenderLayers();
+
+protected:
+    WindowConfiguration m_window_configuration{};
+    ApplicationState m_app_state{};
+
+private:
+    std::vector<typename Layers::TLayer<ApplicationState>::Ptr> m_layers{};
+    std::unordered_set<Graphite::Common::UniqueID, Graphite::Common::UniqueID::Hash> m_removed_layers{};
+    std::unique_ptr<Graphite::Application::Renderer::IRenderer> m_renderer{nullptr};
+};
+
+template <typename ApplicationState>
+TGraphiteApplication<ApplicationState>::TGraphiteApplication(
+    WindowConfiguration window_configuration,
+    ApplicationState initial_state)
+    : m_window_configuration{std::move(window_configuration)}, m_app_state{std::move(initial_state)}
+{
+    LOG_SCOPE("");
+}
+
+template <typename ApplicationState>
+void TGraphiteApplication<ApplicationState>::Run()
+{
+    LOG_SCOPE("");
+    Init();
+    m_renderer->Render(this->shared_from_this());
+    Shutdown();
+}
+
+template <typename ApplicationState>
+void TGraphiteApplication<ApplicationState>::Init()
+{
+    LOG_SCOPE("");
+    m_renderer = Graphite::Application::Renderer::CreateRenderer();
+    m_renderer->Init(m_window_configuration);
+
+    AppInit();
+}
+
+template <typename ApplicationState>
+void TGraphiteApplication<ApplicationState>::Render()
+{
+    LOG_SCOPE("");
+    RenderLayers();
+}
+
+template <typename ApplicationState>
+void TGraphiteApplication<ApplicationState>::Shutdown()
+{
+    LOG_SCOPE("");
+    while (!m_layers.empty())
+    {
+        m_layers.back()->OnRemove();
+        m_layers.pop_back();
+    }
+    m_renderer->Cleanup();
+}
+
+template <typename ApplicationState>
+template <typename LayerImpl, typename... Args>
+    requires std::derived_from<LayerImpl, Layers::TLayer<ApplicationState>> && requires {
+        { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
+    }
+Graphite::Common::UniqueID const& TGraphiteApplication<ApplicationState>::AddLayer(Args&&... args)
+{
+    LOG_SCOPE("{}", LayerImpl::GetLayerName().data());
+    auto layer = std::make_unique<LayerImpl>(std::forward<Args>(args)...);
+
+    GRAPHITE_ASSERT(
+        std::find_if(
+            m_layers.cbegin(),
+            m_layers.cend(),
+            [&id = layer->GetID()](auto const& layer_ptr) { return layer_ptr->GetID() == id; }) ==
+            m_layers.cend(),
+        "Trying to add layer with same ID");
+
+    layer->OnAdd();
+
+    auto const& layer_id{layer->GetID()};
+    m_layers.push_back(std::move(layer));
+
+    std::sort(m_layers.begin(), m_layers.end(), [](auto const& a, auto const& b) {
+        return a->GetZIndex() < b->GetZIndex();
+    });
+
+    return layer_id;
+}
+
+template <typename ApplicationState>
+template <typename LayerType>
+    requires std::is_class_v<LayerType> &&
+             std::derived_from<LayerType, Layers::TLayer<ApplicationState>>
+inline void TGraphiteApplication<ApplicationState>::ForEachLayer(
+    std::function<void(LayerType&, bool const)> func)
+{
+    LOG_SCOPE("");
+    for (std::size_t idx = 0; idx < m_layers.size(); ++idx)
+    {
+        auto& layer{m_layers[idx]};
+        if (auto* casted = dynamic_cast<LayerType*>(layer.get()))
+        {
+            LOG_TRACE("Applied to layer ID {}", layer->GetID());
+            func(*casted, idx + 1 == m_layers.size());
+        }
+    }
+}
+
+template <typename ApplicationState>
+inline ApplicationState& TGraphiteApplication<ApplicationState>::GetApplicationState() noexcept
+{
+    return m_app_state;
+}
+
+template <typename ApplicationState>
+void TGraphiteApplication<ApplicationState>::RenderLayers()
+{
+    LOG_SCOPE("");
+    m_removed_layers.clear();
+    std::for_each(
+        m_layers.begin(), m_layers.end(), [](Layers::TLayer<ApplicationState>::Ptr& layer_ptr) {
+            if (layer_ptr->IsActive())
+            {
+                layer_ptr->OnRender();
+            }
+        });
+
+    m_layers.erase(
+        std::remove_if(
+            m_layers.begin(),
+            m_layers.end(),
+            [&](auto& layer_ptr) {
+                if (m_removed_layers.contains(layer_ptr->GetID()))
+                {
+                    layer_ptr->OnRemove();
+                    return true;
+                }
+                return false;
+            }),
+        m_layers.end());
+}
+
+} // namespace Graphite::Application

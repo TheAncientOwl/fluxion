@@ -11,7 +11,7 @@
 
 #include "Data.hpp"
 
-#include "Core/Logger/Logger.hpp"
+#include "Graphite/Logger/Logger.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -21,8 +21,8 @@ namespace Fluxion::API::Data {
 // ---------------- FilterComponent ----------------
 
 FilterComponent::FilterComponent(FilterComponent const& other)
-    : Internal::TWithFlags<FilterComponent, EFilterComponentFlag>(other)
-    , id(Graphite::Core::Common::UniqueID::Generate())
+    : Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>(other)
+    , id(Graphite::Common::UniqueID::Generate())
     , over_field_id(other.over_field_id)
     , data(other.data)
 {
@@ -35,8 +35,8 @@ FilterComponent& FilterComponent::operator=(FilterComponent const& other)
         return *this;
     }
 
-    Internal::TWithFlags<FilterComponent, EFilterComponentFlag>::operator=(other);
-    id = Graphite::Core::Common::UniqueID::Generate();
+    Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>::operator=(other);
+    id = Graphite::Common::UniqueID::Generate();
     over_field_id = other.over_field_id;
     data = other.data;
 
@@ -46,8 +46,8 @@ FilterComponent& FilterComponent::operator=(FilterComponent const& other)
 // ---------------- Filter ----------------
 
 Filter::Filter(Filter const& other)
-    : Internal::TWithFlags<Filter, EFilterFlag>(other)
-    , id(Graphite::Core::Common::UniqueID::Generate())
+    : Graphite::Common::TWithFlags<Filter, EFilterFlag>(other)
+    , id(Graphite::Common::UniqueID::Generate())
     , name(other.name)
     , colors(other.colors)
     , priority(other.priority)
@@ -67,8 +67,8 @@ Filter& Filter::operator=(Filter const& other)
         return *this;
     }
 
-    Internal::TWithFlags<Filter, EFilterFlag>::operator=(other);
-    id = Graphite::Core::Common::UniqueID::Generate();
+    Graphite::Common::TWithFlags<Filter, EFilterFlag>::operator=(other);
+    id = Graphite::Common::UniqueID::Generate();
     name = other.name;
     colors = other.colors;
     priority = other.priority;
@@ -87,8 +87,8 @@ Filter& Filter::operator=(Filter const& other)
 // ---------------- FiltersTab ----------------
 
 FiltersTab::FiltersTab(FiltersTab const& other)
-    : Internal::TWithFlags<FiltersTab, EFiltersTabFlag>(other)
-    , id(Graphite::Core::Common::UniqueID::Generate())
+    : Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>(other)
+    , id(Graphite::Common::UniqueID::Generate())
     , name(other.name)
 {
     filters.reserve(other.filters.size());
@@ -105,8 +105,8 @@ FiltersTab& FiltersTab::operator=(FiltersTab const& other)
         return *this;
     }
 
-    Internal::TWithFlags<FiltersTab, EFiltersTabFlag>::operator=(other);
-    id = Graphite::Core::Common::UniqueID::Generate();
+    Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>::operator=(other);
+    id = Graphite::Common::UniqueID::Generate();
     name = other.name;
 
     filters.clear();

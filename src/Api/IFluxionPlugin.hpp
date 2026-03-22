@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "Core/Common/GraphiteExport.hpp"
+#include "Graphite/Common/GraphiteExport.hpp"
 
 #include "Data.hpp"
 

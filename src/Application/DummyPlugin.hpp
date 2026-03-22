@@ -12,7 +12,7 @@
 #include "Api/Data.hpp"
 #include "Api/IFluxionPlugin.hpp"
 
-#include "Core/Logger/Logger.hpp"
+#include "Graphite/Logger/Logger.hpp"
 
 #include <filesystem>
 #include <random>

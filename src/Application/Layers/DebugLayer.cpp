@@ -33,7 +33,7 @@ std::string_view DebugLayer::GetName() const noexcept
 
 DebugLayer::DebugLayer(
     FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layers::ZIndex const z_index)
+    Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
@@ -382,7 +382,7 @@ extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float
 
 void DebugLayer::RenderLogger()
 {
-    using Logger = Graphite::Core::Logger::Logger;
+    using Logger = Graphite::Logger::Logger;
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text(ICON_CI_TASKLIST " Levels");
@@ -442,7 +442,7 @@ void DebugLayer::RenderLogger()
 
     static std::size_t s_last_scopes_count{0};
     auto scopes = Logger::GetScopes();
-    static std::vector<std::pair<std::string_view, Graphite::Core::Logger::LogScopeFlags>> s_sorted_scopes{};
+    static std::vector<std::pair<std::string_view, Graphite::Logger::LogScopeFlags>> s_sorted_scopes{};
     {
         s_sorted_scopes.resize(scopes.size());
         size_t scope_idx{0};

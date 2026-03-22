@@ -24,7 +24,7 @@
 namespace Fluxion::Application {
 
 FluxionApplication::FluxionApplication(
-    Graphite::Core::Application::WindowConfiguration window_configuration,
+    Graphite::Application::WindowConfiguration window_configuration,
     AppState initial_state)
     : TGraphiteApplication{std::move(window_configuration), std::move(initial_state)}
 {
@@ -53,7 +53,7 @@ void FluxionApplication::AppInit()
 
     AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
     AddLayer<Layers::DebugLayer>(
-        shared_from_this(), std::numeric_limits<Graphite::Core::Application::Layers::ZIndex>::max());
+        shared_from_this(), std::numeric_limits<Graphite::Application::Layers::ZIndex>::max());
     AddLayer<Layers::MainMenuLayer>(shared_from_this(), 1);
     AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);
     AddLayer<Layers::FiltersLayer>(shared_from_this(), 20);

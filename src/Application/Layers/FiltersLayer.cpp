@@ -32,7 +32,7 @@ std::string_view FiltersLayer::GetName() const noexcept
 
 FiltersLayer::FiltersLayer(
     FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layers::ZIndex const z_index)
+    Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
@@ -304,7 +304,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
 {
     GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        tab_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        tab_ptr->id != Graphite::Common::UniqueID::Default(),
         "Received tab with default ID for rendering...");
 
     auto& tab{*tab_ptr};
@@ -367,12 +367,12 @@ void FiltersLayer::RenderFilter(
 {
     GRAPHITE_ASSERT(filter_ptr != nullptr, "Received filter::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        filter_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        filter_ptr->id != Graphite::Common::UniqueID::Default(),
         "Received filter with default ID for rendering...");
 
     GRAPHITE_ASSERT(owning_tab_ptr != nullptr, "Received owning_tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        owning_tab_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        owning_tab_ptr->id != Graphite::Common::UniqueID::Default(),
         "Received owning_tab with default ID for rendering...");
 
     auto& filter{*filter_ptr};
@@ -498,13 +498,13 @@ void FiltersLayer::RenderFilterComponent(
 {
     GRAPHITE_ASSERT(component_ptr != nullptr, "Received component::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        component_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        component_ptr->id != Graphite::Common::UniqueID::Default(),
         "Received component with default ID for rendering...");
 
     GRAPHITE_ASSERT(
         owning_filter_ptr != nullptr, "Received owning_filter::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        owning_filter_ptr->id != Graphite::Core::Common::UniqueID::Default(),
+        owning_filter_ptr->id != Graphite::Common::UniqueID::Default(),
         "Received owning_filter with default ID for rendering...");
 
     auto& component{*component_ptr};
@@ -637,19 +637,19 @@ void FiltersLayer::HandleAction()
             "component should be nullptr for AddFiltersTab action");
 
         auto& new_tab = *tabs.emplace_back(std::make_shared<FiltersTab>());
-        new_tab.id = Graphite::Core::Common::UniqueID::Generate();
+        new_tab.id = Graphite::Common::UniqueID::Generate();
         new_tab.name = "New Tab";
         new_tab[EFiltersTabFlag::IsActive] = true;
 
         auto& new_filter = *new_tab.filters.emplace_back(std::make_shared<Filter>());
-        new_filter.id = Graphite::Core::Common::UniqueID::Generate();
+        new_filter.id = Graphite::Common::UniqueID::Generate();
         new_filter.name = "New Filter";
         new_filter.colors = {
             .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
         new_filter[EFilterFlag::IsActive] = true;
 
         auto& new_component = *new_filter.components.emplace_back(std::make_shared<FilterComponent>());
-        new_component.id = Graphite::Core::Common::UniqueID::Generate();
+        new_component.id = Graphite::Common::UniqueID::Generate();
         new_component[EFilterComponentFlag::IsEquals] = true;
 
         break;
@@ -701,7 +701,7 @@ void FiltersLayer::HandleAction()
         if (it != tabs.cend())
         {
             auto duplicate_tab = std::make_shared<FiltersTab>(**it);
-            duplicate_tab->id = Graphite::Core::Common::UniqueID::Generate();
+            duplicate_tab->id = Graphite::Common::UniqueID::Generate();
             duplicate_tab->name += "*";
             tabs.insert(std::next(it), duplicate_tab);
         }
@@ -724,14 +724,14 @@ void FiltersLayer::HandleAction()
             "component should be nullptr for AddFilter action");
 
         auto& new_filter = *m_current_action.tab->filters.emplace_back(std::make_shared<Filter>());
-        new_filter.id = Graphite::Core::Common::UniqueID::Generate();
+        new_filter.id = Graphite::Common::UniqueID::Generate();
         new_filter.name = "New Filter";
         new_filter.colors = {
             .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
         new_filter[EFilterFlag::IsActive] = true;
 
         auto& new_component = *new_filter.components.emplace_back(std::make_shared<FilterComponent>());
-        new_component.id = Graphite::Core::Common::UniqueID::Generate();
+        new_component.id = Graphite::Common::UniqueID::Generate();
         new_component[EFilterComponentFlag::IsEquals] = true;
 
         break;
@@ -811,7 +811,7 @@ void FiltersLayer::HandleAction()
 
         auto& new_component =
             *m_current_action.filter->components.emplace_back(std::make_shared<FilterComponent>());
-        new_component.id = Graphite::Core::Common::UniqueID::Generate();
+        new_component.id = Graphite::Common::UniqueID::Generate();
         new_component[EFilterComponentFlag::IsEquals] = true;
 
         break;

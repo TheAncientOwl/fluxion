@@ -29,7 +29,7 @@ std::string_view BaseLayer::GetName() const noexcept
 
 BaseLayer::BaseLayer(
     FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layers::ZIndex const z_index)
+    Graphite::Application::Layers::ZIndex const z_index)
     : TLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");

@@ -10,9 +10,9 @@
 ///
 
 #include "MainMenuLayer.hpp"
-#include "Core/Application/Layers/TSoftCloseableLayer.hpp"
 #include "DebugLayer.hpp"
 #include "FiltersLayer.hpp"
+#include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "LogsViewLayer.hpp"
 
 #include "icons/IconsCodicons.h"
@@ -34,7 +34,7 @@ std::string_view MainMenuLayer::GetName() const noexcept
 
 MainMenuLayer::MainMenuLayer(
     FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layers::ZIndex const z_index)
+    Graphite::Application::Layers::ZIndex const z_index)
     : TLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");
@@ -64,8 +64,8 @@ void MainMenuLayer::RenderMenu()
     {
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
-            m_application->ForEachLayer<Graphite::Core::Application::Layers::TSoftMenuCloseableLayer<AppState>>(
-                [](Graphite::Core::Application::Layers::TSoftMenuCloseableLayer<AppState>& menu_item,
+            m_application->ForEachLayer<Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>>(
+                [](Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>& menu_item,
                    bool const is_last) {
                     static char display_name_buffer[64];
 

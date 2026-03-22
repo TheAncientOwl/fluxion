@@ -13,11 +13,11 @@
 
 #include "Application/AppState.hpp"
 #include "Application/Fluxion.hpp"
-#include "Core/Application/Layers/TLayer.hpp"
+#include "Graphite/Application/Layers/TLayer.hpp"
 
 namespace Fluxion::Application::Layers {
 
-class MainMenuLayer : public Graphite::Core::Application::Layers::TLayer<AppState>
+class MainMenuLayer : public Graphite::Application::Layers::TLayer<AppState>
 {
 public:
     static std::string_view GetLayerName() noexcept;
@@ -25,7 +25,7 @@ public:
 
     MainMenuLayer(
         Fluxion::Application::FluxionApplication::Ptr application,
-        Graphite::Core::Application::Layers::ZIndex const z_index);
+        Graphite::Application::Layers::ZIndex const z_index);
 
     void OnAdd() override;
     void OnRender() override;

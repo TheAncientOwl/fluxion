@@ -28,7 +28,7 @@ std::string_view LogsViewLayer::GetName() const noexcept
 
 LogsViewLayer::LogsViewLayer(
     FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Core::Application::Layers::ZIndex const z_index)
+    Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
     LOG_SCOPE("");

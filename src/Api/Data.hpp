@@ -18,82 +18,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "Core/Common/UniqueID.hpp"
+#include "Graphite/Common/TWithFlags.hpp"
+#include "Graphite/Common/UniqueID.hpp"
 
 #include "imgui/imgui.h"
 
 namespace Fluxion::API::Data {
-
-namespace Internal {
-
-template <typename Derived, typename Enum>
-    requires std::is_enum_v<Enum> && std::is_unsigned_v<std::underlying_type_t<Enum>>
-class TWithFlags
-{
-public:
-    using Storage = std::underlying_type_t<Enum>;
-
-    /**
-     * @brief Proxy object to provide read/write access to individual flags.
-     *
-     * This proxy allows convenient manipulation of specific flags within the flags storage.
-     * It supports conversion to bool to check if the flag is set, and assignment from bool
-     * to set or clear the flag.
-     */
-    struct FlagProxy
-    {
-        Storage& flags;
-        Enum flag;
-
-        /**
-         * @brief Conversion operator to check if the flag is set.
-         * @return true if the flag is set, false otherwise.
-         */
-        operator bool() const noexcept { return (flags & static_cast<Storage>(flag)) != 0; }
-
-        /**
-         * @brief Assign a boolean value to set or clear the flag.
-         * @param value true to set the flag, false to clear it.
-         * @return Reference to this FlagProxy.
-         */
-        FlagProxy& operator=(bool value) noexcept
-        {
-            if (value)
-                flags |= static_cast<Storage>(flag);
-            else
-                flags &= ~static_cast<Storage>(flag);
-            return *this;
-        }
-    };
-
-    /**
-     * @brief Provides read/write access to a specific flag.
-     * @param flag The flag to access.
-     * @return A FlagProxy object for the specified flag.
-     */
-    inline FlagProxy operator[](Enum const flag) noexcept { return FlagProxy{flags, flag}; }
-
-    /**
-     * @brief Reset all flags to zero (clear all flags).
-     */
-    inline void ClearFlags() noexcept { flags = 0; }
-
-    /**
-     * @brief Check if a specific flag is set.
-     * @param flag The flag to check.
-     * @return true if the flag is set, false otherwise.
-     */
-    [[nodiscard]]
-    inline bool operator[](Enum const flag) const noexcept
-    {
-        return (flags & static_cast<Storage>(flag)) != 0;
-    }
-
-protected:
-    Storage flags{};
-};
-
-} // namespace Internal
 
 namespace Plugin {
 
@@ -121,10 +51,10 @@ enum class EFilterComponentFlag : std::uint8_t
 };
 // clang-format on
 
-struct FilterComponent : public Internal::TWithFlags<FilterComponent, EFilterComponentFlag>
+struct FilterComponent : public Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>
 {
-    Graphite::Core::Common::UniqueID id{};
-    Graphite::Core::Common::UniqueID over_field_id{};
+    Graphite::Common::UniqueID id{};
+    Graphite::Common::UniqueID over_field_id{};
     std::string data{};
 
     FilterComponent() = default;
@@ -153,9 +83,9 @@ enum class EFilterFlag : std::uint8_t
 };
 // clang-format on
 
-struct Filter : public Internal::TWithFlags<Filter, EFilterFlag>
+struct Filter : public Graphite::Common::TWithFlags<Filter, EFilterFlag>
 {
-    Graphite::Core::Common::UniqueID id{};
+    Graphite::Common::UniqueID id{};
     std::string name{};
     std::vector<std::shared_ptr<FilterComponent>> components{};
     FilterColors colors{};
@@ -179,9 +109,9 @@ enum class EFiltersTabFlag : std::uint8_t
 };
 // clang-format on
 
-struct FiltersTab : public Internal::TWithFlags<FiltersTab, EFiltersTabFlag>
+struct FiltersTab : public Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>
 {
-    Graphite::Core::Common::UniqueID id{};
+    Graphite::Common::UniqueID id{};
     std::string name{};
     std::vector<std::shared_ptr<Filter>> filters{};
 

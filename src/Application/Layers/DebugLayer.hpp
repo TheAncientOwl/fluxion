@@ -13,11 +13,11 @@
 
 #include "Application/AppState.hpp"
 #include "Application/Fluxion.hpp"
-#include "Core/Application/Layers/TSoftCloseableLayer.hpp"
+#include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 
 namespace Fluxion::Application::Layers {
 
-class DebugLayer : public Graphite::Core::Application::Layers::TSoftMenuCloseableLayer<AppState>
+class DebugLayer : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>
 {
 public:
     static std::string_view GetLayerName() noexcept;
@@ -25,7 +25,7 @@ public:
 
     DebugLayer(
         FluxionApplication::FluxionApplication::Ptr application,
-        Graphite::Core::Application::Layers::ZIndex const z_index);
+        Graphite::Application::Layers::ZIndex const z_index);
 
     void OnAdd() override;
     void OnRender() override;

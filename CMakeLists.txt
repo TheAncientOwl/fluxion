@@ -27,7 +27,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(external)
 add_subdirectory(src/Api)
-add_subdirectory(src/Core)
+add_subdirectory(src/Graphite)
 add_subdirectory(src/Application)
 
 # Create executable
