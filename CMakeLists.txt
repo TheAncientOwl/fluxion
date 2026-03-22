@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
-
-add_subdirectory(project/compile-options)
+include(project/cmake/compile-options.cmake)
+include(project/cmake/precompiled-headers.cmake)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
@@ -20,7 +20,8 @@ else()
     project(Fluxion LANGUAGES C CXX)
 endif()
 
-# C++ version
+# CMake flags
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -50,7 +51,10 @@ set_target_properties(fluxion PROPERTIES
 target_link_libraries(fluxion PRIVATE
     fluxion_app
     fluxion_compile_options
+    fluxion_pch
 )
+
+target_precompile_headers(fluxion REUSE_FROM fluxion_pch)
 
 # Include directories
 target_include_directories(fluxion PRIVATE

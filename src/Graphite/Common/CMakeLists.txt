@@ -11,6 +11,8 @@ set_target_properties(graphite_core_common PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
+target_precompile_headers(graphite_core_common REUSE_FROM fluxion_pch)
+
 target_link_libraries(graphite_core_common PRIVATE fluxion_compile_options)
 
 target_include_directories(graphite_core_common PUBLIC

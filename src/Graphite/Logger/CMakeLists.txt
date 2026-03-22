@@ -10,6 +10,8 @@ set_target_properties(graphite_core_logger PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
+target_precompile_headers(graphite_core_logger REUSE_FROM fluxion_pch)
+
 target_link_libraries(graphite_core_logger PRIVATE
     graphite_core_common
     fluxion_compile_options

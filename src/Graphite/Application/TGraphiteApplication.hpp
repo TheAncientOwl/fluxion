@@ -23,7 +23,6 @@
 #include "Graphite/Logger/Logger.hpp"
 
 #include "Layers/TLayer.hpp"
-#include "Layers/TSoftCloseableLayer.hpp"
 #include "Renderer/Renderer.hpp"
 #include "WindowConfiguration.hpp"
 

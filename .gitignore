@@ -4,3 +4,4 @@ imgui.ini
 players.txt
 app.graphite.log
 app.graphite.logger.cfg
+.cache

@@ -8,6 +8,8 @@ set_target_properties(graphite_core_application PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
+target_precompile_headers(graphite_core_application REUSE_FROM fluxion_pch)
+
 target_sources(graphite_core_application
     INTERFACE
         FILE_SET HEADERS
