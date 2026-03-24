@@ -106,13 +106,3 @@ add_custom_target(copy_assets ALL
 )
 
 add_dependencies(fluxion copy_assets)
-
-if(WIN32)
-    # This is a helper to copy DLLs of linked targets to the output dir
-    add_custom_command(TARGET fluxion POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_RUNTIME_DLLS:fluxion>
-        $<TARGET_FILE_DIR:fluxion>
-        COMMAND_EXPAND_LISTS
-    )
-endif()
