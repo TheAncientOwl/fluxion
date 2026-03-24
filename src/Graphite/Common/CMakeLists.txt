@@ -3,7 +3,7 @@ set(LIB_COMMON_SOURCES
     # DynamicLibrary.cpp
 )
 
-add_library(graphite_core_common SHARED ${LIB_COMMON_SOURCES})
+add_library(graphite_core_common STATIC ${LIB_COMMON_SOURCES})
 
 set_target_properties(graphite_core_common PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

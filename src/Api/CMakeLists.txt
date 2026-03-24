@@ -1,4 +1,4 @@
-add_library(fluxion_api SHARED
+add_library(fluxion_api STATIC
     Data.cpp
 )
 

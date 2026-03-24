@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.25)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+if(WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+endif()
+
 include(project/cmake/compile-options.cmake)
 include(project/cmake/precompiled-headers.cmake)
 
@@ -20,12 +29,6 @@ else()
     project(Fluxion LANGUAGES C CXX)
 endif()
 
-# CMake flags
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 add_subdirectory(external)
 add_subdirectory(src/Api)
 add_subdirectory(src/Graphite)
@@ -35,7 +38,6 @@ add_subdirectory(src/Application)
 set(SOURCES
     src/main.cpp
 )
-
 
 if (APPLE)
     add_executable(fluxion MACOSX_BUNDLE ${SOURCES})
@@ -104,3 +106,13 @@ add_custom_target(copy_assets ALL
 )
 
 add_dependencies(fluxion copy_assets)
+
+if(WIN32)
+    # This is a helper to copy DLLs of linked targets to the output dir
+    add_custom_command(TARGET fluxion POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_RUNTIME_DLLS:fluxion>
+        $<TARGET_FILE_DIR:fluxion>
+        COMMAND_EXPAND_LISTS
+    )
+endif()

@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.8
+/// @version 1.9
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -50,7 +50,11 @@ void Logger::SaveConfig()
     std::ofstream ofs(config_path, std::ios::trunc);
     if (!ofs.is_open())
     {
+#ifdef _WIN32
+        LOG_ERROR("Failed to open config file {}", config_path.string());
+#else
         LOG_ERROR("Failed to open config file {}", config_path.c_str());
+#endif
         return;
     }
 
