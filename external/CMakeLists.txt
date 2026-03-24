@@ -23,7 +23,7 @@ else()
     )
 endif()
 
-add_library(imgui SHARED ${IMGUI_SOURCES})
+add_library(imgui STATIC ${IMGUI_SOURCES})
 target_include_directories(imgui SYSTEM PUBLIC
     ${PROJECT_SOURCE_DIR}/external/imgui
 )
@@ -62,6 +62,8 @@ if(APPLE)
         ${METALKIT_LIBRARY}
         ${QUARTZCORE_LIBRARY}
     )
+
+    target_include_directories(imgui PUBLIC ${glfw_SOURCE_DIR}/include)
 elseif(WIN32)
     # Vulkan SDK paths
     set(Vulkan_INCLUDE_DIR "D:/VulkanSDK/1.4.341.1/Include")
