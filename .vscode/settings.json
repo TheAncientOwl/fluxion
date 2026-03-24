@@ -3,9 +3,10 @@
     "**/.git": true,
     "**/.svn": true,
     "**/.hg": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true,
-    // "**/external": true
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "external/imgui/*": true
   },
   "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.arguments": [
