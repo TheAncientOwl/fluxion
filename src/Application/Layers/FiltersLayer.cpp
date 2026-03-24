@@ -9,6 +9,8 @@
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
+#include <cstring>
+
 #include "icons/IconsCodicons.h"
 #include "imgui/imgui.h"
 

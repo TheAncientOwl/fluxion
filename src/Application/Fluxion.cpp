@@ -9,17 +9,16 @@
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
-#include "Fluxion.hpp"
-
 #include "icons/IconsCodicons.h"
+#include "imgui/imgui.h"
 
+#include "DummyPlugin.hpp"
+#include "Fluxion.hpp"
 #include "Layers/BaseLayer.hpp"
 #include "Layers/DevLayer/DevLayer.hpp"
 #include "Layers/FiltersLayer.hpp"
 #include "Layers/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"
-
-#include "DummyPlugin.hpp"
 
 namespace Fluxion::Application {
 

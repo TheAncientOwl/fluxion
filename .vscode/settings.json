@@ -5,7 +5,7 @@
     "**/.hg": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "**/external": true
+    // "**/external": true
   },
   "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.arguments": [

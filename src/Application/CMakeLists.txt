@@ -2,14 +2,14 @@ add_library(fluxion_app STATIC
     Fluxion.cpp
     AppState.cpp
 
-    layers/DevLayer/DevLayer.cpp
-    layers/DevLayer/Modules/Logger.cpp
-    layers/DevLayer/Modules/Theme.cpp
+    Layers/DevLayer/DevLayer.cpp
+    Layers/DevLayer/Modules/Logger.cpp
+    Layers/DevLayer/Modules/Theme.cpp
 
-    layers/BaseLayer.cpp
-    layers/MainMenuLayer.cpp
-    layers/LogsViewLayer.cpp
-    layers/FiltersLayer.cpp
+    Layers/BaseLayer.cpp
+    Layers/MainMenuLayer.cpp
+    Layers/LogsViewLayer.cpp
+    Layers/FiltersLayer.cpp
 )
 
 set_target_properties(fluxion_app PROPERTIES
@@ -21,6 +21,7 @@ set_target_properties(fluxion_app PROPERTIES
 # target_precompile_headers(fluxion_app REUSE_FROM fluxion_pch)
 
 target_link_libraries(fluxion_app PRIVATE
+    imgui
     fluxion_compile_options
     fluxion_api
     graphite_core_logger
@@ -28,6 +29,6 @@ target_link_libraries(fluxion_app PRIVATE
     graphite_core_application
 )
 
-target_include_directories(fluxion_app PRIVATE
-    ${PROJECT_SOURCE_DIR}/src
-)
+# target_include_directories(fluxion_app PRIVATE
+#     ${PROJECT_SOURCE_DIR}/src
+# )

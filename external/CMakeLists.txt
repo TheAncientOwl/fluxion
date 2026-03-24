@@ -23,8 +23,8 @@ else()
     )
 endif()
 
-add_library(imgui STATIC ${IMGUI_SOURCES})
+add_library(imgui SHARED ${IMGUI_SOURCES})
 
-target_include_directories(imgui PUBLIC
+target_include_directories(imgui SYSTEM PUBLIC
     ${PROJECT_SOURCE_DIR}/external/imgui
 )

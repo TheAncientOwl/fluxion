@@ -103,12 +103,8 @@ public:
             }
         }
 
-        Instance().Enqueue(
-            LogMessage{
-                level,
-                scope,
-                std::format(fmt, std::forward<Args>(args)...),
-                std::chrono::system_clock::now()});
+        Instance().Enqueue(LogMessage{
+            level, scope, std::format(fmt, std::forward<Args>(args)...), std::chrono::system_clock::now()});
     }
 
 public:

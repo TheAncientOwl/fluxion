@@ -37,8 +37,8 @@ Logger& Logger::Instance()
     return logger;
 }
 
-Logger::LogLevel::LogLevel(ELogLevel const level, std::string icon, std::string label, ImVec4 const color)
-    : value{level}, icon{std::move(icon)}, label{std::move(label)}, color{color}
+Logger::LogLevel::LogLevel(ELogLevel const p_level, std::string p_icon, std::string p_label, ImVec4 const p_color)
+    : value{p_level}, icon{std::move(p_icon)}, label{std::move(p_label)}, color{p_color}
 {
     this->display = this->icon + " " + this->label;
 }

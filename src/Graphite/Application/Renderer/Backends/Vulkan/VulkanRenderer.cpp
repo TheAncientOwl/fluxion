@@ -432,8 +432,8 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
     float main_scale =
         ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
     m_state.window = glfwCreateWindow(
-        static_cast<int>(window_configuration.width * main_scale),
-        static_cast<int>(window_configuration.height * main_scale),
+        static_cast<int>(static_cast<float>(window_configuration.width) * main_scale),
+        static_cast<int>(static_cast<float>(window_configuration.height) * main_scale),
         window_configuration.title.c_str(),
         nullptr,
         nullptr);

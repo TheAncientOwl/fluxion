@@ -11,6 +11,7 @@ set_target_properties(fluxion_api PROPERTIES
 # target_precompile_headers(fluxion_api REUSE_FROM fluxion_pch)
 
 target_link_libraries(fluxion_api PRIVATE
+    imgui
     fluxion_compile_options
     graphite_core_logger
     graphite_core_common

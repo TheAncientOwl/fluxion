@@ -3,12 +3,10 @@ add_library(fluxion_compile_options INTERFACE)
 target_compile_options(fluxion_compile_options INTERFACE
     -fdiagnostics-color
     -Wall -Wextra -Wpedantic
-    -Wconversion -Wsign-conversion
-    -Wshadow -Wformat=2 -Wundef
-    -Wnon-virtual-dtor -Wold-style-cast
-    -Woverloaded-virtual -Wnull-dereference
-    -Wdouble-promotion -Wimplicit-fallthrough
-    -Wno-error=unused-parameter
+    -Wconversion -Wshadow -Wformat=2 -Wundef
+    -Wnon-virtual-dtor -Woverloaded-virtual
+    -Wnull-dereference -Wdouble-promotion
+    -Wimplicit-fallthrough -Wno-error=unused-parameter
 )
 
 target_compile_options(fluxion_compile_options INTERFACE
