@@ -83,5 +83,10 @@ elseif(WIN32)
     )
     target_link_libraries(imgui PRIVATE ${Vulkan_LIBRARY})
 else()
-    target_link_libraries(imgui PRIVATE glfw)
+    find_package(Vulkan REQUIRED)
+    
+    target_link_libraries(imgui PRIVATE 
+        glfw 
+        Vulkan::Vulkan
+    )
 endif()

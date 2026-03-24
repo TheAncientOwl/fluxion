@@ -52,7 +52,9 @@ else()
     target_compile_definitions(graphite_core_renderer PRIVATE GRAPHITE_USE_VULKAN_API)
 endif()
 
-if (WIN32)
+if (APPLE)
+
+elseif (WIN32)
     find_package(Vulkan REQUIRED)
     if(Vulkan_FOUND)
         target_include_directories(graphite_core_renderer PRIVATE ${Vulkan_INCLUDE_DIRS})
@@ -60,4 +62,9 @@ if (WIN32)
         target_include_directories(graphite_core_renderer PRIVATE /mingw64/include)
         target_link_libraries(graphite_core_renderer PRIVATE vulkan-1)
     endif()
+else()
+    find_package(Vulkan REQUIRED)
+    target_link_libraries(graphite_core_renderer PRIVATE 
+        Vulkan::Vulkan
+    )
 endif()
