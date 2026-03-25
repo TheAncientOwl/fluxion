@@ -28,26 +28,24 @@ include(project/cmake/compile-options.cmake)
 include(project/cmake/precompiled-headers.cmake)
 
 add_subdirectory(external)
-add_subdirectory(src/Api)
-add_subdirectory(src/Graphite)
-add_subdirectory(src/Application)
+add_subdirectory(src)
 
 # --- 3. Executable Configuration ---
-set(SOURCES src/main.cpp)
+set(FLUXION_SOURCES src/main.cpp)
 
 if(APPLE)
     # Define the icon as a resource
     set(MACOS_ICON ${CMAKE_SOURCE_DIR}/assets/icons/fluxion725x725.icns)
 
     # Adding the icon to the executable sources tells CMake it's part of the bundle
-    add_executable(fluxion MACOSX_BUNDLE ${SOURCES} ${MACOS_ICON})
+    add_executable(fluxion MACOSX_BUNDLE ${FLUXION_SOURCES} ${MACOS_ICON})
 
     set_target_properties(fluxion PROPERTIES
         MACOSX_BUNDLE_ICON_FILE fluxion725x725.icns
         RESOURCE "${MACOS_ICON}"
     )
 else()
-    add_executable(fluxion ${SOURCES})
+    add_executable(fluxion ${FLUXION_SOURCES})
 endif()
 
 # --- 4. Target Properties & Linking ---
@@ -63,40 +61,23 @@ set_target_properties(fluxion PROPERTIES
 )
 
 target_link_libraries(fluxion PRIVATE
-    fluxion_compile_options
+    project_compile_options
     fluxion_app
 )
 
-target_include_directories(fluxion PRIVATE
-    external
-    src
-)
-
 # --- 5. Asset Handling ---
-
-# A: Base assets for Windows/Linux (copies to the folder where the .exe lives)
-if(NOT APPLE)
+if(APPLE)
+    # Assets for macOS Bundle (copies into Fluxion.app/Contents/Resources)
+    add_custom_command(TARGET fluxion POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:fluxion>/../Resources/assets
+        COMMENT "Copying assets into macOS App Bundle"
+    )
+else()
+    # Base assets for Windows/Linux (copies to the folder where the .exe lives)
     add_custom_command(TARGET fluxion POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:fluxion>/assets
         COMMENT "Copying assets to executable directory"
     )
 endif()
-
-# B: Assets for macOS Bundle (copies into Fluxion.app/Contents/Resources)
-if(APPLE)
-    add_custom_command(TARGET fluxion POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:fluxion>/../Resources/assets
-        COMMENT "Copying assets into macOS App Bundle"
-    )
-endif()
-
-# C: Development Sync (keeps build folder root updated for VS Code/General use)
-add_custom_target(copy_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/assets
-    ${CMAKE_BINARY_DIR}/assets
-    COMMENT "Syncing assets to build root"
-)
-add_dependencies(fluxion copy_assets)

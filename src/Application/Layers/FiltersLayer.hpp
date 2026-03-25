@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Application/AppState.hpp"
-#include "Application/Fluxion.hpp"
+#include "AppState.hpp"
+#include "Fluxion.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 
 namespace Fluxion::Application::Layers {

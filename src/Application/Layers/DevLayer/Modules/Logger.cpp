@@ -15,10 +15,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "icons/IconsCodicons.h"
-#include "imgui/imgui.h"
+#include "IconsCodicons.h"
+#include "imgui.h"
 
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 namespace Fluxion::Application::Layers::UIHelpers {
 

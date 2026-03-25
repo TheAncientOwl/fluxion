@@ -13,8 +13,8 @@
 #include "Modules/Logger.hpp"
 #include "Modules/Theme.hpp"
 
-#include "icons/IconsCodicons.h"
-#include "imgui/imgui.h"
+#include "IconsCodicons.h"
+#include "imgui.h"
 
 namespace Fluxion::Application::Layers {
 

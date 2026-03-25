@@ -14,7 +14,7 @@
 
 #include <memory>
 
-#include "Graphite/Application/Renderer/Renderer.hpp"
+#include "Graphite/Renderer/Renderer.hpp"
 
 namespace Graphite::Application::Renderer::Backends::Metal {
 

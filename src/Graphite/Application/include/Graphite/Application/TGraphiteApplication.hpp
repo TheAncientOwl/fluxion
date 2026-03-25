@@ -20,10 +20,10 @@
 #include <utility>
 #include <vector>
 
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
+#include "Graphite/Renderer/Renderer.hpp"
 #include "Layers/TLayer.hpp"
-#include "Renderer/Renderer.hpp"
 #include "WindowConfiguration.hpp"
 
 namespace Graphite::Application {

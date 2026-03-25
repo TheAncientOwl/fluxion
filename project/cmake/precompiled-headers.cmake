@@ -61,4 +61,4 @@ target_precompile_headers(fluxion_pch PRIVATE
     <stdlib.h>
 )
 
-target_link_libraries(fluxion_pch PUBLIC fluxion_compile_options)
+target_link_libraries(fluxion_pch PUBLIC project_compile_options)

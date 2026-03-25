@@ -13,7 +13,7 @@
 
 #include <utility>
 
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 namespace Graphite::Common {
 

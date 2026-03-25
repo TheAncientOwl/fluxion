@@ -3,24 +3,24 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file Renderer.cpp
+/// @file Renderer.mm
 /// @author Alexandru Delegeanu
 /// @version 1.0
 /// @brief Implementation of @see Renderer.hpp::CreateRenderer.
 ///
 
-#ifdef GRAPHITE_USE_VULKAN_API
-#include <memory>
+#ifdef GRAPHITE_USE_METAL_API
+#include "Graphite/Renderer/Renderer.hpp"
 
-#include "Backends/Vulkan/VulkanRenderer.hpp"
-#include "Renderer.hpp"
+#include "Backends/Metal/MetalRenderer.hpp"
 
 namespace Graphite::Application::Renderer {
 
 std::unique_ptr<IRenderer> CreateRenderer()
 {
-    return std::make_unique<Backends::Vulkan::VulkanRenderer>();
+    return std::make_unique<Backends::Metal::MetalRenderer>();
 }
+
 } // namespace Graphite::Application::Renderer
 
 #endif

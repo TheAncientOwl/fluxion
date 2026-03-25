@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file Data.hpp
+/// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.4
 /// @brief General data.
@@ -19,7 +19,7 @@
 #include "Graphite/Common/TWithFlags.hpp"
 #include "Graphite/Common/UniqueID.hpp"
 
-#include "imgui/imgui.h"
+#include "imgui.h"
 
 namespace Fluxion::API::Data {
 

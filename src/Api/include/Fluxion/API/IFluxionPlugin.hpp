@@ -17,7 +17,7 @@
 
 #include "Graphite/Common/GraphiteExport.hpp"
 
-#include "Data.hpp"
+#include "Fluxion/API/Data.hpp"
 
 namespace Fluxion::API {
 

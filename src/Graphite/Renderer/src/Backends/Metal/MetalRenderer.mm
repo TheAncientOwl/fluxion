@@ -12,7 +12,7 @@
 #include <exception>
 
 #include "Graphite/Application/WindowConfiguration.hpp"
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 #include "MetalRenderer.hpp"
 #include "MetalRendererState.mm"

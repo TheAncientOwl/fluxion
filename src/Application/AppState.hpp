@@ -13,8 +13,8 @@
 
 #include <memory>
 
-#include "Api/Data.hpp"
-#include "Api/IFluxionPlugin.hpp"
+#include "Fluxion/API/Data.hpp"
+#include "Fluxion/API/IFluxionPlugin.hpp"
 
 namespace Fluxion::Application {
 

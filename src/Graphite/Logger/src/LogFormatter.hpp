@@ -13,7 +13,8 @@
 
 #include <ostream>
 #include <string_view>
-#include "Graphite/Logger/Logger.hpp"
+
+#include "Graphite/Logger.hpp"
 
 namespace Graphite::Logger::Private::Formatter {
 

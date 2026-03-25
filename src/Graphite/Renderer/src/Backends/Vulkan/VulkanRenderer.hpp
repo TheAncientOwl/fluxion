@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "Graphite/Application/Renderer/Renderer.hpp"
+#include "Graphite/Renderer/Renderer.hpp"
 
 #ifdef GRAPHITE_USE_VULKAN_API
 #include <vulkan/vulkan.h>

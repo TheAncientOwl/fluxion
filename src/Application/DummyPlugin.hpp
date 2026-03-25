@@ -9,10 +9,10 @@
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
-#include "Api/Data.hpp"
-#include "Api/IFluxionPlugin.hpp"
+#include "Fluxion/API/Data.hpp"
+#include "Fluxion/API/IFluxionPlugin.hpp"
 
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 #include <filesystem>
 #include <random>

@@ -13,7 +13,7 @@
 
 #include <string_view>
 
-#include "imgui/imgui.h"
+#include "imgui.h"
 
 namespace Fluxion::Application::Layers::Modules::DevLayer {
 

@@ -9,8 +9,8 @@
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
-#include "icons/IconsCodicons.h"
-#include "imgui/imgui.h"
+#include "IconsCodicons.h"
+#include "imgui.h"
 
 #include "DummyPlugin.hpp"
 #include "Fluxion.hpp"

@@ -1,15 +1,16 @@
+# --- 1. Implementation ---
 add_library(fluxion_app STATIC
-    Fluxion.cpp
-    AppState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Fluxion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/AppState.cpp
 
-    Layers/DevLayer/DevLayer.cpp
-    Layers/DevLayer/Modules/Logger.cpp
-    Layers/DevLayer/Modules/Theme.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/DevLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/Modules/Logger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/Modules/Theme.cpp
 
-    Layers/BaseLayer.cpp
-    Layers/MainMenuLayer.cpp
-    Layers/LogsViewLayer.cpp
-    Layers/FiltersLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/BaseLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/MainMenuLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer.cpp
 )
 
 set_target_properties(fluxion_app PROPERTIES
@@ -20,11 +21,16 @@ set_target_properties(fluxion_app PROPERTIES
 
 # target_precompile_headers(fluxion_app REUSE_FROM fluxion_pch)
 
-target_link_libraries(fluxion_app PRIVATE
-    imgui
-    fluxion_compile_options
-    fluxion_api
-    graphite_core_logger
-    graphite_core_renderer
-    graphite_core_application
+target_link_libraries(fluxion_app PUBLIC
+    external_imgui
+    external_icons_codicons
+    project_compile_options
+    graphite_interface
+    graphite_impl
+    fluxion_api_interface
+    fluxion_api_impl
+)
+
+target_include_directories(fluxion_app PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )

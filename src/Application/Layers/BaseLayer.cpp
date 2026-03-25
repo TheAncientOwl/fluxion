@@ -10,10 +10,8 @@
 ///
 
 #include "BaseLayer.hpp"
-#include "FiltersLayer.hpp"
-#include "LogsViewLayer.hpp"
 
-#include "imgui/imgui.h"
+#include "imgui.h"
 
 namespace Fluxion::Application::Layers {
 

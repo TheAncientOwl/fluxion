@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include "Application/Fluxion.hpp"
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 int main()
 {

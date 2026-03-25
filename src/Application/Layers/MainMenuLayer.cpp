@@ -10,15 +10,10 @@
 ///
 
 #include "MainMenuLayer.hpp"
-#include "DevLayer/DevLayer.hpp"
-#include "FiltersLayer.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
-#include "LogsViewLayer.hpp"
 
-#include "icons/IconsCodicons.h"
-#include "imgui/imgui.h"
-
-#include "Api/DataIO.hpp"
+#include "IconsCodicons.h"
+#include "imgui.h"
 
 namespace Fluxion::Application::Layers {
 

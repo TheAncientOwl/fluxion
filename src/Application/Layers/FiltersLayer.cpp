@@ -11,12 +11,12 @@
 
 #include <cstring>
 
-#include "icons/IconsCodicons.h"
-#include "imgui/imgui.h"
+#include "IconsCodicons.h"
+#include "imgui.h"
 
 #include "FiltersLayer.hpp"
 
-#include "Api/DataIO.hpp"
+#include "Fluxion/API/DataIO.hpp"
 
 namespace Fluxion::Application::Layers {
 

@@ -9,7 +9,7 @@
 /// @brief Implementation of @see Theme.hpp.
 ///
 
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 namespace Fluxion::Application::Layers::Modules::DevLayer {
 

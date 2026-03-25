@@ -16,11 +16,11 @@
 #include <iostream>
 #include <sstream>
 
-#include "icons/IconsCodicons.h"
+#include "IconsCodicons.h"
 
-#include "Logger.hpp"
-#include "Private/Ansi.hpp"
-#include "Private/LogFormatter.hpp"
+#include "Ansi.hpp"
+#include "Graphite/Logger.hpp"
+#include "LogFormatter.hpp"
 
 using namespace std::string_literals;
 

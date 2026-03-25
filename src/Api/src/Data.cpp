@@ -6,12 +6,10 @@
 /// @file FiltersTabs.cpp
 /// @author Alexandru Delegeanu
 /// @version 0.1
-/// @brief Implementation of @see Data.hpp::FiltersTabs.
+/// @brief Implementation of @see Fluxion/Data.hpp::FiltersTabs.
 ///
 
-#include "Data.hpp"
-
-#include "Graphite/Logger/Logger.hpp"
+#include "Fluxion/API/Data.hpp"
 
 #include <algorithm>
 #include <iterator>

@@ -10,7 +10,7 @@
 ///
 
 #include "VulkanRenderer.hpp"
-#include "Graphite/Logger/Logger.hpp"
+#include "Graphite/Logger.hpp"
 
 #include <exception>
 

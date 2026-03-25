@@ -1,6 +1,6 @@
-add_library(fluxion_compile_options INTERFACE)
+add_library(project_compile_options INTERFACE)
 
-target_compile_options(fluxion_compile_options INTERFACE
+target_compile_options(project_compile_options INTERFACE
     -fdiagnostics-color
     -Wall -Wextra -Wpedantic
     -Wconversion -Wshadow -Wformat=2 -Wundef
@@ -9,7 +9,7 @@ target_compile_options(fluxion_compile_options INTERFACE
     -Wimplicit-fallthrough -Wno-error=unused-parameter
 )
 
-target_compile_options(fluxion_compile_options INTERFACE
+target_compile_options(project_compile_options INTERFACE
     $<$<CXX_COMPILER_ID:Clang>:
         -Wno-padded
         -Wno-exit-time-destructors
@@ -18,7 +18,7 @@ target_compile_options(fluxion_compile_options INTERFACE
     >
 )
 
-target_compile_options(fluxion_compile_options INTERFACE
+target_compile_options(project_compile_options INTERFACE
     $<$<CONFIG:Debug>:
         -O1 -g -fno-omit-frame-pointer
         # -fsanitize=address,undefined
@@ -28,7 +28,7 @@ target_compile_options(fluxion_compile_options INTERFACE
     >
 )
 
-target_link_options(fluxion_compile_options INTERFACE
+target_link_options(project_compile_options INTERFACE
     $<$<CONFIG:Debug>:
         # -fsanitize=address,undefined
     >
