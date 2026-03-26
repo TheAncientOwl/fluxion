@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.9
+/// @version 1.10
 /// @brief Logging utilities
 ///
 
@@ -22,6 +22,7 @@
 #include <mutex>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 
@@ -57,11 +58,7 @@ struct LogScopeFlags : public Graphite::Common::TWithFlags<LogScopeFlags, ELogLe
     using Base = Graphite::Common::TWithFlags<LogScopeFlags, ELogLevel>;
     using Storage = Base::Storage;
 
-    [[nodiscard]]
-    Storage GetStorage() const noexcept
-    {
-        return this->flags;
-    }
+    [[nodiscard]] Storage GetStorage() const noexcept { return this->flags; }
 
     void SetStorage(Storage storage) noexcept { this->flags = storage; }
 };
@@ -76,53 +73,63 @@ struct GlobalLogLevel
     ImVec4 color{};
 };
 
+struct StringHash
+{
+    using is_transparent = void;
+
+    [[nodiscard]] size_t operator()(std::string_view sv) const
+    {
+        return std::hash<std::string_view>{}(sv);
+    }
+
+    [[nodiscard]] size_t operator()(std::string const& str) const
+    {
+        return std::hash<std::string>{}(str);
+    }
+};
+
 class Logger
 {
 public: // Types
-    using ScopeEnabledMap = std::unordered_map<std::string, LogScopeFlags>;
+    using ScopeEnabledMap =
+        std::unordered_map<std::string, LogScopeFlags, StringHash, std::equal_to<>>;
     using LogLevels = std::array<GlobalLogLevel, 7>;
 
 public: // Singleton
     static Logger& Instance();
     ~Logger();
 
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
 public: // API
     template <typename... Args>
-    void Log(ELogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
+    void Log(ELogLevel level, std::string_view scope, std::format_string<Args...> fmt, Args&&... args)
     {
-        {
-            std::string key(scope);
-            std::lock_guard lock(m_scope_mutex);
-
-            auto it = m_scope_enabled.find(key);
-            if (it == m_scope_enabled.end())
-            {
-                auto flags = GetDefaultScopeFlags();
-                m_scope_enabled.emplace(key, flags);
-            }
-        }
-
         if (!IsLevelEnabled(level))
         {
             return;
         }
 
         {
-            std::string key(scope);
-            std::lock_guard lock(m_scope_mutex);
+            std::lock_guard lock{m_scope_mutex};
+            auto it = m_scope_enabled.find(scope);
 
-            auto it = m_scope_enabled.find(key);
-            if (it != m_scope_enabled.end())
+            if (it == m_scope_enabled.end())
             {
-                if (!it->second[level])
-                    return;
+                it = m_scope_enabled.emplace(std::string{scope}, GetDefaultScopeFlags()).first;
+            }
+
+            if (!it->second[level])
+            {
+                return;
             }
         }
 
         Enqueue(
             LogMessage{
                 level,
-                scope,
+                std::string(scope),
                 std::format(fmt, std::forward<Args>(args)...),
                 std::chrono::system_clock::now()});
     }
@@ -131,13 +138,13 @@ public: // API
     void LoadConfig();
 
     ScopeEnabledMap const& GetScopes() const;
-    LogLevels const& GetLevels();
+    static LogLevels const& GetLevels();
 
-    void SetScopeEnabled(std::string scope, bool const enabled);
-    void SetScopeLevelEnabled(std::string scope, ELogLevel const level, bool const enabled);
+    void SetScopeEnabled(std::string_view scope, bool const enabled);
+    void SetScopeLevelEnabled(std::string_view scope, ELogLevel const level, bool const enabled);
 
     void SetLevelState(ELogLevel const level, bool const enabled);
-    bool IsLevelEnabled(ELogLevel const level);
+    [[nodiscard]] bool IsLevelEnabled(ELogLevel const level) const noexcept;
 
 private:
     static std::filesystem::path GetConfigFilePath();
@@ -163,16 +170,19 @@ private:
 
     std::mutex m_scope_mutex;
     ScopeEnabledMap m_scope_enabled;
+    std::atomic<uint8_t> m_global_level_mask;
 };
 
 class ScopeLogger
 {
 public:
-    ScopeLogger(std::string tag, std::string scope);
+    // Scope can be string_view because __PRETTY_FUNCTION__ has static lifetime.
+    // Tag MUST be std::string because std::format returns a temporary that would dangle.
+    ScopeLogger(std::string tag, std::string_view scope);
     ~ScopeLogger();
 
 private:
-    std::string m_scope;
+    std::string_view m_scope;
     std::string m_tag;
     std::chrono::high_resolution_clock::time_point m_start;
 };
@@ -220,7 +230,6 @@ private:
         std::format(fmt __VA_OPT__(, ) __VA_ARGS__), __PRETTY_FUNCTION__ \
     }
 
-// TODO: improve?
 #define GRAPHITE_ASSERT(condition, message)                                                    \
     do                                                                                         \
     {                                                                                          \

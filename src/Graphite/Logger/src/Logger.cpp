@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.10
+/// @version 1.11
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -71,7 +71,6 @@ void Logger::LoadConfig()
     std::ifstream ifs(config_path);
     if (!ifs.is_open())
     {
-        // No config file, silently return
         return;
     }
 
@@ -112,18 +111,21 @@ void Logger::LoadConfig()
         }
 
         flags.SetStorage(static_cast<LogScopeFlags::Storage>(storage));
-
         m_scope_enabled[std::move(name)] = flags;
+
+        if (name == GetGlobalScopeKey())
+        {
+            m_global_level_mask.store(flags.GetStorage(), std::memory_order_relaxed);
+        }
     }
 }
 
 std::filesystem::path Logger::GetConfigFilePath()
 {
-    // TODO: Move home path to general utils
     const char* home = std::getenv("HOME");
     if (!home)
     {
-        home = std::getenv("USERPROFILE"); // Windows fallback
+        home = std::getenv("USERPROFILE");
         if (!home)
         {
             throw std::runtime_error("Cannot determine home directory for config file");
@@ -165,11 +167,10 @@ void Logger::Enqueue(LogMessage&& msg)
 LogScopeFlags Logger::GetDefaultScopeFlags()
 {
     LogScopeFlags flags;
-    for (auto const& log_level : Instance().GetLevels())
+    for (auto const& log_level : GetLevels())
     {
         flags[log_level.value] = true;
     }
-
     return flags;
 }
 
@@ -181,51 +182,59 @@ std::string const& Logger::GetGlobalScopeKey()
 
 void Logger::SetLevelState(ELogLevel const level, bool const enabled)
 {
+    uint8_t current_mask = m_global_level_mask.load(std::memory_order_relaxed);
+    if (enabled)
+    {
+        current_mask |= static_cast<uint8_t>(level);
+    }
+    else
+    {
+        current_mask &= ~static_cast<uint8_t>(level);
+    }
+    m_global_level_mask.store(current_mask, std::memory_order_relaxed);
+
+    // Keep the map synchronized so SaveConfig() works
     std::lock_guard lock{m_scope_mutex};
     auto& flags = m_scope_enabled[GetGlobalScopeKey()];
     if (flags.GetStorage() == 0)
     {
         flags = GetDefaultScopeFlags();
     }
-
     flags[level] = enabled;
 }
 
-bool Logger::IsLevelEnabled(ELogLevel level)
+bool Logger::IsLevelEnabled(ELogLevel const level) const noexcept
 {
-    std::lock_guard lock{m_scope_mutex};
-    auto it = m_scope_enabled.find(GetGlobalScopeKey());
-    if (it == m_scope_enabled.end())
-    {
-        auto const flags = GetDefaultScopeFlags();
-        m_scope_enabled.emplace(GetGlobalScopeKey(), flags);
-        return flags[level];
-    }
-
-    return it->second[level];
+    return (m_global_level_mask.load(std::memory_order_relaxed) & static_cast<uint8_t>(level)) != 0;
 }
 
-void Logger::SetScopeEnabled(std::string scope, bool const enabled)
+void Logger::SetScopeEnabled(std::string_view scope, bool const enabled)
 {
     std::lock_guard lock{m_scope_mutex};
-    auto& flags = m_scope_enabled[std::move(scope)];
-    if (flags.GetStorage() == 0)
+    auto it = m_scope_enabled.find(scope);
+
+    if (it == m_scope_enabled.end())
     {
-        flags = GetDefaultScopeFlags();
+        it = m_scope_enabled.emplace(std::string(scope), GetDefaultScopeFlags()).first;
     }
 
     for (auto const& log_level : GetLevels())
     {
-        flags[log_level.value] = enabled;
+        it->second[log_level.value] = enabled;
     }
 }
 
-void Logger::SetScopeLevelEnabled(std::string scope, ELogLevel const level, bool const enabled)
+void Logger::SetScopeLevelEnabled(std::string_view scope, ELogLevel const level, bool const enabled)
 {
     std::lock_guard lock{m_scope_mutex};
-    auto& flags = m_scope_enabled[std::move(scope)];
+    auto it = m_scope_enabled.find(scope);
 
-    flags[level] = enabled;
+    if (it == m_scope_enabled.end())
+    {
+        it = m_scope_enabled.emplace(std::string(scope), GetDefaultScopeFlags()).first;
+    }
+
+    it->second[level] = enabled;
 }
 
 Logger::ScopeEnabledMap const& Logger::GetScopes() const
@@ -258,11 +267,10 @@ Logger::~Logger()
 
 std::filesystem::path Logger::GetLogFilePath()
 {
-    // TODO: Move home path to general utils
     const char* home = std::getenv("HOME");
     if (!home)
     {
-        home = std::getenv("USERPROFILE"); // Windows fallback
+        home = std::getenv("USERPROFILE");
         if (!home)
         {
             throw std::runtime_error("Cannot determine home directory for log file");
@@ -280,7 +288,10 @@ std::filesystem::path Logger::GetLogFilePath()
 }
 
 Logger::Logger()
-    : m_running{true}, m_log_file{Logger::GetLogFilePath(), std::ios::trunc}, m_worker{}
+    : m_running{true}
+    , m_log_file{Logger::GetLogFilePath(), std::ios::trunc}
+    , m_worker{}
+    , m_global_level_mask{GetDefaultScopeFlags().GetStorage()}
 {
     if (!m_log_file.is_open())
     {
@@ -336,8 +347,6 @@ void Logger::ProcessQueue()
 
 void Logger::PrintMessage(const LogMessage& msg)
 {
-    // Format: | HH:MM:SS:ms:ns | LEVEL | Scope::Subscope: Message
-
     auto const duration_since_epoch = msg.time.time_since_epoch();
     auto const seconds_since_epoch =
         std::chrono::duration_cast<std::chrono::seconds>(duration_since_epoch);
@@ -396,7 +405,7 @@ void Logger::PrintMessage(const LogMessage& msg)
     }
 }
 
-ScopeLogger::ScopeLogger(std::string tag, std::string scope)
+ScopeLogger::ScopeLogger(std::string tag, std::string_view scope)
     : m_scope{scope}, m_tag{std::move(tag)}, m_start{}
 {
     if (!Logger::Instance().IsLevelEnabled(ELogLevel::Scope))
