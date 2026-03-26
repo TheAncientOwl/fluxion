@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -35,8 +35,20 @@ public:
 
     virtual Fluxion::API::Data::LogsTableHeader GetTableHeader() const = 0;
     virtual std::size_t GetTotalLogs() const = 0;
-    virtual Fluxion::API::Data::LogsChunk GetLogsChunk(std::size_t const begin, std::size_t const end)
-        const = 0;
+
+    /**
+     * @brief Get the Logs Chunk object
+     *
+     * @param begin inclusive
+     * @param end exclusive
+     * @param out vector<vector<string>> with memory already allocated
+     *
+     * @return how many rows were filled
+     */
+    virtual std::size_t GetLogsChunk(
+        std::size_t const begin,
+        std::size_t const end,
+        std::vector<std::vector<std::string>>& out) const = 0;
 
     virtual ~IFluxionPlugin() = default;
 };

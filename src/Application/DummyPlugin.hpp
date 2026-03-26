@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -37,7 +37,7 @@ public:
 
         for (std::size_t i = 0; i < 1000; ++i)
         {
-            Fluxion::API::Data::LogRow entry{};
+            std::vector<std::string> entry{};
             entry.push_back(std::string("2026-01-01 12:00:") + (i < 10 ? "0" : "") + std::to_string(i));
             auto const channel_idx{static_cast<std::size_t>(std::max(0, channel_dist(gen)))};
             entry.push_back(channels[channel_idx]);
@@ -87,22 +87,46 @@ public:
 
     std::size_t GetTotalLogs() const override { return m_logs.size(); }
 
-    Fluxion::API::Data::LogsChunk GetLogsChunk(std::size_t const begin, std::size_t const end) const override
+    std::size_t GetLogsChunk(
+        std::size_t const begin,
+        std::size_t const end,
+        std::vector<std::vector<std::string>>& out) const override
     {
-        Fluxion::API::Data::LogsChunk chunk;
-        if (begin >= m_logs.size() || begin >= end)
-            return chunk;
+        LOG_INFO("Begin {} | End {}", begin, end);
 
-        std::size_t actual_end = (end > m_logs.size()) ? m_logs.size() : end;
-        chunk.insert(
-            chunk.end(),
-            m_logs.begin() + static_cast<Fluxion::API::Data::LogsChunk::difference_type>(begin),
-            m_logs.begin() + static_cast<Fluxion::API::Data::LogsChunk::difference_type>(actual_end));
-        return chunk;
+        // 1. Validation & Early Exit
+        if (m_logs.empty() || begin >= m_logs.size() || begin >= end)
+        {
+            return 0;
+        }
+
+        // 2. Calculate safe bounds
+        // We only copy what we actually have in m_logs
+        std::size_t const row_count = std::min(end, m_logs.size()) - begin;
+
+        // 3. Perform the copy into the pre-allocated 'out' pool
+        for (std::size_t i = 0; i < row_count; ++i)
+        {
+            auto const& source_row = m_logs[begin + i];
+            auto& target_row = out[i];
+
+            GRAPHITE_ASSERT(
+                source_row.size() == target_row.size(),
+                std::string{"source_row.size() {"} + std::to_string(source_row.size()) +
+                    "} does not match target_row.size() {" + std::to_string(target_row.size()) +
+                    "}");
+
+            for (std::size_t col_idx = 0; col_idx < target_row.size(); ++col_idx)
+            {
+                target_row[col_idx] = source_row[col_idx];
+            }
+        }
+
+        return row_count;
     }
 
 private:
-    std::vector<Fluxion::API::Data::LogRow> m_logs;
+    std::vector<std::vector<std::string>> m_logs;
 };
 
 } // namespace Fluxion::Application

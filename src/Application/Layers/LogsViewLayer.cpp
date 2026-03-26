@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -70,7 +70,7 @@ inline std::string_view LogsViewLayer::GetDisplayName() const noexcept
 void LogsViewLayer::RenderLogsTable()
 {
     auto& app_state{m_application->GetApplicationState()};
-    auto const headers{app_state.logs_logic->GetTableHeader()};
+    auto const& headers{app_state.logs_logic->GetTableHeader()};
 
     ImGui::BeginChild("LogsTableRegion");
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 5));
@@ -84,36 +84,51 @@ void LogsViewLayer::RenderLogsTable()
     {
         ImGui::TableSetupScrollFreeze(1, 1);
 
-        std::for_each(headers.cbegin(), headers.cend(), [](auto const& header) {
+        for (const auto& header : headers)
+        {
             ImGui::TableSetupColumn(header.c_str());
-        });
+        }
         ImGui::TableHeadersRow();
 
         ImGuiListClipper clipper{};
         clipper.Begin(static_cast<int>(app_state.logs_logic->GetTotalLogs()));
 
+        // TODO: resize the data when the imported logs change
+        static std::vector<std::vector<std::string>> s_logs_chunk{};
+
         while (clipper.Step())
         {
-            LOG_INFO("Rendering from {} to {}", clipper.DisplayStart, clipper.DisplayEnd - 1);
+            const size_t new_size = static_cast<size_t>(clipper.DisplayEnd - clipper.DisplayStart);
 
-            auto const logs_chunk = app_state.logs_logic->GetLogsChunk(
-                static_cast<std::size_t>(clipper.DisplayStart),
-                static_cast<std::size_t>(clipper.DisplayEnd));
-            for (auto const& log_row : logs_chunk)
+            if (new_size > s_logs_chunk.size())
+            {
+                auto const old_size = s_logs_chunk.size();
+                s_logs_chunk.resize(new_size);
+
+                for (size_t row_idx = old_size; row_idx < new_size; ++row_idx)
+                {
+                    s_logs_chunk[row_idx].resize(headers.size());
+                }
+            }
+
+            auto const filled_size = app_state.logs_logic->GetLogsChunk(
+                static_cast<size_t>(clipper.DisplayStart),
+                static_cast<size_t>(clipper.DisplayEnd),
+                s_logs_chunk);
+
+            for (size_t log_idx = 0, size = std::min(new_size, filled_size); log_idx < size; ++log_idx)
             {
                 ImGui::TableNextRow();
-
-                for (auto const& log_field : log_row)
+                for (const auto& log_field : s_logs_chunk[log_idx])
                 {
                     ImGui::TableNextColumn();
-                    ImGui::Text("%s", log_field.c_str());
+                    ImGui::TextUnformatted(log_field.c_str());
                 }
             }
         }
         ImGui::EndTable();
     }
     ImGui::PopStyleVar();
-
     ImGui::EndChild();
 }
 
