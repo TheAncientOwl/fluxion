@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -323,7 +323,7 @@ void RenderCppSignature(std::string_view line)
 void RenderLogger()
 {
     LOG_SCOPE("");
-    using Logger = Graphite::Logger::Logger;
+    auto& Logger = Graphite::Logger::Logger::Instance();
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text(ICON_CI_TASKLIST " Levels");
@@ -336,7 +336,7 @@ void RenderLogger()
         ImVec2(0, ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y),
         ImGuiChildFlags_None,
         ImGuiWindowFlags_HorizontalScrollbar);
-    auto const levels{Logger::GetLevels()};
+    auto const levels{Logger.GetLevels()};
     for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
     {
         auto const& log_level{levels[level_idx]};
@@ -356,10 +356,10 @@ void RenderLogger()
         ImGui::PushStyleColor(ImGuiCol_FrameBgActive, bg_active);
         ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4{0.15f, 0.15f, 0.15f, 1.00f});
 
-        bool enabled{Logger::IsLevelEnabled(log_level.value)};
+        bool enabled{Logger.IsLevelEnabled(log_level.value)};
         if (ImGui::Checkbox(log_level.display.data(), &enabled))
         {
-            Logger::SetLevelState(log_level.value, enabled);
+            Logger.SetLevelState(log_level.value, enabled);
         }
 
         ImGui::PopStyleColor(4);
@@ -382,7 +382,7 @@ void RenderLogger()
     ImGui::InputTextWithHint("##Search", "Type to filter scopes...", filter, sizeof(filter));
 
     static std::size_t s_last_scopes_count{0};
-    auto scopes = Logger::GetScopes();
+    auto scopes = Logger.GetScopes();
     static std::vector<std::pair<std::string_view, Graphite::Logger::LogScopeFlags>> s_sorted_scopes{};
     {
         s_sorted_scopes.resize(scopes.size());
@@ -437,7 +437,7 @@ void RenderLogger()
         for (size_t idx : s_filtered_indices)
         {
             auto const& [scope, _] = s_sorted_scopes[idx];
-            Logger::SetScopeEnabled(std::string{scope}, true);
+            Logger.SetScopeEnabled(std::string{scope}, true);
         }
     }
 
@@ -448,7 +448,7 @@ void RenderLogger()
         for (size_t idx : s_filtered_indices)
         {
             auto const& [scope, _] = s_sorted_scopes[idx];
-            Logger::SetScopeEnabled(std::string{scope}, false);
+            Logger.SetScopeEnabled(std::string{scope}, false);
         }
     }
 
@@ -501,7 +501,7 @@ void RenderLogger()
                     ImGui::PushID(static_cast<int>(level_idx));
                     if (ImGui::Checkbox("##level", &value))
                     {
-                        Logger::SetScopeLevelState(std::string{scope}, log_level.value, value);
+                        Logger.SetScopeLevelEnabled(std::string{scope}, log_level.value, value);
                     }
                     ImGui::PopID();
 

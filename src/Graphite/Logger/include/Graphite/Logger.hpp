@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.8
+/// @version 1.9
 /// @brief Logging utilities
 ///
 
@@ -66,23 +66,39 @@ struct LogScopeFlags : public Graphite::Common::TWithFlags<LogScopeFlags, ELogLe
     void SetStorage(Storage storage) noexcept { this->flags = storage; }
 };
 
+struct GlobalLogLevel
+{
+    GlobalLogLevel(ELogLevel const value, std::string icon, std::string label, ImVec4 const color);
+    ELogLevel value{};
+    std::string icon{};
+    std::string label{};
+    std::string display{};
+    ImVec4 color{};
+};
+
 class Logger
 {
-public:
+public: // Types
+    using ScopeEnabledMap = std::unordered_map<std::string, LogScopeFlags>;
+    using LogLevels = std::array<GlobalLogLevel, 7>;
+
+public: // Singleton
+    static Logger& Instance();
     ~Logger();
 
+public: // API
     template <typename... Args>
-    static void log(ELogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
+    void Log(ELogLevel level, std::string scope, std::format_string<Args...> fmt, Args&&... args)
     {
         {
             std::string key(scope);
-            std::lock_guard lock(s_scope_mutex);
+            std::lock_guard lock(m_scope_mutex);
 
-            auto it = s_scope_enabled.find(key);
-            if (it == s_scope_enabled.end())
+            auto it = m_scope_enabled.find(key);
+            if (it == m_scope_enabled.end())
             {
                 auto flags = GetDefaultScopeFlags();
-                s_scope_enabled.emplace(key, flags);
+                m_scope_enabled.emplace(key, flags);
             }
         }
 
@@ -93,17 +109,17 @@ public:
 
         {
             std::string key(scope);
-            std::lock_guard lock(s_scope_mutex);
+            std::lock_guard lock(m_scope_mutex);
 
-            auto it = s_scope_enabled.find(key);
-            if (it != s_scope_enabled.end())
+            auto it = m_scope_enabled.find(key);
+            if (it != m_scope_enabled.end())
             {
                 if (!it->second[level])
                     return;
             }
         }
 
-        Instance().Enqueue(
+        Enqueue(
             LogMessage{
                 level,
                 scope,
@@ -111,52 +127,42 @@ public:
                 std::chrono::system_clock::now()});
     }
 
-public:
-    static void SaveConfig();
-    static void LoadConfig();
-    static std::filesystem::path GetConfigFilePath();
+    void SaveConfig();
+    void LoadConfig();
+
+    ScopeEnabledMap const& GetScopes() const;
+    LogLevels const& GetLevels();
+
+    void SetScopeEnabled(std::string scope, bool const enabled);
+    void SetScopeLevelEnabled(std::string scope, ELogLevel const level, bool const enabled);
+
+    void SetLevelState(ELogLevel const level, bool const enabled);
+    bool IsLevelEnabled(ELogLevel const level);
 
 private:
+    static std::filesystem::path GetConfigFilePath();
     static std::filesystem::path GetLogFilePath();
-    static Logger& Instance();
+
     Logger();
 
     void Enqueue(LogMessage&& msg);
     void ProcessQueue();
     void PrintMessage(LogMessage const& msg);
+
     static LogScopeFlags GetDefaultScopeFlags();
     static std::string const& GetGlobalScopeKey();
 
-public:
-    using ScopeEnabledMap = std::unordered_map<std::string, LogScopeFlags>;
-    static ScopeEnabledMap GetScopes();
-    static void SetScopeEnabled(std::string scope, bool enabled);
-    static void SetScopeLevelState(std::string scope, ELogLevel const level, bool const enabled);
-
-    struct LogLevel
-    {
-        LogLevel(ELogLevel const value, std::string icon, std::string label, ImVec4 const color);
-        ELogLevel value{};
-        std::string icon{};
-        std::string label{};
-        std::string display{};
-        ImVec4 color{};
-    };
-    using LogLevels = std::array<LogLevel, 7>;
-    static LogLevels const& GetLevels();
-    static void SetLevelState(ELogLevel const level, bool const enabled);
-    static bool IsLevelEnabled(ELogLevel const level);
-
 private:
-    std::queue<LogMessage> m_queue;
-    std::mutex m_queue_mutex;
-    std::condition_variable m_cv;
     std::atomic<bool> m_running;
-    std::thread m_worker;
     std::ofstream m_log_file;
+    std::thread m_worker;
+    std::condition_variable m_cv;
 
-    static std::mutex s_scope_mutex;
-    static ScopeEnabledMap s_scope_enabled;
+    std::mutex m_queue_mutex;
+    std::queue<LogMessage> m_queue;
+
+    std::mutex m_scope_mutex;
+    ScopeEnabledMap m_scope_enabled;
 };
 
 class ScopeLogger
@@ -183,29 +189,29 @@ private:
 #define LOG_SCOPE(fmt, ...)
 #define GRAPHITE_ASSERT(condition, message)
 #else
-#define LOG_TRACE(fmt, ...)          \
-    ::Graphite::Logger::Logger::log( \
+#define LOG_TRACE(fmt, ...)                     \
+    ::Graphite::Logger::Logger::Instance().Log( \
         ::Graphite::Logger::ELogLevel::Trace, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_INFO(fmt, ...)           \
-    ::Graphite::Logger::Logger::log( \
+#define LOG_INFO(fmt, ...)                      \
+    ::Graphite::Logger::Logger::Instance().Log( \
         ::Graphite::Logger::ELogLevel::Info, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_WARN(fmt, ...)           \
-    ::Graphite::Logger::Logger::log( \
+#define LOG_WARN(fmt, ...)                      \
+    ::Graphite::Logger::Logger::Instance().Log( \
         ::Graphite::Logger::ELogLevel::Warn, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_ERROR(fmt, ...)          \
-    ::Graphite::Logger::Logger::log( \
+#define LOG_ERROR(fmt, ...)                     \
+    ::Graphite::Logger::Logger::Instance().Log( \
         ::Graphite::Logger::ELogLevel::Error, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_CRITICAL(fmt, ...)                                                                         \
-    ::Graphite::Logger::Logger::log(                                                                   \
+    ::Graphite::Logger::Logger::Instance().Log(                                                        \
         ::Graphite::Logger::ELogLevel::Critical, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__); \
     std::this_thread::sleep_for(std::chrono::seconds{2})
 
-#define LOG_DEBUG(fmt, ...)          \
-    ::Graphite::Logger::Logger::log( \
+#define LOG_DEBUG(fmt, ...)                     \
+    ::Graphite::Logger::Logger::Instance().Log( \
         ::Graphite::Logger::ELogLevel::Debug, __PRETTY_FUNCTION__, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_SCOPE(fmt, ...)                                              \

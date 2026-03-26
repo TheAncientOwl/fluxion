@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.9
+/// @version 1.10
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -28,16 +28,13 @@ namespace Graphite::Logger {
 
 static std::mutex g_write_mutex;
 
-Logger::ScopeEnabledMap Logger::s_scope_enabled{};
-std::mutex Logger::s_scope_mutex{};
-
 Logger& Logger::Instance()
 {
     static Logger logger{};
     return logger;
 }
 
-Logger::LogLevel::LogLevel(ELogLevel const p_level, std::string p_icon, std::string p_label, ImVec4 const p_color)
+GlobalLogLevel::GlobalLogLevel(ELogLevel const p_level, std::string p_icon, std::string p_label, ImVec4 const p_color)
     : value{p_level}, icon{std::move(p_icon)}, label{std::move(p_label)}, color{p_color}
 {
     this->display = this->icon + " " + this->label;
@@ -59,9 +56,9 @@ void Logger::SaveConfig()
     }
 
     {
-        std::lock_guard lock{s_scope_mutex};
+        std::lock_guard lock{m_scope_mutex};
 
-        for (auto const& [scope, enabled] : s_scope_enabled)
+        for (auto const& [scope, enabled] : m_scope_enabled)
         {
             ofs << static_cast<int>(enabled.GetStorage()) << " " << scope << "\n";
         }
@@ -82,7 +79,7 @@ void Logger::LoadConfig()
     std::string state{};
     std::string name{};
 
-    std::lock_guard lock{s_scope_mutex};
+    std::lock_guard lock{m_scope_mutex};
     while (std::getline(ifs, line))
     {
         std::istringstream iss(line);
@@ -116,7 +113,7 @@ void Logger::LoadConfig()
 
         flags.SetStorage(static_cast<LogScopeFlags::Storage>(storage));
 
-        s_scope_enabled[std::move(name)] = flags;
+        m_scope_enabled[std::move(name)] = flags;
     }
 }
 
@@ -168,7 +165,7 @@ void Logger::Enqueue(LogMessage&& msg)
 LogScopeFlags Logger::GetDefaultScopeFlags()
 {
     LogScopeFlags flags;
-    for (auto const& log_level : GetLevels())
+    for (auto const& log_level : Instance().GetLevels())
     {
         flags[log_level.value] = true;
     }
@@ -184,8 +181,8 @@ std::string const& Logger::GetGlobalScopeKey()
 
 void Logger::SetLevelState(ELogLevel const level, bool const enabled)
 {
-    std::lock_guard lock{s_scope_mutex};
-    auto& flags = s_scope_enabled[GetGlobalScopeKey()];
+    std::lock_guard lock{m_scope_mutex};
+    auto& flags = m_scope_enabled[GetGlobalScopeKey()];
     if (flags.GetStorage() == 0)
     {
         flags = GetDefaultScopeFlags();
@@ -196,22 +193,22 @@ void Logger::SetLevelState(ELogLevel const level, bool const enabled)
 
 bool Logger::IsLevelEnabled(ELogLevel level)
 {
-    std::lock_guard lock{s_scope_mutex};
-    auto it = s_scope_enabled.find(GetGlobalScopeKey());
-    if (it == s_scope_enabled.end())
+    std::lock_guard lock{m_scope_mutex};
+    auto it = m_scope_enabled.find(GetGlobalScopeKey());
+    if (it == m_scope_enabled.end())
     {
         auto const flags = GetDefaultScopeFlags();
-        s_scope_enabled.emplace(GetGlobalScopeKey(), flags);
+        m_scope_enabled.emplace(GetGlobalScopeKey(), flags);
         return flags[level];
     }
 
     return it->second[level];
 }
 
-void Logger::SetScopeEnabled(std::string scope, bool enabled)
+void Logger::SetScopeEnabled(std::string scope, bool const enabled)
 {
-    std::lock_guard lock{s_scope_mutex};
-    auto& flags = s_scope_enabled[std::move(scope)];
+    std::lock_guard lock{m_scope_mutex};
+    auto& flags = m_scope_enabled[std::move(scope)];
     if (flags.GetStorage() == 0)
     {
         flags = GetDefaultScopeFlags();
@@ -223,32 +220,30 @@ void Logger::SetScopeEnabled(std::string scope, bool enabled)
     }
 }
 
-void Logger::SetScopeLevelState(std::string scope, ELogLevel const level, bool const enabled)
+void Logger::SetScopeLevelEnabled(std::string scope, ELogLevel const level, bool const enabled)
 {
-    std::lock_guard lock{s_scope_mutex};
-    auto& flags = s_scope_enabled[std::move(scope)];
+    std::lock_guard lock{m_scope_mutex};
+    auto& flags = m_scope_enabled[std::move(scope)];
 
     flags[level] = enabled;
 }
 
-Logger::ScopeEnabledMap Logger::GetScopes()
+Logger::ScopeEnabledMap const& Logger::GetScopes() const
 {
-    std::lock_guard lock{s_scope_mutex};
-    auto scopes = s_scope_enabled;
-    scopes.erase(GetGlobalScopeKey());
-    return scopes;
+    return m_scope_enabled;
 }
 
 Logger::LogLevels const& Logger::GetLevels()
 {
     static LogLevels s_levels{
-        LogLevel(ELogLevel::Scope, ICON_CI_SEARCH, "Scope", {0.75f, 0.75f, 0.25f, 0.60f}),
-        LogLevel(ELogLevel::Debug, ICON_CI_DEBUG, "Debug", {0.50f, 0.75f, 0.50f, 0.60f}),
-        LogLevel(ELogLevel::Trace, ICON_CI_SURROUND_WITH, "Trace", {0.50f, 0.50f, 0.50f, 0.60f}),
-        LogLevel(ELogLevel::Info, ICON_CI_INFO, "Info", {0.00f, 0.75f, 1.00f, 0.60f}),
-        LogLevel(ELogLevel::Warn, ICON_CI_WARNING, "Warn", {1.00f, 0.65f, 0.00f, 0.60f}),
-        LogLevel(ELogLevel::Error, ICON_CI_ERROR, "Error", {1.00f, 0.25f, 0.25f, 0.60f}),
-        LogLevel(ELogLevel::Critical, ICON_CI_CIRCLE_SLASH, "Critical", {0.75f, 0.00f, 0.00f, 0.60f}),
+        GlobalLogLevel(ELogLevel::Scope, ICON_CI_SEARCH, "Scope", {0.75f, 0.75f, 0.25f, 0.60f}),
+        GlobalLogLevel(ELogLevel::Debug, ICON_CI_DEBUG, "Debug", {0.50f, 0.75f, 0.50f, 0.60f}),
+        GlobalLogLevel(ELogLevel::Trace, ICON_CI_SURROUND_WITH, "Trace", {0.50f, 0.50f, 0.50f, 0.60f}),
+        GlobalLogLevel(ELogLevel::Info, ICON_CI_INFO, "Info", {0.00f, 0.75f, 1.00f, 0.60f}),
+        GlobalLogLevel(ELogLevel::Warn, ICON_CI_WARNING, "Warn", {1.00f, 0.65f, 0.00f, 0.60f}),
+        GlobalLogLevel(ELogLevel::Error, ICON_CI_ERROR, "Error", {1.00f, 0.25f, 0.25f, 0.60f}),
+        GlobalLogLevel(
+            ELogLevel::Critical, ICON_CI_CIRCLE_SLASH, "Critical", {0.75f, 0.00f, 0.00f, 0.60f}),
     };
     return s_levels;
 }
@@ -285,7 +280,7 @@ std::filesystem::path Logger::GetLogFilePath()
 }
 
 Logger::Logger()
-    : m_running{true}, m_worker{}, m_log_file{Logger::GetLogFilePath(), std::ios::trunc}
+    : m_running{true}, m_log_file{Logger::GetLogFilePath(), std::ios::trunc}, m_worker{}
 {
     if (!m_log_file.is_open())
     {
@@ -404,7 +399,7 @@ void Logger::PrintMessage(const LogMessage& msg)
 ScopeLogger::ScopeLogger(std::string tag, std::string scope)
     : m_scope{scope}, m_tag{std::move(tag)}, m_start{}
 {
-    if (!Logger::IsLevelEnabled(ELogLevel::Scope))
+    if (!Logger::Instance().IsLevelEnabled(ELogLevel::Scope))
         return;
 
     m_start = std::chrono::high_resolution_clock::now();
@@ -412,13 +407,13 @@ ScopeLogger::ScopeLogger(std::string tag, std::string scope)
     static constexpr auto green = "\033[32m";
     static constexpr auto gray = "\033[90m";
 
-    Logger::log(
+    Logger::Instance().Log(
         ELogLevel::Scope, m_scope, "{}[{}+{}]{} Begin {}» {}{}", gray, green, gray, green, gray, green, m_tag);
 }
 
 ScopeLogger::~ScopeLogger()
 {
-    if (!Logger::IsLevelEnabled(ELogLevel::Scope))
+    if (!Logger::Instance().IsLevelEnabled(ELogLevel::Scope))
         return;
 
     auto const end = std::chrono::high_resolution_clock::now();
@@ -482,7 +477,7 @@ ScopeLogger::~ScopeLogger()
     }
     oss << reset;
 
-    Logger::log(
+    Logger::Instance().Log(
         ELogLevel::Scope,
         m_scope,
         "{}[{}-{}]{} End   {}» {}{} ~ elapsed {}",

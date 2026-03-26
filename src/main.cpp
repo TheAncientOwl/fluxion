@@ -5,7 +5,7 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief ImGui entry point.
 ///
 
@@ -16,7 +16,7 @@
 
 int main()
 {
-    Graphite::Logger::Logger::LoadConfig();
+    Graphite::Logger::Logger::Instance().LoadConfig();
 
     LOG_SCOPE("");
 
@@ -32,7 +32,7 @@ int main()
 
     app->Run();
 
-    Graphite::Logger::Logger::SaveConfig();
+    Graphite::Logger::Logger::Instance().SaveConfig();
 
     return EXIT_SUCCESS;
 }
