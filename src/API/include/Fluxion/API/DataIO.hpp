@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
 {
     os << "[";
     bool first = true;
-    for (const auto& v : vec)
+    for (auto const& v : vec)
     {
         if (!first)
             os << ", ";
@@ -53,7 +53,7 @@ std::string format_vector(const std::vector<T>& vec)
     std::ostringstream oss;
     oss << "[";
     bool first = true;
-    for (const auto& elem : vec)
+    for (auto const& elem : vec)
     {
         if (!first)
             oss << ", ";

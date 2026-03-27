@@ -84,7 +84,7 @@ void LogsViewLayer::RenderLogsTable()
     {
         ImGui::TableSetupScrollFreeze(1, 1);
 
-        for (const auto& header : headers)
+        for (auto const& header : headers)
         {
             ImGui::TableSetupColumn(header.c_str());
         }
@@ -119,7 +119,7 @@ void LogsViewLayer::RenderLogsTable()
             for (size_t log_idx = 0, size = std::min(new_size, filled_size); log_idx < size; ++log_idx)
             {
                 ImGui::TableNextRow();
-                for (const auto& log_field : s_logs_chunk[log_idx])
+                for (auto const& log_field : s_logs_chunk[log_idx])
                 {
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(log_field.c_str());

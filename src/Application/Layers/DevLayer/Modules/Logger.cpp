@@ -414,7 +414,7 @@ void RenderLogger()
             std::regex re(regex_pattern, std::regex_constants::icase);
             for (size_t i = 0; i < s_sorted_scopes.size(); ++i)
             {
-                const auto& [scope, _] = s_sorted_scopes[i];
+                auto const& [scope, _] = s_sorted_scopes[i];
                 if (std::regex_search(scope.begin(), scope.end(), re))
                 {
                     s_filtered_indices.push_back(i);
