@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -16,16 +16,15 @@
 
 namespace Fluxion::Application {
 
-class FluxionApplication
-    : public Graphite::Application::TGraphiteApplication<Fluxion::Application::AppState>
+class FluxionApplication : public Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>
 {
 public:
-    using Ptr = Graphite::Application::TGraphiteApplication<AppState>::Ptr;
+    using Ptr = Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>::Ptr;
 
     ~FluxionApplication();
 
 private:
-    friend class Graphite::Application::TGraphiteApplication<AppState>;
+    friend class Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>;
     FluxionApplication(Graphite::Application::WindowConfiguration window_configuration, AppState initial_state);
 
 private:
@@ -33,6 +32,7 @@ private:
 
 private:
     void AppInit() override;
+    void OnProcessAction(Graphite::Application::TAppAction<EFluxionAction> const& action) override;
 };
 
 } // namespace Fluxion::Application

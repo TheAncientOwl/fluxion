@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief UniqueID abstraction.
 ///
 
@@ -13,10 +13,7 @@
 
 #include <array>
 #include <format>
-#include <functional>
 #include <ostream>
-#include <unordered_map>
-#include <unordered_set>
 
 namespace Graphite::Common {
 
@@ -59,10 +56,6 @@ public: // hashing
         std::size_t operator()(UniqueID const&) const;
     };
     friend std::size_t Hash::operator()(UniqueID const&) const;
-
-public: // structures
-    template <typename Value>
-    using MapTo = std::unordered_map<UniqueID, Value, Hash>;
 
 public: // operators
     bool operator<(UniqueID const&) const;

@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.10
+/// @version 1.11
 /// @brief Logging utilities
 ///
 
@@ -230,18 +230,21 @@ private:
         std::format(fmt __VA_OPT__(, ) __VA_ARGS__), __PRETTY_FUNCTION__ \
     }
 
-#define GRAPHITE_ASSERT(condition, message)                                                    \
-    do                                                                                         \
-    {                                                                                          \
-        auto const line{__LINE__ - 2};                                                         \
-        if (!(condition))                                                                      \
-        {                                                                                      \
-            LOG_CRITICAL(                                                                      \
-                "Assertion failed on line {}: {} | Condition: {}", line, message, #condition); \
-            std::cerr << std::endl                                                             \
-                      << "Assertion failed on line " << line << " : " << message               \
-                      << " | Condition: " << #condition << std::endl;                          \
-            std::abort();                                                                      \
-        }                                                                                      \
+#define GRAPHITE_ASSERT(condition, message)                                                  \
+    do                                                                                       \
+    {                                                                                        \
+        if (!(condition))                                                                    \
+        {                                                                                    \
+            LOG_CRITICAL(                                                                    \
+                "Assertion failed {} on line {}: {} | Condition: {}",                        \
+                __FILE__,                                                                    \
+                __LINE__,                                                                    \
+                message,                                                                     \
+                #condition);                                                                 \
+            std::cerr << std::endl                                                           \
+                      << "Assertion failed " << __FILE__ << " on line " << __LINE__ << " : " \
+                      << message << " | Condition: " << #condition << std::endl;             \
+            std::abort();                                                                    \
+        }                                                                                    \
     } while (0)
 #endif

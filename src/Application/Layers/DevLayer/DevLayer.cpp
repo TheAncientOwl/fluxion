@@ -5,7 +5,7 @@
 ///
 /// @file DevLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Implementation of @see DevLayer.hpp.
 ///
 
@@ -37,6 +37,11 @@ DevLayer::DevLayer(
 }
 
 void DevLayer::OnAdd()
+{
+    LOG_SCOPE("");
+}
+
+void DevLayer::OnIterate()
 {
     LOG_SCOPE("");
 }

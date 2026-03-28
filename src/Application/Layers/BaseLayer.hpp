@@ -5,7 +5,7 @@
 ///
 /// @file BaseLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Render App's menu.
 ///
 
@@ -17,7 +17,7 @@
 
 namespace Fluxion::Application::Layers {
 
-class BaseLayer : public Graphite::Application::Layers::TLayer<AppState>
+class BaseLayer : public Graphite::Application::Layers::TLayer<AppState, EFluxionAction>
 {
 public:
     static std::string_view GetLayerName() noexcept;
@@ -28,6 +28,7 @@ public:
         Graphite::Application::Layers::ZIndex const z_index);
 
     void OnAdd() override;
+    void OnIterate() override;
     void OnRender() override;
     void OnRemove() override;
 };

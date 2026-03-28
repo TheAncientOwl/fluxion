@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -35,6 +35,11 @@ LogsViewLayer::LogsViewLayer(
 }
 
 void LogsViewLayer::OnAdd()
+{
+    LOG_SCOPE("");
+}
+
+void LogsViewLayer::OnIterate()
 {
     LOG_SCOPE("");
 }

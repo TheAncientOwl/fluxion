@@ -5,7 +5,7 @@
 ///
 /// @file BaseLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see BaseLayer.hpp.
 ///
 
@@ -34,6 +34,11 @@ BaseLayer::BaseLayer(
 }
 
 void BaseLayer::OnAdd()
+{
+    LOG_SCOPE("");
+}
+
+void BaseLayer::OnIterate()
 {
     LOG_SCOPE("");
 }

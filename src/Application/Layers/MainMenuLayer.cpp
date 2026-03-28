@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
@@ -40,6 +40,11 @@ void MainMenuLayer::OnAdd()
     LOG_SCOPE("");
 }
 
+void MainMenuLayer::OnIterate()
+{
+    LOG_SCOPE("");
+}
+
 void MainMenuLayer::OnRender()
 {
     LOG_SCOPE("");
@@ -59,8 +64,9 @@ void MainMenuLayer::RenderMenu()
     {
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
-            m_application->ForEachLayer<Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>>(
-                [](Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>& menu_item,
+            m_application->ForEachLayer<
+                Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>>(
+                [](Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>& menu_item,
                    bool const is_last) {
                     static char display_name_buffer[64];
 

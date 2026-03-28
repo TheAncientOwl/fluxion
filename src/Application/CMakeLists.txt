@@ -10,7 +10,8 @@ add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/BaseLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/MainMenuLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer/FiltersLayer.cpp
 )
 
 set_target_properties(fluxion_app PROPERTIES

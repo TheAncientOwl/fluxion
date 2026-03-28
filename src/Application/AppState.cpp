@@ -5,7 +5,7 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see AppState.hpp.
 ///
 
@@ -17,27 +17,30 @@ AppState Make()
 {
     AppState app_state{};
 
-    app_state.filters.tabs = MakeDefaultTabs();
+    app_state.filters.tabs.back = MakeDefaultTabs();
+    app_state.filters.tabs.front = app_state.filters.tabs.back;
 
     return app_state;
 }
 
-Fluxion::API::Data::FiltersTabs MakeDefaultTabs()
+Fluxion::API::Data::FiltersTabs::StorageType MakeDefaultTabs()
 {
-    Fluxion::Application::AppState app_state{};
-
     using namespace Fluxion::API::Data;
     using UniqueID = Graphite::Common::UniqueID;
 
-    FiltersTabs tabs{};
+    FiltersTabs::StorageType tabs{};
     {
-        auto& tab = *tabs.emplace_back(std::make_shared<FiltersTab>());
+        auto tab_ptr = tabs.emplace_back(std::make_shared<FiltersTab>());
+        auto& tab = *tab_ptr;
         tab.id = UniqueID::Generate();
         tab.name = "Tab1";
         tab[EFiltersTabFlag::IsActive] = true;
 
         {
-            auto& filter = *tab.filters.emplace_back(std::make_shared<Filter>());
+            auto filter_ptr = tab.filters.back.emplace_back(std::make_shared<Filter>());
+            tab.filters.front.emplace_back(filter_ptr);
+
+            auto& filter = *filter_ptr;
             filter.id = UniqueID::Generate();
             filter.name = "Filter1";
             filter.colors = FilterColors{
@@ -47,7 +50,9 @@ Fluxion::API::Data::FiltersTabs MakeDefaultTabs()
             filter[EFilterFlag::IsCollapsed] = false;
 
             {
-                auto& component = *filter.components.emplace_back(std::make_shared<FilterComponent>());
+                auto component_ptr =
+                    filter.components.back.emplace_back(std::make_shared<FilterComponent>());
+                auto& component = *component_ptr;
                 component.id = UniqueID::Generate();
                 component[EFilterComponentFlag::IsRegex] = false;
                 component[EFilterComponentFlag::IsEquals] = true;

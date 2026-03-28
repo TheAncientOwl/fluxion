@@ -5,17 +5,17 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief General data.
 ///
 
 #pragma once
 
-#include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
 
+#include "Graphite/Common/TDoubleBufferedVector.hpp"
 #include "Graphite/Common/TWithFlags.hpp"
 #include "Graphite/Common/UniqueID.hpp"
 
@@ -53,13 +53,6 @@ struct FilterComponent : public Graphite::Common::TWithFlags<FilterComponent, EF
     Graphite::Common::UniqueID over_field_id{};
     std::string data{};
 
-    FilterComponent() = default;
-    FilterComponent(FilterComponent const& other);
-    FilterComponent& operator=(FilterComponent const& other);
-    FilterComponent(FilterComponent&& other) noexcept = default;
-    FilterComponent& operator=(FilterComponent&& other) noexcept = default;
-    ~FilterComponent() = default;
-
     friend std::ostream& operator<<(std::ostream& os, const FilterComponent& v);
 };
 
@@ -83,16 +76,9 @@ struct Filter : public Graphite::Common::TWithFlags<Filter, EFilterFlag>
 {
     Graphite::Common::UniqueID id{};
     std::string name{};
-    std::vector<std::shared_ptr<FilterComponent>> components{};
+    Graphite::Common::TDoubleBufferedVector<FilterComponent> components{};
     FilterColors colors{};
     std::uint8_t priority{};
-
-    Filter() = default;
-    Filter(Filter const& other);
-    Filter& operator=(Filter const& other);
-    Filter(Filter&& other) noexcept;
-    Filter& operator=(Filter&& other) noexcept;
-    ~Filter() = default;
 
     friend std::ostream& operator<<(std::ostream& os, const Filter& v);
 };
@@ -109,18 +95,11 @@ struct FiltersTab : public Graphite::Common::TWithFlags<FiltersTab, EFiltersTabF
 {
     Graphite::Common::UniqueID id{};
     std::string name{};
-    std::vector<std::shared_ptr<Filter>> filters{};
-
-    FiltersTab() = default;
-    FiltersTab(FiltersTab const& other);
-    FiltersTab& operator=(FiltersTab const& other);
-    FiltersTab(FiltersTab&& other) noexcept = default;
-    FiltersTab& operator=(FiltersTab&& other) noexcept = default;
-    ~FiltersTab() = default;
+    Graphite::Common::TDoubleBufferedVector<Filter> filters{};
 
     friend std::ostream& operator<<(std::ostream& os, const FiltersTab& v);
 };
 
-using FiltersTabs = std::vector<std::shared_ptr<FiltersTab>>;
+using FiltersTabs = Graphite::Common::TDoubleBufferedVector<FiltersTab>;
 
 } // namespace Fluxion::API::Data

@@ -5,7 +5,7 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief ImGui entry point.
 ///
 
@@ -26,9 +26,9 @@ int main()
     window_configuration.title = "Fluxion";
 
     auto app =
-        Graphite::Application::TGraphiteApplication<Fluxion::Application::AppState>::CreateApplication<
-            Fluxion::Application::FluxionApplication>(
-            std::move(window_configuration), Fluxion::Application::DefaultState::Make());
+        Graphite::Application::TGraphiteApplication<Fluxion::Application::AppState, Fluxion::Application::EFluxionAction>::
+            CreateApplication<Fluxion::Application::FluxionApplication>(
+                std::move(window_configuration), Fluxion::Application::DefaultState::Make());
 
     app->Run();
 

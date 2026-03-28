@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.5
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -23,6 +23,7 @@ namespace Graphite::Common {
 
 UniqueID::UniqueID(UniqueID&& other) noexcept : m_data{std::move(other.m_data)}
 {
+    other.m_data = s_default.m_data;
 }
 
 UniqueID& UniqueID::operator=(UniqueID&& rhs) noexcept

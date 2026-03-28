@@ -5,7 +5,7 @@
 ///
 /// @file TSoftMenuCloseableLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Layer that is removed / added on close / open.
 ///
 
@@ -15,8 +15,8 @@
 
 namespace Graphite::Application::Layers {
 
-template <typename ApplicationState>
-class TSoftMenuCloseableLayer : public TLayer<ApplicationState>
+template <typename ApplicationState, typename ActionEnum>
+class TSoftMenuCloseableLayer : public TLayer<ApplicationState, ActionEnum>
 {
 public:
     virtual inline std::string_view GetDisplayName() const noexcept = 0;
@@ -25,17 +25,17 @@ public:
     virtual void SetIsActive(bool active) = 0;
 
     TSoftMenuCloseableLayer(
-        std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState>> application,
+        std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         ZIndex const z_index)
-        : TLayer<ApplicationState>(std::move(application), z_index)
+        : TLayer<ApplicationState, ActionEnum>(std::move(application), z_index)
     {
     }
 
     TSoftMenuCloseableLayer(
-        std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState>> application,
+        std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         ZIndex const zindex,
         Graphite::Common::UniqueID id)
-        : TLayer<ApplicationState>(std::move(application), zindex, std::move(id))
+        : TLayer<ApplicationState, ActionEnum>(std::move(application), zindex, std::move(id))
     {
     }
 };
