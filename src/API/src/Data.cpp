@@ -1,17 +1,22 @@
-// /// --------------------------------------------------------------------------
-// ///                     Copyright (c) by Fluxion 2026
-// /// --------------------------------------------------------------------------
-// /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
-// ///
-// /// @file FiltersTabs.cpp
-// /// @author Alexandru Delegeanu
-// /// @version 0.2
-// /// @brief Implementation of @see Fluxion/Data.hpp::FiltersTabs.
-// ///
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file FiltersTabs.cpp
+/// @author Alexandru Delegeanu
+/// @version 0.3
+/// @brief Implementation of @see Fluxion/Data.hpp::FiltersTabs.
+///
 
-// #include "Fluxion/API/Data.hpp"
+#include "Fluxion/API/Data.hpp"
 
-// namespace Fluxion::API::Data {
+namespace Fluxion::API::Data {
+
+void FiltersTab::UpdateImGuiID()
+{
+    imgui_id = name + "###" + id.ToString();
+}
 
 // // ---------------- FilterComponent ----------------
 
@@ -104,4 +109,4 @@
 //     return *this;
 // }
 
-// } // namespace Fluxion::API::Data
+} // namespace Fluxion::API::Data

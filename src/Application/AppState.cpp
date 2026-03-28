@@ -5,7 +5,7 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see AppState.hpp.
 ///
 
@@ -35,6 +35,7 @@ Fluxion::API::Data::FiltersTabs::StorageType MakeDefaultTabs()
         tab.id = UniqueID::Generate();
         tab.name = "Tab1";
         tab[EFiltersTabFlag::IsActive] = true;
+        tab.UpdateImGuiID();
 
         {
             auto filter_ptr = tab.filters.back.emplace_back(std::make_shared<Filter>());

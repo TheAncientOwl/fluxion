@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.5
 /// @brief UniqueID abstraction.
 ///
 
@@ -43,7 +43,14 @@ public: // public API
     /// @return ID in format 8f674453-a065-4138-969d-10b6b83b94cc
     /// @return ID in format OOOOOOOO-OOOO-OOOO-OOOO-OOOOOOOOOOOO
     ///
-    std::string toString() const;
+    [[nodiscard]] std::string ToString() const;
+
+    ///
+    /// @brief Dumps hex representation into char array, '\0' terminated.
+    ///
+    void Dump(char dst[37]) const;
+
+    static inline constexpr std::size_t GetMinDumpSize() { return 37; }
 
     ///
     /// @return true if object was created via UniqueID::generate, false otherwise

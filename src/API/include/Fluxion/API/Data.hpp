@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief General data.
 ///
 
@@ -96,6 +96,9 @@ struct FiltersTab : public Graphite::Common::TWithFlags<FiltersTab, EFiltersTabF
     Graphite::Common::UniqueID id{};
     std::string name{};
     Graphite::Common::TDoubleBufferedVector<Filter> filters{};
+    std::string imgui_id{};
+
+    void UpdateImGuiID();
 
     friend std::ostream& operator<<(std::ostream& os, const FiltersTab& v);
 };

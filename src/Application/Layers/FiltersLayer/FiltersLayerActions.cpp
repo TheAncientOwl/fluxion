@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -39,6 +39,7 @@ void handle<EFilterActionType::AddFiltersTab>(AppState& application_state, Filte
     new_tab.id = Graphite::Common::UniqueID::Generate();
     new_tab.name = "New Tab";
     new_tab[EFiltersTabFlag::IsActive] = true;
+    new_tab.UpdateImGuiID();
 
     auto& new_filters{new_tab.filters};
     auto& new_filter = *new_filters.back.emplace_back(std::make_shared<Filter>());
@@ -103,6 +104,7 @@ void handle<EFilterActionType::DuplicateFiltersTab>(
         duplicated_tab->filters.MarkDataHasChanges();
         duplicated_tab->id = Graphite::Common::UniqueID::Generate();
         duplicated_tab->name += "*";
+        duplicated_tab->UpdateImGuiID();
         for (auto& filter : duplicated_tab->filters.back)
         {
             filter = std::make_shared<Fluxion::API::Data::Filter>(*filter);
@@ -138,7 +140,7 @@ void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterAct
     auto const tab_it = FindByID(tabs.back, *action.tab_id);
     GRAPHITE_ASSERT(
         tab_it != tabs.back.end(),
-        std::string{"Failed to find tab with ID "} + action.tab_id->toString());
+        std::string{"Failed to find tab with ID "} + action.tab_id->ToString());
     auto& tab{**tab_it};
 
     auto& filters{tab.filters};
@@ -171,7 +173,7 @@ void handle<EFilterActionType::RemoveFilter>(AppState& application_state, Filter
     auto const tab_it = FindByID(tabs.back, *action.tab_id);
     GRAPHITE_ASSERT(
         tab_it != tabs.back.end(),
-        std::string{"Failed to find tab with ID "} + action.tab_id->toString());
+        std::string{"Failed to find tab with ID "} + action.tab_id->ToString());
     auto& tab{**tab_it};
 
     auto& filters = tab.filters;
@@ -205,7 +207,7 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
     auto const tab_it = FindByID(tabs.back, *action.tab_id);
     GRAPHITE_ASSERT(
         tab_it != tabs.back.end(),
-        std::string{"Failed to find tab with ID "} + action.tab_id->toString());
+        std::string{"Failed to find tab with ID "} + action.tab_id->ToString());
     auto& tab{**tab_it};
 
     auto& filters = tab.filters;
@@ -251,7 +253,7 @@ void handle<EFilterActionType::AddFilterComponent>(
     auto const tab_it = FindByID(tabs.back, *action.tab_id);
     GRAPHITE_ASSERT(
         tab_it != tabs.back.end(),
-        std::string{"Failed to find tab with ID "} + action.tab_id->toString());
+        std::string{"Failed to find tab with ID "} + action.tab_id->ToString());
     auto& tab{**tab_it};
 
     auto& filters{tab.filters};
@@ -259,7 +261,7 @@ void handle<EFilterActionType::AddFilterComponent>(
     auto const filter_it = FindByID(filters.back, *action.filter_id);
     GRAPHITE_ASSERT(
         filter_it != filters.back.end(),
-        std::string{"Failed to find filter with ID "} + action.tab_id->toString());
+        std::string{"Failed to find filter with ID "} + action.tab_id->ToString());
     auto& filter{**filter_it};
     filter.components.MarkDataHasChanges();
 
@@ -286,14 +288,14 @@ void handle<EFilterActionType::RemoveFilterComponent>(
     auto const tab_it = FindByID(tabs.back, *action.tab_id);
     GRAPHITE_ASSERT(
         tab_it != tabs.back.end(),
-        std::string{"Failed to find tab with ID "} + action.tab_id->toString());
+        std::string{"Failed to find tab with ID "} + action.tab_id->ToString());
     auto& tab{**tab_it};
 
     auto& filters{tab.filters};
     auto const filter_it = FindByID(filters.back, *action.filter_id);
     GRAPHITE_ASSERT(
         filter_it != filters.back.end(),
-        std::string{"Failed to find filter with ID "} + action.tab_id->toString());
+        std::string{"Failed to find filter with ID "} + action.tab_id->ToString());
     filters.MarkDataHasChanges();
 
     auto& components{(**filter_it).components};
@@ -323,9 +325,9 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     LOG_TRACE(
         "Handling action type {} -> tab: {} | filter: {} | component: {}",
         static_cast<std::uint32_t>(action.type),
-        action.tab_id ? action.tab_id->toString() : "nullopt",
-        action.filter_id ? action.filter_id->toString() : "nullopt",
-        action.component_id ? action.component_id->toString() : "nullopt");
+        action.tab_id ? action.tab_id->ToString() : "nullopt",
+        action.filter_id ? action.filter_id->ToString() : "nullopt",
+        action.component_id ? action.component_id->ToString() : "nullopt");
 
     switch (action.type)
     {
@@ -365,9 +367,9 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         LOG_WARN(
             "Unknown action type {} -> tab: {} | filter: {} | component: {}",
             static_cast<std::uint32_t>(action.type),
-            action.tab_id ? action.tab_id->toString() : "nullopt",
-            action.filter_id ? action.filter_id->toString() : "nullopt",
-            action.component_id ? action.component_id->toString() : "nullopt");
+            action.tab_id ? action.tab_id->ToString() : "nullopt",
+            action.filter_id ? action.filter_id->ToString() : "nullopt",
+            action.component_id ? action.component_id->ToString() : "nullopt");
         break;
     }
     }

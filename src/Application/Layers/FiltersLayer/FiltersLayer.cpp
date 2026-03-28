@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.16
+/// @version 0.17
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -121,8 +121,10 @@ enum class EInputTextWidth : std::uint8_t
 };
 
 template <std::size_t TBufferSize, EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
-void InputText(const char* label, std::string& str, bool& dirty)
+bool InputText(const char* label, std::string& str, bool& dirty)
 {
+    bool modified{false};
+
     char buffer[TBufferSize];
     std::strncpy(buffer, str.c_str(), TBufferSize);
     buffer[TBufferSize - 1] = '\0';
@@ -136,12 +138,15 @@ void InputText(const char* label, std::string& str, bool& dirty)
     {
         str = buffer;
         dirty = true;
+        modified = true;
     }
 
     if constexpr (TInputTextWidth == EInputTextWidth::Fill)
     {
         ImGui::PopItemWidth();
     }
+
+    return modified;
 }
 
 void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f)
@@ -308,10 +313,9 @@ void FiltersLayer::RenderFiltersTabs()
     {
         for (auto& tab : app_state.filters.tabs.front)
         {
-            auto const tab_label = tab->name + "###" + tab->id;
-            if (ImGui::BeginTabItem(tab_label.c_str()))
+            if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
-                LOG_INFO("Rendering filter tab {}", tab_label);
+                LOG_INFO("Rendering filter tab {}", tab->imgui_id.c_str());
                 RenderFiltersTab(tab, app_state.filters.dirty);
                 ImGui::EndTabItem();
             }
@@ -385,7 +389,10 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     }
 
     ImGui::SameLine();
-    UIHelpers::InputText<128>("##tab_name", tab.name, dirty);
+    if (UIHelpers::InputText<128>("##tab_name", tab.name, dirty))
+    {
+        tab.UpdateImGuiID();
+    }
 
     for (auto& filter : tab.filters.front)
     {
@@ -400,20 +407,18 @@ void FiltersLayer::RenderFilter(
     Fluxion::API::Data::Filter& filter,
     bool& dirty)
 {
-    // GRAPHITE_ASSERT(filter != nullptr, "Received filter::nullptr for rendering...");
     GRAPHITE_ASSERT(
         filter.id != Graphite::Common::UniqueID::Default(),
         "Received filter with default ID for rendering...");
-
     GRAPHITE_ASSERT(
         owning_tab_id != Graphite::Common::UniqueID::Default(),
         "Received owning_tab as default ID for rendering...");
 
-    // auto& filter{*filter};
     LOG_SCOPE("ID: \"{}\" | \"{}\"", filter.id, filter.name);
 
-    auto const filter_id{filter.id.toString()};
-    ImGui::BeginChild(filter_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
+    char s_filter_id[Graphite::Common::UniqueID::GetMinDumpSize()];
+    filter.id.Dump(s_filter_id);
+    ImGui::BeginChild(s_filter_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
     ImGui::Separator();
 
     using EFilterFlag = Fluxion::API::Data::EFilterFlag;
@@ -491,7 +496,6 @@ void FiltersLayer::RenderFilter(
 
     ImGui::Separator();
 
-    // ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 32.0f);
     ImGui::Indent(32.0f);
     if (ImGui::Button(ICON_CI_PLUS))
     {
@@ -536,11 +540,9 @@ void FiltersLayer::RenderFilterComponent(
     Fluxion::API::Data::FilterComponent& component,
     bool& dirty)
 {
-    // GRAPHITE_ASSERT(component_ptr != nullptr, "Received component::nullptr for rendering...");
     GRAPHITE_ASSERT(
         component.id != Graphite::Common::UniqueID::Default(),
         "Received component with default ID for rendering...");
-
     GRAPHITE_ASSERT(
         owning_tab_id != Graphite::Common::UniqueID::Default(),
         "Received owning_tab_id as default ID for rendering...");
@@ -548,11 +550,11 @@ void FiltersLayer::RenderFilterComponent(
         owning_filter_id != Graphite::Common::UniqueID::Default(),
         "Received owning_filter_id as default ID for rendering...");
 
-    // auto& component{*component_ptr};
     LOG_SCOPE("ID: \"{}\"", component.id);
 
-    auto const component_id{component.id.toString()};
-    ImGui::BeginChild(component_id.c_str(), ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
+    char s_component_id[Graphite::Common::UniqueID::GetMinDumpSize()];
+    component.id.Dump(s_component_id);
+    ImGui::BeginChild(s_component_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 
     UIHelpers::Styles::PushButtonGripper();
     if (ImGui::Button(ICON_CI_GRIPPER))
@@ -567,8 +569,6 @@ void FiltersLayer::RenderFilterComponent(
     if (ImGui::Button(ICON_CI_TRASH))
     {
         dirty = true;
-        // filters_tabs.RemoveComponent(component.id);
-        // TODO:
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilterComponent,
              .tab_id = owning_tab_id,
