@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -91,7 +91,7 @@ inline std::string_view FiltersLayer::GetDisplayName() const noexcept
     return "Filters";
 }
 
-void FiltersLayer::Dispatch(Actions::FilterActionPayload&& payload)
+void FiltersLayer::Dispatch(Actions::FiltersLayer::FilterActionPayload&& payload)
 {
     m_application->PushAction(EFluxionAction::FilterAction, std::move(payload));
 }
@@ -331,7 +331,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     if (ImGui::Button(ICON_CI_PLUS))
     {
         Dispatch(
-            {.type = Actions::EFilterActionType::AddFilter,
+            {.type = Actions::FiltersLayer::EFilterActionType::AddFilter,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
@@ -341,10 +341,8 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_NEW_FOLDER))
     {
-        // filters_tabs.AddTab();
-        // TODO:
         Dispatch(
-            {.type = Actions::EFilterActionType::AddFiltersTab,
+            {.type = Actions::FiltersLayer::EFilterActionType::AddFiltersTab,
              .tab_id = std::nullopt,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
@@ -355,7 +353,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     if (ImGui::Button(ICON_CI_COPY))
     {
         Dispatch(
-            {.type = Actions::EFilterActionType::DuplicateFiltersTab,
+            {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFiltersTab,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
@@ -368,7 +366,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     {
         dirty = true;
         Dispatch(
-            {.type = Actions::EFilterActionType::RemoveFiltersTab,
+            {.type = Actions::FiltersLayer::EFilterActionType::RemoveFiltersTab,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
@@ -438,7 +436,7 @@ void FiltersLayer::RenderFilter(
     if (ImGui::Button(ICON_CI_COPY))
     {
         Dispatch(
-            {.type = Actions::EFilterActionType::DuplicateFilter,
+            {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFilter,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
              .component_id = std::nullopt});
@@ -451,7 +449,7 @@ void FiltersLayer::RenderFilter(
     {
         dirty = true;
         Dispatch(
-            {.type = Actions::EFilterActionType::RemoveFilter,
+            {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilter,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
              .component_id = std::nullopt});
@@ -496,7 +494,7 @@ void FiltersLayer::RenderFilter(
     if (ImGui::Button(ICON_CI_PLUS))
     {
         Dispatch(
-            {.type = Actions::EFilterActionType::AddFilterComponent,
+            {.type = Actions::FiltersLayer::EFilterActionType::AddFilterComponent,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
              .component_id = std::nullopt});
@@ -570,7 +568,7 @@ void FiltersLayer::RenderFilterComponent(
         // filters_tabs.RemoveComponent(component.id);
         // TODO:
         Dispatch(
-            {.type = Actions::EFilterActionType::RemoveFilterComponent,
+            {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilterComponent,
              .tab_id = owning_tab_id,
              .filter_id = owning_filter_id,
              .component_id = component.id});

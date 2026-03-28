@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -53,7 +53,7 @@ private: // Private Rendering API
         bool& dirty);
 
 private: // Private Logics API
-    void Dispatch(Actions::FilterActionPayload&& payload);
+    void Dispatch(Actions::FiltersLayer::FilterActionPayload&& payload);
 };
 
 } // namespace Fluxion::Application::Layers

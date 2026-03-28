@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -82,8 +82,9 @@ void FluxionApplication::OnProcessAction(Graphite::Application::TAppAction<EFlux
         break;
     }
     case Fluxion::Application::EFluxionAction::FilterAction: {
-        Layers::Actions::HandleFiltersLayerAction(
-            m_app_state, std::any_cast<Layers::Actions::FilterActionPayload>(action.payload));
+        Layers::Actions::FiltersLayer::HandleFiltersLayerAction(
+            m_app_state,
+            std::any_cast<Layers::Actions::FiltersLayer::FilterActionPayload>(action.payload));
         break;
     }
     default: {

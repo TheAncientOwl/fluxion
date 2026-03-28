@@ -12,6 +12,7 @@ add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer/FiltersLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer/FiltersLayerActions.cpp
 )
 
 set_target_properties(fluxion_app PROPERTIES
