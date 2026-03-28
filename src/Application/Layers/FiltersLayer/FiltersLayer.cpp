@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.15
+/// @version 0.16
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -301,15 +301,17 @@ void FiltersLayer::RenderFiltersTabs()
 {
     LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
+    // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
     LOG_DEBUG("FiltersTabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.front));
 
     if (ImGui::BeginTabBar("FiltersTabs"))
     {
         for (auto& tab : app_state.filters.tabs.front)
         {
-            auto tab_label = tab->name + "###" + tab->id;
+            auto const tab_label = tab->name + "###" + tab->id;
             if (ImGui::BeginTabItem(tab_label.c_str()))
             {
+                LOG_INFO("Rendering filter tab {}", tab_label);
                 RenderFiltersTab(tab, app_state.filters.dirty);
                 ImGui::EndTabItem();
             }
