@@ -5,7 +5,7 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see AppState.hpp.
 ///
 
@@ -52,6 +52,7 @@ Fluxion::API::Data::FiltersTabs::StorageType MakeDefaultTabs()
             {
                 auto component_ptr =
                     filter.components.back.emplace_back(std::make_shared<FilterComponent>());
+                filter.components.front.push_back(component_ptr);
                 auto& component = *component_ptr;
                 component.id = UniqueID::Generate();
                 component[EFilterComponentFlag::IsRegex] = false;
