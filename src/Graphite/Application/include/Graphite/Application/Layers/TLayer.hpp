@@ -5,7 +5,7 @@
 ///
 /// @file TLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief App layer.
 ///
 
@@ -57,6 +57,8 @@ public:
 
     inline Graphite::Common::UniqueID const& GetID() const noexcept { return m_layer_id; }
     inline bool GetZIndex() const noexcept { return m_z_index; }
+
+    ApplicationPtr GetApplication() { return m_application; }
 
 protected:
     friend class Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>;

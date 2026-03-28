@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -15,11 +15,14 @@
 #include "FiltersLayerActions.hpp"
 #include "Fluxion.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
+#include "Graphite/Application/Layers/Utils/TDispatcher.hpp"
 
 namespace Fluxion::Application::Layers {
 
 class FiltersLayer
     : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>
+    , public Graphite::Application::Layers::Utils::
+          TDispatcher<FiltersLayer, EFluxionAction::FilterAction, Actions::FiltersLayer::FilterActionPayload>
 {
 public: // Public API
     static std::string_view GetLayerName() noexcept;
@@ -53,7 +56,7 @@ private: // Private Rendering API
         bool& dirty);
 
 private: // Private Logics API
-    void Dispatch(Actions::FiltersLayer::FilterActionPayload&& payload);
+         // void Dispatch(Actions::FiltersLayer::FilterActionPayload&& payload);
 };
 
 } // namespace Fluxion::Application::Layers

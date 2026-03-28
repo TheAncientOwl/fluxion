@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.17
+/// @version 0.18
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -89,11 +89,6 @@ inline void FiltersLayer::SetIsActive(bool const open)
 inline std::string_view FiltersLayer::GetDisplayName() const noexcept
 {
     return "Filters";
-}
-
-void FiltersLayer::Dispatch(Actions::FiltersLayer::FilterActionPayload&& payload)
-{
-    m_application->PushAction(EFluxionAction::FilterAction, std::move(payload));
 }
 
 namespace UIHelpers {
