@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.18
+/// @version 0.19
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -107,6 +107,16 @@ void ItemHoverTooltip(const char* fmt, Args&&... args)
             ImGui::SetTooltip(fmt, std::forward<Args>(args)...);
         }
     }
+}
+
+template <typename TAction>
+inline void IconButton(const char* icon, const char* tooltip, TAction&& action)
+{
+    if (ImGui::Button(icon))
+    {
+        action();
+    }
+    ItemHoverTooltip(tooltip);
 }
 
 enum class EInputTextWidth : std::uint8_t
@@ -329,51 +339,42 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     auto& tab{*tab_ptr};
     LOG_SCOPE("ID: \"{}\" | \"{}\"", tab.id, tab.name);
 
-    if (ImGui::Button(ICON_CI_PLUS))
-    {
+    UIHelpers::IconButton(ICON_CI_PLUS, "Add Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilter,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
-    }
-    UIHelpers::ItemHoverTooltip("Add Filter");
+    });
 
     ImGui::SameLine();
-    if (ImGui::Button(ICON_CI_NEW_FOLDER))
-    {
+    UIHelpers::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFiltersTab,
              .tab_id = std::nullopt,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
-    }
-    UIHelpers::ItemHoverTooltip("Add Tab");
+    });
 
     ImGui::SameLine();
-    if (ImGui::Button(ICON_CI_COPY))
-    {
+    UIHelpers::IconButton(ICON_CI_COPY, "Duplicate Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFiltersTab,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
-    }
-    UIHelpers::ItemHoverTooltip("Duplicate Tab");
+    });
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    if (ImGui::Button(ICON_CI_TRASH))
-    {
-        dirty = true;
+    UIHelpers::IconButton(ICON_CI_TRASH, "Delete Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFiltersTab,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
-    }
+    });
     UIHelpers::Styles::PopRedButton();
-    UIHelpers::ItemHoverTooltip("Delete Tab");
 
     ImGui::SameLine();
     bool is_active{tab[API::Data::EFiltersTabFlag::IsActive]};
@@ -419,45 +420,37 @@ void FiltersLayer::RenderFilter(
     using EFilterFlag = Fluxion::API::Data::EFilterFlag;
 
     UIHelpers::Styles::PushButtonGripper();
-    if (ImGui::Button(ICON_CI_GRIPPER))
-    {
-        // TODO: Implement move
-    }
+    UIHelpers::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {
+        // TODO:
+    });
     UIHelpers::Styles::PopButtonGripper();
-    UIHelpers::ItemHoverTooltip("Move Filter");
 
     ImGui::SameLine();
     bool const is_collapsed{filter[EFilterFlag::IsCollapsed]};
-    if (ImGui::Button(is_collapsed ? ICON_CI_EYE_CLOSED : ICON_CI_EYE))
-    {
-        filter[EFilterFlag::IsCollapsed] = !is_collapsed;
-    }
-    UIHelpers::ItemHoverTooltip(is_collapsed ? "Show Filter" : "Hide Filter");
+    UIHelpers::IconButton(
+        is_collapsed ? ICON_CI_EYE_CLOSED : ICON_CI_EYE,
+        is_collapsed ? "Show Filter" : "Hide Filter",
+        [&] { filter[EFilterFlag::IsCollapsed] = !is_collapsed; });
 
     ImGui::SameLine();
-    if (ImGui::Button(ICON_CI_COPY))
-    {
+    UIHelpers::IconButton(ICON_CI_COPY, "Duplicate Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFilter,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
              .component_id = std::nullopt});
-    }
-    UIHelpers::ItemHoverTooltip("Duplicate Filter");
+    });
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    if (ImGui::Button(ICON_CI_TRASH))
-    {
-        dirty = true;
+    UIHelpers::IconButton(ICON_CI_TRASH, "Delete Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilter,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
              .component_id = std::nullopt});
-    }
+    });
     UIHelpers::Styles::PopRedButton();
-    UIHelpers::ItemHoverTooltip("Delete Filter");
 
     ImGui::SameLine();
     UIHelpers::ColorsPicker(
@@ -492,15 +485,13 @@ void FiltersLayer::RenderFilter(
     ImGui::Separator();
 
     ImGui::Indent(32.0f);
-    if (ImGui::Button(ICON_CI_PLUS))
-    {
+    UIHelpers::IconButton(ICON_CI_PLUS, "Add Component", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilterComponent,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
              .component_id = std::nullopt});
-    }
-    UIHelpers::ItemHoverTooltip("Add Component");
+    });
 
     ImGui::SameLine();
     bool is_active{filter[EFilterFlag::IsActive]};
@@ -552,26 +543,21 @@ void FiltersLayer::RenderFilterComponent(
     ImGui::BeginChild(s_component_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 
     UIHelpers::Styles::PushButtonGripper();
-    if (ImGui::Button(ICON_CI_GRIPPER))
-    {
+    UIHelpers::IconButton(ICON_CI_GRIPPER, "Move Component", [&] {
         // TODO: Implement move
-    }
+    });
     UIHelpers::Styles::PopButtonGripper();
-    UIHelpers::ItemHoverTooltip("Move Component");
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    if (ImGui::Button(ICON_CI_TRASH))
-    {
-        dirty = true;
+    UIHelpers::IconButton(ICON_CI_TRASH, "Delete Component", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilterComponent,
              .tab_id = owning_tab_id,
              .filter_id = owning_filter_id,
              .component_id = component.id});
-    }
+    });
     UIHelpers::Styles::PopRedButton();
-    UIHelpers::ItemHoverTooltip("Delete Component");
 
     // TODO: update when plugin implementation supports headers with IDs
     constexpr std::size_t c_dummy_options_size{3};
@@ -602,36 +588,28 @@ void FiltersLayer::RenderFilterComponent(
     ImGui::SameLine();
     bool const is_regex{component[EFilterComponentFlag::IsRegex]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
-    if (ImGui::Button(ICON_CI_REGEX))
-    {
-        dirty = true;
+    UIHelpers::IconButton(ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
         component[EFilterComponentFlag::IsRegex] = !is_regex;
-    }
+    });
     UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
-    UIHelpers::ItemHoverTooltip(is_regex ? "Toggle Regex Off" : "Toggle Regex On");
 
     ImGui::SameLine();
     bool const is_case_sensitive{component[EFilterComponentFlag::IsCaseSensitive]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
-    if (ImGui::Button(ICON_CI_CASE_SENSITIVE))
-    {
-        dirty = true;
-        component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive;
-    }
+    UIHelpers::IconButton(
+        ICON_CI_CASE_SENSITIVE,
+        is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On",
+        [&] { component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive; });
     UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
-    UIHelpers::ItemHoverTooltip(
-        is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On");
 
     ImGui::SameLine();
     bool const is_equals{component[EFilterComponentFlag::IsEquals]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
-    if (ImGui::Button(ICON_CI_CHEVRON_RIGHT))
-    {
-        dirty = true;
-        component[EFilterComponentFlag::IsEquals] = !is_equals;
-    }
+    UIHelpers::IconButton(
+        ICON_CI_CHEVRON_RIGHT, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
+            component[EFilterComponentFlag::IsEquals] = !is_equals;
+        });
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
-    UIHelpers::ItemHoverTooltip(is_equals ? "Toggle Equals Off" : "Toggle Equals On");
 
     ImGui::SameLine();
     UIHelpers::InputText<256>("##component_data", component.data, dirty);
