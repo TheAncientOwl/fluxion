@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.8
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -16,7 +16,8 @@
 #include "Fluxion.hpp"
 #include "Layers/BaseLayer.hpp"
 #include "Layers/DevLayer/DevLayer.hpp"
-#include "Layers/FiltersLayer.hpp"
+#include "Layers/FiltersLayer//FiltersLayerActions.hpp"
+#include "Layers/FiltersLayer/FiltersLayer.hpp"
 #include "Layers/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"
 
@@ -70,6 +71,29 @@ void FluxionApplication::SetupFonts()
     config.GlyphOffset.y = 2.5f;
     ImWchar const codicon_ranges[] = {ICON_MIN_CI, ICON_MAX_16_CI, 0};
     io.Fonts->AddFontFromFileTTF("assets/fonts/codicon.ttf", 15.5f, &config, codicon_ranges);
+}
+
+void FluxionApplication::OnProcessAction(Graphite::Application::TAppAction<EFluxionAction> const& action)
+{
+    LOG_SCOPE("");
+    switch (action.type)
+    {
+    case EFluxionAction::None: {
+        break;
+    }
+    case Fluxion::Application::EFluxionAction::FilterAction: {
+        Layers::Actions::FiltersLayer::HandleFiltersLayerAction(
+            m_app_state,
+            std::any_cast<Layers::Actions::FiltersLayer::FilterActionPayload>(action.payload));
+        break;
+    }
+    default: {
+        GRAPHITE_ASSERT(
+            false,
+            std::string{"Not handled fluxion action type "} +
+                std::to_string(static_cast<std::uint32_t>(action.type)));
+    }
+    }
 }
 
 } // namespace Fluxion::Application

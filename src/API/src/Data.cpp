@@ -5,116 +5,108 @@
 ///
 /// @file FiltersTabs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.3
 /// @brief Implementation of @see Fluxion/Data.hpp::FiltersTabs.
 ///
 
 #include "Fluxion/API/Data.hpp"
 
-#include <algorithm>
-#include <iterator>
-
 namespace Fluxion::API::Data {
 
-// ---------------- FilterComponent ----------------
-
-FilterComponent::FilterComponent(FilterComponent const& other)
-    : Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>(other)
-    , id(Graphite::Common::UniqueID::Generate())
-    , over_field_id(other.over_field_id)
-    , data(other.data)
+void FiltersTab::UpdateImGuiID()
 {
+    imgui_id = name + "###" + id.ToString();
 }
 
-FilterComponent& FilterComponent::operator=(FilterComponent const& other)
-{
-    if (this == &other)
-    {
-        return *this;
-    }
+// // ---------------- FilterComponent ----------------
 
-    Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>::operator=(other);
-    id = Graphite::Common::UniqueID::Generate();
-    over_field_id = other.over_field_id;
-    data = other.data;
+// FilterComponent::FilterComponent() : id(Graphite::Common::UniqueID::Generate())
+// {
+// }
 
-    return *this;
-}
+// FilterComponent::FilterComponent(FilterComponent const& other)
+//     : Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>(other)
+//     , id(Graphite::Common::UniqueID::Generate())
+//     , over_field_id(other.over_field_id)
+//     , data(other.data)
+// {
+// }
 
-// ---------------- Filter ----------------
+// FilterComponent& FilterComponent::operator=(FilterComponent const& other)
+// {
+//     if (this == &other)
+//     {
+//         return *this;
+//     }
 
-Filter::Filter(Filter const& other)
-    : Graphite::Common::TWithFlags<Filter, EFilterFlag>(other)
-    , id(Graphite::Common::UniqueID::Generate())
-    , name(other.name)
-    , colors(other.colors)
-    , priority(other.priority)
-{
-    components.reserve(other.components.size());
-    std::transform(
-        other.components.begin(),
-        other.components.end(),
-        std::back_inserter(components),
-        [](auto const& component) { return std::make_shared<FilterComponent>(*component); });
-}
+//     Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>::operator=(other);
+//     id = Graphite::Common::UniqueID::Generate();
+//     over_field_id = other.over_field_id;
+//     data = other.data;
 
-Filter& Filter::operator=(Filter const& other)
-{
-    if (this == &other)
-    {
-        return *this;
-    }
+//     return *this;
+// }
 
-    Graphite::Common::TWithFlags<Filter, EFilterFlag>::operator=(other);
-    id = Graphite::Common::UniqueID::Generate();
-    name = other.name;
-    colors = other.colors;
-    priority = other.priority;
+// // ---------------- Filter ----------------
 
-    components.clear();
-    components.reserve(other.components.size());
-    std::transform(
-        other.components.begin(),
-        other.components.end(),
-        std::back_inserter(components),
-        [](auto const& component) { return std::make_shared<FilterComponent>(*component); });
+// Filter::Filter() : id(Graphite::Common::UniqueID::Generate())
+// {
+// }
 
-    return *this;
-}
+// Filter::Filter(Filter const& other)
+//     : Graphite::Common::TWithFlags<Filter, EFilterFlag>(other)
+//     , id(Graphite::Common::UniqueID::Generate())
+//     , name(other.name)
+//     , components(other.components)
+//     , colors(other.colors)
+//     , priority(other.priority)
+// {
+// }
 
-// ---------------- FiltersTab ----------------
+// Filter& Filter::operator=(Filter const& other)
+// {
+//     if (this == &other)
+//     {
+//         return *this;
+//     }
 
-FiltersTab::FiltersTab(FiltersTab const& other)
-    : Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>(other)
-    , id(Graphite::Common::UniqueID::Generate())
-    , name(other.name)
-{
-    filters.reserve(other.filters.size());
-    std::transform(
-        other.filters.begin(), other.filters.end(), std::back_inserter(filters), [](auto const& filter) {
-            return std::make_shared<Filter>(*filter);
-        });
-}
+//     Graphite::Common::TWithFlags<Filter, EFilterFlag>::operator=(other);
+//     id = Graphite::Common::UniqueID::Generate();
+//     name = other.name;
+//     colors = other.colors;
+//     priority = other.priority;
+//     components = other.components;
 
-FiltersTab& FiltersTab::operator=(FiltersTab const& other)
-{
-    if (this == &other)
-    {
-        return *this;
-    }
+//     return *this;
+// }
 
-    Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>::operator=(other);
-    id = Graphite::Common::UniqueID::Generate();
-    name = other.name;
+// // ---------------- FiltersTab ----------------
 
-    filters.clear();
-    filters.reserve(other.filters.size());
-    std::transform(
-        other.filters.begin(), other.filters.end(), std::back_inserter(filters), [](auto const& filter) {
-            return std::make_shared<Filter>(*filter);
-        });
+// FiltersTab::FiltersTab() : id(Graphite::Common::UniqueID::Generate())
+// {
+// }
 
-    return *this;
-}
+// FiltersTab::FiltersTab(FiltersTab const& other)
+//     : Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>(other)
+//     , id(Graphite::Common::UniqueID::Generate())
+//     , name(other.name)
+//     , filters(other.filters)
+// {
+// }
+
+// FiltersTab& FiltersTab::operator=(FiltersTab const& other)
+// {
+//     if (this == &other)
+//     {
+//         return *this;
+//     }
+
+//     Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>::operator=(other);
+//     id = Graphite::Common::UniqueID::Generate();
+//     name = other.name;
+//     filters = other.filters;
+
+//     return *this;
+// }
 
 } // namespace Fluxion::API::Data

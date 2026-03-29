@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -17,7 +17,8 @@
 
 namespace Fluxion::Application::Layers {
 
-class LogsViewLayer : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>
+class LogsViewLayer
+    : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>
 {
 public:
     static std::string_view GetLayerName() noexcept;
@@ -28,6 +29,7 @@ public:
         Graphite::Application::Layers::ZIndex const z_index);
 
     void OnAdd() override;
+    void OnIterate() override;
     void OnRender() override;
     void OnRemove() override;
 

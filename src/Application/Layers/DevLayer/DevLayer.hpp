@@ -5,7 +5,7 @@
 ///
 /// @file DevLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Debug menus.
 ///
 
@@ -18,7 +18,8 @@
 
 namespace Fluxion::Application::Layers {
 
-class DevLayer : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState>
+class DevLayer
+    : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>
 {
 public:
     static std::string_view GetLayerName() noexcept;
@@ -29,6 +30,7 @@ public:
         Graphite::Application::Layers::ZIndex const z_index);
 
     void OnAdd() override;
+    void OnIterate() override;
     void OnRender() override;
     void OnRemove() override;
 
