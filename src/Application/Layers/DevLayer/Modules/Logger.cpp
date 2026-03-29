@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -18,13 +18,8 @@
 #include "IconsCodicons.h"
 #include "imgui.h"
 
+#include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
-
-namespace Fluxion::Application::Layers::UIHelpers {
-
-extern void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f);
-
-} // namespace Fluxion::Application::Layers::UIHelpers
 
 namespace Fluxion::Application::Layers::Modules::DevLayer {
 
@@ -328,7 +323,7 @@ void RenderLogger()
     ImGui::AlignTextToFramePadding();
     ImGui::Text(ICON_CI_TASKLIST " Levels");
     ImGui::SameLine();
-    UIHelpers::VerticalSeparator();
+    Graphite::Common::UI::VerticalSeparator();
 
     ImGui::SameLine();
     ImGui::BeginChild(
@@ -367,7 +362,7 @@ void RenderLogger()
         if (level_idx + 1 < levels.size())
         {
             ImGui::SameLine();
-            UIHelpers::VerticalSeparator();
+            Graphite::Common::UI::VerticalSeparator();
         }
     }
     ImGui::EndChild();

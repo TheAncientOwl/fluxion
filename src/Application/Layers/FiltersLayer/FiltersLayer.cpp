@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.21
+/// @version 0.22
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -13,9 +13,9 @@
 
 #include "IconsCodicons.h"
 #include "imgui.h"
-#include "misc/cpp/imgui_stdlib.h"
 
 #include "FiltersLayer.hpp"
+#include "Graphite/Common/UI/ImGuiHelpers.hpp"
 
 #include "Fluxion/API/DataIO.hpp"
 
@@ -93,85 +93,6 @@ inline std::string_view FiltersLayer::GetDisplayName() const noexcept
 }
 
 namespace UIHelpers {
-
-template <typename... Args>
-void ItemHoverTooltip(const char* fmt, Args&&... args)
-{
-    if (ImGui::IsItemHovered())
-    {
-        if constexpr (sizeof...(args) == 0)
-        {
-            ImGui::SetTooltip("%s", fmt);
-        }
-        else
-        {
-            ImGui::SetTooltip(fmt, std::forward<Args>(args)...);
-        }
-    }
-}
-
-template <typename TAction>
-inline void IconButton(const char* icon, const char* tooltip, TAction&& action)
-{
-    if (ImGui::Button(icon))
-    {
-        action();
-    }
-    ItemHoverTooltip(tooltip);
-}
-
-enum class EInputTextWidth : std::uint8_t
-{
-    Auto,
-    Fill
-};
-
-template <EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
-bool InputText(const char* label, std::string& str)
-{
-    bool modified{false};
-
-    if constexpr (TInputTextWidth == EInputTextWidth::Fill)
-    {
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    }
-
-    if (ImGui::InputText(label, &str))
-    {
-        modified = true;
-    }
-
-    if constexpr (TInputTextWidth == EInputTextWidth::Fill)
-    {
-        ImGui::PopItemWidth();
-    }
-
-    return modified;
-}
-
-void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f)
-{
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    float frame_height = ImGui::GetFrameHeight();
-
-    // height of the line
-    if (height <= 0.0f)
-        height = frame_height * 0.7f;
-
-    ImVec2 pos = ImGui::GetCursorScreenPos();
-
-    // horizontal center inside reserved space
-    float x_center = pos.x + reserved_width * 0.5f;
-    float y_start = pos.y + (frame_height - height) * 0.5f;
-
-    ImU32 color = ImGui::GetColorU32(ImGuiCol_Separator);
-
-    draw_list->AddLine(ImVec2(x_center, y_start), ImVec2(x_center, y_start + height), color, thickness);
-
-    // reserve the width for layout
-    ImGui::Dummy(ImVec2(reserved_width, frame_height));
-    ImGui::SameLine();
-}
 
 void ColorsPicker(
     const char* id,
@@ -330,7 +251,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     auto& tab{*tab_ptr};
     LOG_SCOPE("ID: \"{}\" | \"{}\"", tab.id, tab.name);
 
-    UIHelpers::IconButton(ICON_CI_PLUS, "Add Filter", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilter,
              .tab_id = tab_ptr->id,
@@ -339,7 +260,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     });
 
     ImGui::SameLine();
-    UIHelpers::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFiltersTab,
              .tab_id = std::nullopt,
@@ -348,7 +269,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     });
 
     ImGui::SameLine();
-    UIHelpers::IconButton(ICON_CI_COPY, "Duplicate Tab", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_COPY, "Duplicate Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFiltersTab,
              .tab_id = tab_ptr->id,
@@ -358,7 +279,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    UIHelpers::IconButton(ICON_CI_TRASH, "Delete Tab", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFiltersTab,
              .tab_id = tab_ptr->id,
@@ -375,7 +296,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     }
 
     ImGui::SameLine();
-    if (UIHelpers::InputText("##tab_name", tab.name))
+    if (Graphite::Common::UI::InputText("##tab_name", tab.name))
     {
         tab.UpdateImGuiID();
     }
@@ -409,20 +330,20 @@ void FiltersLayer::RenderFilter(
     using EFilterFlag = Fluxion::API::Data::EFilterFlag;
 
     UIHelpers::Styles::PushButtonGripper();
-    UIHelpers::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {
         // TODO:
     });
     UIHelpers::Styles::PopButtonGripper();
 
     ImGui::SameLine();
     bool const is_collapsed{filter[EFilterFlag::IsCollapsed]};
-    UIHelpers::IconButton(
+    Graphite::Common::UI::IconButton(
         is_collapsed ? ICON_CI_EYE_CLOSED : ICON_CI_EYE,
         is_collapsed ? "Show Filter" : "Hide Filter",
         [&] { filter[EFilterFlag::IsCollapsed] = !is_collapsed; });
 
     ImGui::SameLine();
-    UIHelpers::IconButton(ICON_CI_COPY, "Duplicate Filter", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_COPY, "Duplicate Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFilter,
              .tab_id = owning_tab_id,
@@ -432,7 +353,7 @@ void FiltersLayer::RenderFilter(
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    UIHelpers::IconButton(ICON_CI_TRASH, "Delete Filter", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilter,
              .tab_id = owning_tab_id,
@@ -449,7 +370,7 @@ void FiltersLayer::RenderFilter(
         "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet");
 
     ImGui::SameLine();
-    UIHelpers::VerticalSeparator();
+    Graphite::Common::UI::VerticalSeparator();
 
     ImGui::SameLine();
     int priority_tmp = static_cast<int>(filter.priority);
@@ -459,21 +380,21 @@ void FiltersLayer::RenderFilter(
         filter.priority = static_cast<std::uint8_t>(std::clamp(priority_tmp, 0, 255));
     }
     ImGui::PopItemWidth();
-    UIHelpers::ItemHoverTooltip("Filter Priority");
+    Graphite::Common::UI::ItemHoverTooltip("Filter Priority");
 
     ImGui::SameLine();
-    UIHelpers::VerticalSeparator();
+    Graphite::Common::UI::VerticalSeparator();
 
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-    UIHelpers::InputText("##filter_name", filter.name);
+    Graphite::Common::UI::InputText("##filter_name", filter.name);
     ImGui::PopStyleColor(2); // input text and background colors
 
     ImGui::Separator();
 
     ImGui::Indent(32.0f);
-    UIHelpers::IconButton(ICON_CI_PLUS, "Add Component", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Component", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilterComponent,
              .tab_id = owning_tab_id,
@@ -528,14 +449,14 @@ void FiltersLayer::RenderFilterComponent(
     ImGui::BeginChild(s_component_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 
     UIHelpers::Styles::PushButtonGripper();
-    UIHelpers::IconButton(ICON_CI_GRIPPER, "Move Component", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Component", [&] {
         // TODO: Implement move
     });
     UIHelpers::Styles::PopButtonGripper();
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    UIHelpers::IconButton(ICON_CI_TRASH, "Delete Component", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Component", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilterComponent,
              .tab_id = owning_tab_id,
@@ -573,15 +494,16 @@ void FiltersLayer::RenderFilterComponent(
     ImGui::SameLine();
     bool const is_regex{component[EFilterComponentFlag::IsRegex]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
-    UIHelpers::IconButton(ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
-        component[EFilterComponentFlag::IsRegex] = !is_regex;
-    });
+    Graphite::Common::UI::IconButton(
+        ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
+            component[EFilterComponentFlag::IsRegex] = !is_regex;
+        });
     UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
 
     ImGui::SameLine();
     bool const is_case_sensitive{component[EFilterComponentFlag::IsCaseSensitive]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
-    UIHelpers::IconButton(
+    Graphite::Common::UI::IconButton(
         ICON_CI_CASE_SENSITIVE,
         is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On",
         [&] { component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive; });
@@ -590,14 +512,14 @@ void FiltersLayer::RenderFilterComponent(
     ImGui::SameLine();
     bool const is_equals{component[EFilterComponentFlag::IsEquals]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
-    UIHelpers::IconButton(
+    Graphite::Common::UI::IconButton(
         ICON_CI_CHEVRON_RIGHT, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
             component[EFilterComponentFlag::IsEquals] = !is_equals;
         });
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
 
     ImGui::SameLine();
-    UIHelpers::InputText("##component_data", component.data);
+    Graphite::Common::UI::InputText("##component_data", component.data);
 
     ImGui::EndChild();
 }
