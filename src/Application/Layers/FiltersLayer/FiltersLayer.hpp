@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -44,16 +44,12 @@ public: // Public API
 private: // Private Rendering API
     void RenderFiltersTabs();
 
-    void RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr, bool& dirty);
-    void RenderFilter(
-        Graphite::Common::UniqueID const& owning_tab_id,
-        Fluxion::API::Data::Filter& filter,
-        bool& dirty);
+    void RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr);
+    void RenderFilter(Graphite::Common::UniqueID const& owning_tab_id, Fluxion::API::Data::Filter& filter);
     void RenderFilterComponent(
         Graphite::Common::UniqueID const& owning_tab_id,
         Graphite::Common::UniqueID const& owning_filter_id,
-        Fluxion::API::Data::FilterComponent& component,
-        bool& dirty);
+        Fluxion::API::Data::FilterComponent& component);
 
 private: // Private Logics API
          // void Dispatch(Actions::FiltersLayer::FilterActionPayload&& payload);

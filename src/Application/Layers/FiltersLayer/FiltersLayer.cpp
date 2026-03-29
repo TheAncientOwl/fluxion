@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.19
+/// @version 0.20
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -126,7 +126,7 @@ enum class EInputTextWidth : std::uint8_t
 };
 
 template <std::size_t TBufferSize, EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
-bool InputText(const char* label, std::string& str, bool& dirty)
+bool InputText(const char* label, std::string& str)
 {
     bool modified{false};
 
@@ -142,7 +142,6 @@ bool InputText(const char* label, std::string& str, bool& dirty)
     if (ImGui::InputText(label, buffer, TBufferSize))
     {
         str = buffer;
-        dirty = true;
         modified = true;
     }
 
@@ -182,8 +181,7 @@ void ColorsPicker(
     const char* id,
     Fluxion::API::Data::FilterColors& colors,
     ImVec4 const& display,
-    std::string_view const preview,
-    bool& dirty)
+    std::string_view const preview)
 {
     static bool s_editing_fg = true;
 
@@ -249,11 +247,8 @@ void ColorsPicker(
         ImGui::SliderFloat("##opacity", &target.w, 0.0f, 1.0f, "%.2f");
         ImGui::PopStyleColor(6);
 
-        if (ImGui::ColorPicker4(
-                "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview))
-        {
-            dirty = true;
-        }
+        ImGui::ColorPicker4(
+            "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview);
 
         ImGui::EndPopup();
     }
@@ -321,7 +316,7 @@ void FiltersLayer::RenderFiltersTabs()
             if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
                 LOG_INFO("Rendering filter tab {}", tab->imgui_id.c_str());
-                RenderFiltersTab(tab, app_state.filters.dirty);
+                RenderFiltersTab(tab);
                 ImGui::EndTabItem();
             }
         }
@@ -329,7 +324,7 @@ void FiltersLayer::RenderFiltersTabs()
     }
 }
 
-void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr, bool& dirty)
+void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr)
 {
     GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
@@ -380,19 +375,18 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     bool is_active{tab[API::Data::EFiltersTabFlag::IsActive]};
     if (ImGui::Checkbox("Active", &is_active))
     {
-        dirty = true;
         tab[API::Data::EFiltersTabFlag::IsActive] = is_active;
     }
 
     ImGui::SameLine();
-    if (UIHelpers::InputText<128>("##tab_name", tab.name, dirty))
+    if (UIHelpers::InputText<128>("##tab_name", tab.name))
     {
         tab.UpdateImGuiID();
     }
 
     for (auto& filter : tab.filters.front)
     {
-        RenderFilter(tab_ptr->id, *filter, dirty);
+        RenderFilter(tab_ptr->id, *filter);
 
         ImGui::Separator();
     }
@@ -400,8 +394,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
 
 void FiltersLayer::RenderFilter(
     Graphite::Common::UniqueID const& owning_tab_id,
-    Fluxion::API::Data::Filter& filter,
-    bool& dirty)
+    Fluxion::API::Data::Filter& filter)
 {
     GRAPHITE_ASSERT(
         filter.id != Graphite::Common::UniqueID::Default(),
@@ -454,10 +447,10 @@ void FiltersLayer::RenderFilter(
 
     ImGui::SameLine();
     UIHelpers::ColorsPicker(
-        "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet", dirty);
+        "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet");
     ImGui::SameLine();
     UIHelpers::ColorsPicker(
-        "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet", dirty);
+        "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet");
 
     ImGui::SameLine();
     UIHelpers::VerticalSeparator();
@@ -467,7 +460,6 @@ void FiltersLayer::RenderFilter(
     ImGui::PushItemWidth(85);
     if (ImGui::InputInt("##prio", &priority_tmp, 1, 1))
     {
-        dirty = true;
         filter.priority = static_cast<std::uint8_t>(std::clamp(priority_tmp, 0, 255));
     }
     ImGui::PopItemWidth();
@@ -479,7 +471,7 @@ void FiltersLayer::RenderFilter(
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-    UIHelpers::InputText<128>("##filter_name", filter.name, dirty);
+    UIHelpers::InputText<128>("##filter_name", filter.name);
     ImGui::PopStyleColor(2); // input text and background colors
 
     ImGui::Separator();
@@ -497,7 +489,6 @@ void FiltersLayer::RenderFilter(
     bool is_active{filter[EFilterFlag::IsActive]};
     if (ImGui::Checkbox("Active", &is_active))
     {
-        dirty = true;
         filter[EFilterFlag::IsActive] = is_active;
     }
 
@@ -505,7 +496,6 @@ void FiltersLayer::RenderFilter(
     bool is_highlight_only{filter[EFilterFlag::IsHighlightOnly]};
     if (ImGui::Checkbox("Highlight Only", &is_highlight_only))
     {
-        dirty = true;
         filter[EFilterFlag::IsHighlightOnly] = is_highlight_only;
     }
 
@@ -514,7 +504,7 @@ void FiltersLayer::RenderFilter(
     ImGui::Indent(32.0f);
     for (auto& component_ptr : filter.components.front)
     {
-        RenderFilterComponent(owning_tab_id, filter.id, *component_ptr, dirty);
+        RenderFilterComponent(owning_tab_id, filter.id, *component_ptr);
     }
 
     ImGui::EndChild();
@@ -523,8 +513,7 @@ void FiltersLayer::RenderFilter(
 void FiltersLayer::RenderFilterComponent(
     Graphite::Common::UniqueID const& owning_tab_id,
     Graphite::Common::UniqueID const& owning_filter_id,
-    Fluxion::API::Data::FilterComponent& component,
-    bool& dirty)
+    Fluxion::API::Data::FilterComponent& component)
 {
     GRAPHITE_ASSERT(
         component.id != Graphite::Common::UniqueID::Default(),
@@ -612,7 +601,7 @@ void FiltersLayer::RenderFilterComponent(
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
 
     ImGui::SameLine();
-    UIHelpers::InputText<256>("##component_data", component.data, dirty);
+    UIHelpers::InputText<256>("##component_data", component.data);
 
     ImGui::EndChild();
 }

@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Application state.
 ///
 
@@ -26,28 +26,11 @@ enum class EFluxionAction : std::uint8_t
 
 struct AppState
 {
-    // AppState() = default;
-    // ~AppState() = default;
-
-    // AppState(const AppState&) = delete;
-    // AppState& operator=(const AppState&) = delete;
-
-    // AppState(AppState&& other) noexcept;
-    // AppState& operator=(AppState&& other) noexcept;
-
     std::unique_ptr<Fluxion::API::IFluxionPlugin> logs_logic{nullptr};
 
     struct
     {
-        // Fluxion::API::Data::FiltersTabs tabs{};
-        // Fluxion::API::Data::FiltersTabs render_proxy{};
-
-        // // Handshake flags
-        // std::atomic<bool> has_changes{false};
-
         Fluxion::API::Data::FiltersTabs tabs{};
-
-        bool dirty{false};
     } filters{};
 
     struct

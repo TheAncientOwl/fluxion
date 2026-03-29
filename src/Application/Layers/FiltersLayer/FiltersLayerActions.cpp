@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -379,7 +379,6 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         application_state.filters.tabs.back = DefaultState::MakeDefaultTabs();
     }
 
-    application_state.filters.dirty = true;
     application_state.filters.tabs.MarkDataHasChanges();
 }
 
