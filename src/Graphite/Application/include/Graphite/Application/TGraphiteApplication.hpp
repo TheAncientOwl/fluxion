@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief Main application.
 ///
 
@@ -22,9 +22,9 @@
 
 #include "Graphite/Logger.hpp"
 
+#include "Graphite/Common/TThreadSafeQueue.hpp"
 #include "Graphite/Renderer/Renderer.hpp"
 #include "Layers/TLayer.hpp"
-#include "TActionQueue.hpp"
 #include "WindowConfiguration.hpp"
 
 namespace Graphite::Application {

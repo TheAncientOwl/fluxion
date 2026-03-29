@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file TActionQueue.hpp
+/// @file TThreadSafeQueue.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.1
 /// @brief
