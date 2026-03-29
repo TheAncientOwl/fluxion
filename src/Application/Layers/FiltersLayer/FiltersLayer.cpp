@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.20
+/// @version 0.21
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -13,6 +13,7 @@
 
 #include "IconsCodicons.h"
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 
 #include "FiltersLayer.hpp"
 
@@ -125,23 +126,18 @@ enum class EInputTextWidth : std::uint8_t
     Fill
 };
 
-template <std::size_t TBufferSize, EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
+template <EInputTextWidth TInputTextWidth = EInputTextWidth::Fill>
 bool InputText(const char* label, std::string& str)
 {
     bool modified{false};
-
-    char buffer[TBufferSize];
-    std::strncpy(buffer, str.c_str(), TBufferSize);
-    buffer[TBufferSize - 1] = '\0';
 
     if constexpr (TInputTextWidth == EInputTextWidth::Fill)
     {
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
     }
 
-    if (ImGui::InputText(label, buffer, TBufferSize))
+    if (ImGui::InputText(label, &str))
     {
-        str = buffer;
         modified = true;
     }
 
@@ -379,7 +375,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
     }
 
     ImGui::SameLine();
-    if (UIHelpers::InputText<128>("##tab_name", tab.name))
+    if (UIHelpers::InputText("##tab_name", tab.name))
     {
         tab.UpdateImGuiID();
     }
@@ -471,7 +467,7 @@ void FiltersLayer::RenderFilter(
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-    UIHelpers::InputText<128>("##filter_name", filter.name);
+    UIHelpers::InputText("##filter_name", filter.name);
     ImGui::PopStyleColor(2); // input text and background colors
 
     ImGui::Separator();
@@ -601,7 +597,7 @@ void FiltersLayer::RenderFilterComponent(
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
 
     ImGui::SameLine();
-    UIHelpers::InputText<256>("##component_data", component.data);
+    UIHelpers::InputText("##component_data", component.data);
 
     ImGui::EndChild();
 }
