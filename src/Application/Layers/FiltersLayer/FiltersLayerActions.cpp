@@ -17,7 +17,7 @@ namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 using namespace Fluxion::API::Data;
 
 template <typename T>
-auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::UniqueID const& id)
+auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::UniqueID const& id)
 {
     return std::find_if(vec.begin(), vec.end(), [&](const auto& ptr) { return ptr->id == id; });
 }
@@ -36,7 +36,7 @@ void handle<EFilterActionType::AddFiltersTab>(AppState& application_state, Filte
 
     auto& tabs{application_state.filters.tabs};
     auto& new_tab = *tabs.back.emplace_back(std::make_shared<FiltersTab>());
-    new_tab.id = Graphite::Common::UniqueID::Generate();
+    new_tab.id = Graphite::Common::Utility::UniqueID::Generate();
     new_tab.name = "New Tab";
     new_tab[EFiltersTabFlag::IsActive] = true;
     new_tab.UpdateImGuiID();
@@ -44,7 +44,7 @@ void handle<EFilterActionType::AddFiltersTab>(AppState& application_state, Filte
     auto& new_filters{new_tab.filters};
     auto& new_filter = *new_filters.back.emplace_back(std::make_shared<Filter>());
     new_filters.MarkDataHasChanges();
-    new_filter.id = Graphite::Common::UniqueID::Generate();
+    new_filter.id = Graphite::Common::Utility::UniqueID::Generate();
     new_filter.name = "New Filter";
     new_filter.colors = {
         .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
@@ -53,7 +53,7 @@ void handle<EFilterActionType::AddFiltersTab>(AppState& application_state, Filte
     auto& new_components{new_filter.components};
     auto& new_component = *new_components.back.emplace_back(std::make_shared<FilterComponent>());
     new_filter.components.MarkDataHasChanges();
-    new_component.id = Graphite::Common::UniqueID::Generate();
+    new_component.id = Graphite::Common::Utility::UniqueID::Generate();
     new_component[EFilterComponentFlag::IsEquals] = true;
 }
 
@@ -102,18 +102,18 @@ void handle<EFilterActionType::DuplicateFiltersTab>(
     {
         auto duplicated_tab = std::make_shared<FiltersTab>(**tab_it);
         duplicated_tab->filters.MarkDataHasChanges();
-        duplicated_tab->id = Graphite::Common::UniqueID::Generate();
+        duplicated_tab->id = Graphite::Common::Utility::UniqueID::Generate();
         duplicated_tab->name += "*";
         duplicated_tab->UpdateImGuiID();
         for (auto& filter : duplicated_tab->filters.back)
         {
             filter = std::make_shared<Fluxion::API::Data::Filter>(*filter);
-            filter->id = Graphite::Common::UniqueID::Generate();
+            filter->id = Graphite::Common::Utility::UniqueID::Generate();
             filter->components.MarkDataHasChanges();
             for (auto& component : filter->components.back)
             {
                 component = std::make_shared<Fluxion::API::Data::FilterComponent>(*component);
-                component->id = Graphite::Common::UniqueID::Generate();
+                component->id = Graphite::Common::Utility::UniqueID::Generate();
             }
         }
         tabs.back.insert(std::next(tab_it), std::move(duplicated_tab));
@@ -147,7 +147,7 @@ void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterAct
     filters.MarkDataHasChanges();
     auto& new_filter = *filters.back.emplace_back(std::make_shared<Filter>());
     new_filter.components.MarkDataHasChanges();
-    new_filter.id = Graphite::Common::UniqueID::Generate();
+    new_filter.id = Graphite::Common::Utility::UniqueID::Generate();
     new_filter.name = "New Filter";
     new_filter.colors = {
         .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
@@ -155,7 +155,7 @@ void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterAct
 
     auto& new_component =
         *new_filter.components.back.emplace_back(std::make_shared<FilterComponent>());
-    new_component.id = Graphite::Common::UniqueID::Generate();
+    new_component.id = Graphite::Common::Utility::UniqueID::Generate();
     new_component[EFilterComponentFlag::IsEquals] = true;
 }
 
@@ -218,12 +218,12 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
     {
         auto duplicate_filter = std::make_shared<Filter>(**filter_it);
         duplicate_filter->components.MarkDataHasChanges();
-        duplicate_filter->id = Graphite::Common::UniqueID::Generate();
+        duplicate_filter->id = Graphite::Common::Utility::UniqueID::Generate();
         duplicate_filter->name += "*";
         for (auto& component : duplicate_filter->components.back)
         {
             component = std::make_shared<Fluxion::API::Data::FilterComponent>(*component);
-            component->id = Graphite::Common::UniqueID::Generate();
+            component->id = Graphite::Common::Utility::UniqueID::Generate();
         }
         filters.back.insert(std::next(filter_it), std::move(duplicate_filter));
     }
@@ -266,7 +266,7 @@ void handle<EFilterActionType::AddFilterComponent>(
     filter.components.MarkDataHasChanges();
 
     auto& new_component = *filter.components.back.emplace_back(std::make_shared<FilterComponent>());
-    new_component.id = Graphite::Common::UniqueID::Generate();
+    new_component.id = Graphite::Common::Utility::UniqueID::Generate();
     new_component[EFilterComponentFlag::IsEquals] = true;
 }
 

@@ -32,7 +32,7 @@ private:
 
 private:
     void AppInit() override;
-    void OnProcessAction(Graphite::Application::TAppAction<EFluxionAction> const& action) override;
+    void OnProcessAction(Graphite::Common::Utility::TAppAction<EFluxionAction> const& action) override;
 };
 
 } // namespace Fluxion::Application

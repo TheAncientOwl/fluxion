@@ -11,9 +11,9 @@
 
 #include <filesystem>
 
-#include "DynamicLibrary.hpp"
+#include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 
-namespace Graphite::Plugin {
+namespace Graphite::Common::Plugin {
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -66,4 +66,4 @@ bool DynamicLibrary::isLoaded() const
     return handle != nullptr;
 }
 
-} // namespace Graphite::Plugin
+} // namespace Graphite::Common::Plugin

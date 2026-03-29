@@ -13,9 +13,9 @@
 #include <random>
 #include <utility>
 
-#include "Graphite/Common/UniqueID.hpp"
+#include "Graphite/Common/Utility/UniqueID.hpp"
 
-namespace Graphite::Common {
+namespace Graphite::Common::Utility {
 
 UniqueID::UniqueID(UniqueID&& other) noexcept : m_data{std::move(other.m_data)}
 {
@@ -169,4 +169,4 @@ std::size_t UniqueID::Hash::operator()(UniqueID const& id) const
 
 const UniqueID UniqueID::s_default = UniqueID::Default();
 
-} // namespace Graphite::Common
+} // namespace Graphite::Common::Utility

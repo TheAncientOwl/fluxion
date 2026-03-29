@@ -12,7 +12,7 @@
 #include <atomic>
 #include <cstddef>
 
-namespace Graphite::Common {
+namespace Graphite::Common::Utility {
 
 /**
  * @class RefCounted
@@ -179,4 +179,4 @@ private:
     T* m_instance{};
 };
 
-} // namespace Graphite::Common
+} // namespace Graphite::Common::Utility

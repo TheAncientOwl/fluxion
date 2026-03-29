@@ -1,6 +1,5 @@
 add_subdirectory(Logger)
 add_subdirectory(Common)
-add_subdirectory(Renderer)
 add_subdirectory(Application)
 
 add_library(graphite_interface INTERFACE)

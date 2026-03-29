@@ -324,7 +324,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
 {
     GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        tab_ptr->id != Graphite::Common::UniqueID::Default(),
+        tab_ptr->id != Graphite::Common::Utility::UniqueID::Default(),
         "Received tab with default ID for rendering...");
 
     auto& tab{*tab_ptr};
@@ -389,19 +389,19 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
 }
 
 void FiltersLayer::RenderFilter(
-    Graphite::Common::UniqueID const& owning_tab_id,
+    Graphite::Common::Utility::UniqueID const& owning_tab_id,
     Fluxion::API::Data::Filter& filter)
 {
     GRAPHITE_ASSERT(
-        filter.id != Graphite::Common::UniqueID::Default(),
+        filter.id != Graphite::Common::Utility::UniqueID::Default(),
         "Received filter with default ID for rendering...");
     GRAPHITE_ASSERT(
-        owning_tab_id != Graphite::Common::UniqueID::Default(),
+        owning_tab_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_tab as default ID for rendering...");
 
     LOG_SCOPE("ID: \"{}\" | \"{}\"", filter.id, filter.name);
 
-    char s_filter_id[Graphite::Common::UniqueID::GetMinDumpSize()];
+    char s_filter_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
     filter.id.Dump(s_filter_id);
     ImGui::BeginChild(s_filter_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
     ImGui::Separator();
@@ -507,23 +507,23 @@ void FiltersLayer::RenderFilter(
 }
 
 void FiltersLayer::RenderFilterComponent(
-    Graphite::Common::UniqueID const& owning_tab_id,
-    Graphite::Common::UniqueID const& owning_filter_id,
+    Graphite::Common::Utility::UniqueID const& owning_tab_id,
+    Graphite::Common::Utility::UniqueID const& owning_filter_id,
     Fluxion::API::Data::FilterComponent& component)
 {
     GRAPHITE_ASSERT(
-        component.id != Graphite::Common::UniqueID::Default(),
+        component.id != Graphite::Common::Utility::UniqueID::Default(),
         "Received component with default ID for rendering...");
     GRAPHITE_ASSERT(
-        owning_tab_id != Graphite::Common::UniqueID::Default(),
+        owning_tab_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_tab_id as default ID for rendering...");
     GRAPHITE_ASSERT(
-        owning_filter_id != Graphite::Common::UniqueID::Default(),
+        owning_filter_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_filter_id as default ID for rendering...");
 
     LOG_SCOPE("ID: \"{}\"", component.id);
 
-    char s_component_id[Graphite::Common::UniqueID::GetMinDumpSize()];
+    char s_component_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
     component.id.Dump(s_component_id);
     ImGui::BeginChild(s_component_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 

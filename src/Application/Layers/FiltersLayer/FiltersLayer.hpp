@@ -15,13 +15,13 @@
 #include "FiltersLayerActions.hpp"
 #include "Fluxion.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
-#include "Graphite/Application/Layers/Utils/TDispatcher.hpp"
+#include "Graphite/Application/Layers/Utility/TDispatcher.hpp"
 
 namespace Fluxion::Application::Layers {
 
 class FiltersLayer
     : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>
-    , public Graphite::Application::Layers::Utils::
+    , public Graphite::Application::Layers::Utility::
           TDispatcher<FiltersLayer, EFluxionAction::FilterAction, Actions::FiltersLayer::FilterActionPayload>
 {
 public: // Public API
@@ -45,10 +45,12 @@ private: // Private Rendering API
     void RenderFiltersTabs();
 
     void RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr);
-    void RenderFilter(Graphite::Common::UniqueID const& owning_tab_id, Fluxion::API::Data::Filter& filter);
+    void RenderFilter(
+        Graphite::Common::Utility::UniqueID const& owning_tab_id,
+        Fluxion::API::Data::Filter& filter);
     void RenderFilterComponent(
-        Graphite::Common::UniqueID const& owning_tab_id,
-        Graphite::Common::UniqueID const& owning_filter_id,
+        Graphite::Common::Utility::UniqueID const& owning_tab_id,
+        Graphite::Common::Utility::UniqueID const& owning_filter_id,
         Fluxion::API::Data::FilterComponent& component);
 
 private: // Private Logics API

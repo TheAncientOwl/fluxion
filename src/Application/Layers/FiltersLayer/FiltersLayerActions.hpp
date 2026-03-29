@@ -31,9 +31,9 @@ enum class EFilterActionType : std::uint8_t
 struct FilterActionPayload
 {
     EFilterActionType type{EFilterActionType::None};
-    std::optional<Graphite::Common::UniqueID> tab_id{};
-    std::optional<Graphite::Common::UniqueID> filter_id{};
-    std::optional<Graphite::Common::UniqueID> component_id{};
+    std::optional<Graphite::Common::Utility::UniqueID> tab_id{};
+    std::optional<Graphite::Common::Utility::UniqueID> filter_id{};
+    std::optional<Graphite::Common::Utility::UniqueID> component_id{};
 };
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action);

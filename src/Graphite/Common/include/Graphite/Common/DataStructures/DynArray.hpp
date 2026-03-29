@@ -15,7 +15,7 @@
 
 #include "Graphite/Logger.hpp"
 
-namespace Graphite::Common {
+namespace Graphite::Common::DataStructures {
 
 /**
  * @class DynArray
@@ -203,4 +203,4 @@ private:
     size_type m_capacity; ///< Maximum capacity.
 };
 
-} // namespace Graphite::Common
+} // namespace Graphite::Common::DataStructures

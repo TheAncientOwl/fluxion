@@ -34,7 +34,7 @@ public:
     TSoftMenuCloseableLayer(
         std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         ZIndex const zindex,
-        Graphite::Common::UniqueID id)
+        Graphite::Common::Utility::UniqueID id)
         : TLayer<ApplicationState, ActionEnum>(std::move(application), zindex, std::move(id))
     {
     }

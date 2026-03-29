@@ -15,7 +15,7 @@
 #include <iostream>
 #include <string>
 
-namespace Graphite::Plugin {
+namespace Graphite::Common::Plugin {
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -43,4 +43,4 @@ private:
     LibHandle handle;
 };
 
-} // namespace Graphite::Plugin
+} // namespace Graphite::Common::Plugin

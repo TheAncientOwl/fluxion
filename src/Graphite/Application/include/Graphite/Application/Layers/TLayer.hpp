@@ -14,7 +14,7 @@
 #include <memory>
 #include <string_view>
 
-#include "Graphite/Common/UniqueID.hpp"
+#include "Graphite/Common/Utility/UniqueID.hpp"
 
 namespace Graphite::Application {
 
@@ -39,7 +39,7 @@ public:
         std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         ZIndex const z_index)
         : m_z_index{z_index}
-        , m_layer_id{Graphite::Common::UniqueID::Generate()}
+        , m_layer_id{Graphite::Common::Utility::UniqueID::Generate()}
         , m_application{std::move(application)}
     {
     }
@@ -47,7 +47,7 @@ public:
     TLayer(
         std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         ZIndex const zindex,
-        Graphite::Common::UniqueID id)
+        Graphite::Common::Utility::UniqueID id)
         : m_z_index{zindex}, m_layer_id{std::move(id)}, m_application{std::move(application)} {};
 
     virtual ~TLayer() = default;
@@ -55,7 +55,7 @@ public:
     virtual inline bool IsActive() const noexcept { return true; };
     virtual inline void SetIsActive(bool const /* active */) {};
 
-    inline Graphite::Common::UniqueID const& GetID() const noexcept { return m_layer_id; }
+    inline Graphite::Common::Utility::UniqueID const& GetID() const noexcept { return m_layer_id; }
     inline bool GetZIndex() const noexcept { return m_z_index; }
 
     ApplicationPtr GetApplication() { return m_application; }
@@ -91,7 +91,7 @@ protected:
 
 protected:
     ZIndex m_z_index{0};
-    Graphite::Common::UniqueID m_layer_id{};
+    Graphite::Common::Utility::UniqueID m_layer_id{};
     ApplicationPtr m_application{nullptr};
 };
 

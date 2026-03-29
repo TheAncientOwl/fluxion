@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "Graphite/Common/GraphiteExport.hpp"
+#include "Graphite/Common/Plugin/GraphiteExport.hpp"
 
 #include "Fluxion/API/Data.hpp"
 

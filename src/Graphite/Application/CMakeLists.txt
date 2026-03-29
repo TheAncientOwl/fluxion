@@ -1,3 +1,5 @@
+add_subdirectory(src)
+
 # --- 1. Interface ---
 add_library(graphite_application_interface INTERFACE)
 

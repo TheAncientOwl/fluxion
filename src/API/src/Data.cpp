@@ -20,13 +20,13 @@ void FiltersTab::UpdateImGuiID()
 
 // // ---------------- FilterComponent ----------------
 
-// FilterComponent::FilterComponent() : id(Graphite::Common::UniqueID::Generate())
+// FilterComponent::FilterComponent() : id(Graphite::Common::Utility::UniqueID::Generate())
 // {
 // }
 
 // FilterComponent::FilterComponent(FilterComponent const& other)
-//     : Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>(other)
-//     , id(Graphite::Common::UniqueID::Generate())
+//     : Graphite::Common::Utility::TWithFlags<FilterComponent, EFilterComponentFlag>(other)
+//     , id(Graphite::Common::Utility::UniqueID::Generate())
 //     , over_field_id(other.over_field_id)
 //     , data(other.data)
 // {
@@ -39,8 +39,8 @@ void FiltersTab::UpdateImGuiID()
 //         return *this;
 //     }
 
-//     Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>::operator=(other);
-//     id = Graphite::Common::UniqueID::Generate();
+//     Graphite::Common::Utility::TWithFlags<FilterComponent, EFilterComponentFlag>::operator=(other);
+//     id = Graphite::Common::Utility::UniqueID::Generate();
 //     over_field_id = other.over_field_id;
 //     data = other.data;
 
@@ -49,13 +49,13 @@ void FiltersTab::UpdateImGuiID()
 
 // // ---------------- Filter ----------------
 
-// Filter::Filter() : id(Graphite::Common::UniqueID::Generate())
+// Filter::Filter() : id(Graphite::Common::Utility::UniqueID::Generate())
 // {
 // }
 
 // Filter::Filter(Filter const& other)
-//     : Graphite::Common::TWithFlags<Filter, EFilterFlag>(other)
-//     , id(Graphite::Common::UniqueID::Generate())
+//     : Graphite::Common::Utility::TWithFlags<Filter, EFilterFlag>(other)
+//     , id(Graphite::Common::Utility::UniqueID::Generate())
 //     , name(other.name)
 //     , components(other.components)
 //     , colors(other.colors)
@@ -70,8 +70,8 @@ void FiltersTab::UpdateImGuiID()
 //         return *this;
 //     }
 
-//     Graphite::Common::TWithFlags<Filter, EFilterFlag>::operator=(other);
-//     id = Graphite::Common::UniqueID::Generate();
+//     Graphite::Common::Utility::TWithFlags<Filter, EFilterFlag>::operator=(other);
+//     id = Graphite::Common::Utility::UniqueID::Generate();
 //     name = other.name;
 //     colors = other.colors;
 //     priority = other.priority;
@@ -82,13 +82,13 @@ void FiltersTab::UpdateImGuiID()
 
 // // ---------------- FiltersTab ----------------
 
-// FiltersTab::FiltersTab() : id(Graphite::Common::UniqueID::Generate())
+// FiltersTab::FiltersTab() : id(Graphite::Common::Utility::UniqueID::Generate())
 // {
 // }
 
 // FiltersTab::FiltersTab(FiltersTab const& other)
-//     : Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>(other)
-//     , id(Graphite::Common::UniqueID::Generate())
+//     : Graphite::Common::Utility::TWithFlags<FiltersTab, EFiltersTabFlag>(other)
+//     , id(Graphite::Common::Utility::UniqueID::Generate())
 //     , name(other.name)
 //     , filters(other.filters)
 // {
@@ -101,8 +101,8 @@ void FiltersTab::UpdateImGuiID()
 //         return *this;
 //     }
 
-//     Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>::operator=(other);
-//     id = Graphite::Common::UniqueID::Generate();
+//     Graphite::Common::Utility::TWithFlags<FiltersTab, EFiltersTabFlag>::operator=(other);
+//     id = Graphite::Common::Utility::UniqueID::Generate();
 //     name = other.name;
 //     filters = other.filters;
 

@@ -16,7 +16,7 @@
 #include <mutex>
 #include <vector>
 
-namespace Graphite::Common {
+namespace Graphite::Common::DataStructures {
 
 template <typename Item>
 struct TDoubleBufferedVector
@@ -112,4 +112,4 @@ private: // Fields
     std::atomic<bool> m_has_changes{false};
 };
 
-} // namespace Graphite::Common
+} // namespace Graphite::Common::DataStructures

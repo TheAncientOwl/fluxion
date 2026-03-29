@@ -17,14 +17,7 @@
 #include <mutex>
 #include <queue>
 
-namespace Graphite::Application {
-
-template <typename ActionEnum>
-struct TAppAction
-{
-    ActionEnum type;
-    std::any payload;
-};
+namespace Graphite::Common::DataStructures {
 
 template <typename T>
 class TThreadSafeQueue
@@ -58,4 +51,4 @@ private:
     std::condition_variable m_cv;
 };
 
-} // namespace Graphite::Application
+} // namespace Graphite::Common::DataStructures

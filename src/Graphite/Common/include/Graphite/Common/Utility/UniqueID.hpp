@@ -15,7 +15,7 @@
 #include <format>
 #include <ostream>
 
-namespace Graphite::Common {
+namespace Graphite::Common::Utility {
 
 class UniqueID
 {
@@ -80,14 +80,14 @@ private: // fields
 std::string operator+(std::string_view const lhs, UniqueID const& rhs);
 std::string operator+(UniqueID const& lhs, std::string_view const rhs);
 
-} // namespace Graphite::Common
+} // namespace Graphite::Common::Utility
 
 template <>
-struct std::formatter<Graphite::Common::UniqueID>
+struct std::formatter<Graphite::Common::Utility::UniqueID>
 {
     constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
-    auto format(Graphite::Common::UniqueID const& p, std::format_context& ctx) const
+    auto format(Graphite::Common::Utility::UniqueID const& p, std::format_context& ctx) const
     {
         static constexpr char hex[] = "0123456789abcdef";
 

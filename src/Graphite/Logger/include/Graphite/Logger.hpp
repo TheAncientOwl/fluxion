@@ -28,7 +28,7 @@
 
 #include "imgui.h"
 
-#include "Graphite/Common/TWithFlags.hpp"
+#include "Graphite/Common/Utility/TWithFlags.hpp"
 
 namespace Graphite::Logger {
 
@@ -53,9 +53,9 @@ struct LogMessage
     std::chrono::system_clock::time_point time;
 };
 
-struct LogScopeFlags : public Graphite::Common::TWithFlags<LogScopeFlags, ELogLevel>
+struct LogScopeFlags : public Graphite::Common::Utility::TWithFlags<LogScopeFlags, ELogLevel>
 {
-    using Base = Graphite::Common::TWithFlags<LogScopeFlags, ELogLevel>;
+    using Base = Graphite::Common::Utility::TWithFlags<LogScopeFlags, ELogLevel>;
     using Storage = Base::Storage;
 
     [[nodiscard]] Storage GetStorage() const noexcept { return this->flags; }

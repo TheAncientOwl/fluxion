@@ -11,7 +11,7 @@
 
 #include <utility>
 
-namespace Graphite::Application::Layers::Utils {
+namespace Graphite::Application::Layers::Utility {
 
 /**
  * @tparam TDerived The class inheriting (CRTP)
@@ -36,4 +36,4 @@ public:
     }
 };
 
-} // namespace Graphite::Application::Layers::Utils
+} // namespace Graphite::Application::Layers::Utility

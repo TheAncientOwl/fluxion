@@ -22,7 +22,8 @@
 
 #include "Graphite/Logger.hpp"
 
-#include "Graphite/Common/TThreadSafeQueue.hpp"
+#include "Graphite/Common/DataStructures/TThreadSafeQueue.hpp"
+#include "Graphite/Common/Utility/TAppAction.hpp"
 #include "Graphite/Renderer/Renderer.hpp"
 #include "Layers/TLayer.hpp"
 #include "WindowConfiguration.hpp"
@@ -60,7 +61,7 @@ public: // Public API
                  requires {
                      { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
                  }
-    Graphite::Common::UniqueID const& AddLayer(Args&&... args);
+    Graphite::Common::Utility::UniqueID const& AddLayer(Args&&... args);
 
     template <typename LayerType>
         requires std::is_class_v<LayerType> &&
@@ -77,7 +78,7 @@ private: // Private API
     void Render() override;
     void Shutdown();
 
-    virtual void OnProcessAction(TAppAction<ActionEnum> const& action) = 0;
+    virtual void OnProcessAction(Graphite::Common::Utility::TAppAction<ActionEnum> const& action) = 0;
 
     void IterateLayers();
     void RenderLayers();
@@ -89,13 +90,15 @@ protected: // Shared state
 
 private: // Internal state
     std::vector<typename Layers::TLayer<ApplicationState, ActionEnum>::Ptr> m_layers{};
-    std::unordered_set<Graphite::Common::UniqueID, Graphite::Common::UniqueID::Hash> m_removed_layers{};
+    std::unordered_set<Graphite::Common::Utility::UniqueID, Graphite::Common::Utility::UniqueID::Hash>
+        m_removed_layers{};
     std::unique_ptr<Graphite::Application::Renderer::IRenderer> m_renderer{nullptr};
 
 private: // Threading components
     std::thread m_worker_thread{};
     std::atomic<bool> m_worker_running{true};
-    TThreadSafeQueue<TAppAction<ActionEnum>> m_action_queue{};
+    Graphite::Common::DataStructures::TThreadSafeQueue<Graphite::Common::Utility::TAppAction<ActionEnum>>
+        m_action_queue{};
 };
 
 template <typename ApplicationState, typename ActionEnum>
@@ -175,7 +178,7 @@ void TGraphiteApplication<ApplicationState, ActionEnum>::IterateLayers()
 template <typename ApplicationState, typename ActionEnum>
 void TGraphiteApplication<ApplicationState, ActionEnum>::WorkerLoop()
 {
-    TAppAction<ActionEnum> action;
+    Graphite::Common::Utility::TAppAction<ActionEnum> action;
 
     while (m_action_queue.WaitAndPop(action, m_worker_running))
     {
@@ -193,7 +196,8 @@ template <typename LayerImpl, typename... Args>
     requires std::derived_from<LayerImpl, Layers::TLayer<ApplicationState, ActionEnum>> && requires {
         { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
     }
-Graphite::Common::UniqueID const& TGraphiteApplication<ApplicationState, ActionEnum>::AddLayer(Args&&... args)
+Graphite::Common::Utility::UniqueID const& TGraphiteApplication<ApplicationState, ActionEnum>::AddLayer(
+    Args&&... args)
 {
     LOG_SCOPE("{}", LayerImpl::GetLayerName().data());
     auto layer = std::make_unique<LayerImpl>(std::forward<Args>(args)...);

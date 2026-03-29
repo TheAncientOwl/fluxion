@@ -73,7 +73,7 @@ void FluxionApplication::SetupFonts()
     io.Fonts->AddFontFromFileTTF("assets/fonts/codicon.ttf", 15.5f, &config, codicon_ranges);
 }
 
-void FluxionApplication::OnProcessAction(Graphite::Application::TAppAction<EFluxionAction> const& action)
+void FluxionApplication::OnProcessAction(Graphite::Common::Utility::TAppAction<EFluxionAction> const& action)
 {
     LOG_SCOPE("");
     switch (action.type)

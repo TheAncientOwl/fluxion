@@ -15,9 +15,9 @@
 #include <string>
 #include <vector>
 
-#include "Graphite/Common/TDoubleBufferedVector.hpp"
-#include "Graphite/Common/TWithFlags.hpp"
-#include "Graphite/Common/UniqueID.hpp"
+#include "Graphite/Common/DataStructures/TDoubleBufferedVector.hpp"
+#include "Graphite/Common/Utility/TWithFlags.hpp"
+#include "Graphite/Common/Utility/UniqueID.hpp"
 
 #include "imgui.h"
 
@@ -47,10 +47,11 @@ enum class EFilterComponentFlag : std::uint8_t
 };
 // clang-format on
 
-struct FilterComponent : public Graphite::Common::TWithFlags<FilterComponent, EFilterComponentFlag>
+struct FilterComponent
+    : public Graphite::Common::Utility::TWithFlags<FilterComponent, EFilterComponentFlag>
 {
-    Graphite::Common::UniqueID id{};
-    Graphite::Common::UniqueID over_field_id{};
+    Graphite::Common::Utility::UniqueID id{};
+    Graphite::Common::Utility::UniqueID over_field_id{};
     std::string data{};
 
     friend std::ostream& operator<<(std::ostream& os, const FilterComponent& v);
@@ -72,11 +73,11 @@ enum class EFilterFlag : std::uint8_t
 };
 // clang-format on
 
-struct Filter : public Graphite::Common::TWithFlags<Filter, EFilterFlag>
+struct Filter : public Graphite::Common::Utility::TWithFlags<Filter, EFilterFlag>
 {
-    Graphite::Common::UniqueID id{};
+    Graphite::Common::Utility::UniqueID id{};
     std::string name{};
-    Graphite::Common::TDoubleBufferedVector<FilterComponent> components{};
+    Graphite::Common::DataStructures::TDoubleBufferedVector<FilterComponent> components{};
     FilterColors colors{};
     std::uint8_t priority{};
 
@@ -91,11 +92,11 @@ enum class EFiltersTabFlag : std::uint8_t
 };
 // clang-format on
 
-struct FiltersTab : public Graphite::Common::TWithFlags<FiltersTab, EFiltersTabFlag>
+struct FiltersTab : public Graphite::Common::Utility::TWithFlags<FiltersTab, EFiltersTabFlag>
 {
-    Graphite::Common::UniqueID id{};
+    Graphite::Common::Utility::UniqueID id{};
     std::string name{};
-    Graphite::Common::TDoubleBufferedVector<Filter> filters{};
+    Graphite::Common::DataStructures::TDoubleBufferedVector<Filter> filters{};
     std::string imgui_id{};
 
     void UpdateImGuiID();
@@ -103,6 +104,6 @@ struct FiltersTab : public Graphite::Common::TWithFlags<FiltersTab, EFiltersTabF
     friend std::ostream& operator<<(std::ostream& os, const FiltersTab& v);
 };
 
-using FiltersTabs = Graphite::Common::TDoubleBufferedVector<FiltersTab>;
+using FiltersTabs = Graphite::Common::DataStructures::TDoubleBufferedVector<FiltersTab>;
 
 } // namespace Fluxion::API::Data

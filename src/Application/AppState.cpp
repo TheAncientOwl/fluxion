@@ -26,7 +26,7 @@ AppState Make()
 Fluxion::API::Data::FiltersTabs::StorageType MakeDefaultTabs()
 {
     using namespace Fluxion::API::Data;
-    using UniqueID = Graphite::Common::UniqueID;
+    using UniqueID = Graphite::Common::Utility::UniqueID;
 
     FiltersTabs::StorageType tabs{};
     {

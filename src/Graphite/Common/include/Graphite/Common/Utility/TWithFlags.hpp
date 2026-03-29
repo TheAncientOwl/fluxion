@@ -14,7 +14,7 @@
 
 #include <type_traits>
 
-namespace Graphite::Common {
+namespace Graphite::Common::Utility {
 
 template <typename Derived, typename Enum>
     requires std::is_enum_v<Enum> && std::is_unsigned_v<std::underlying_type_t<Enum>>
@@ -83,4 +83,4 @@ protected:
     Storage flags{};
 };
 
-} // namespace Graphite::Common
+} // namespace Graphite::Common::Utility
