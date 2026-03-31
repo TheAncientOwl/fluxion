@@ -5,9 +5,11 @@
 ///
 /// @file TAppAction.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief
 ///
+
+#include <any>
 
 namespace Graphite::Common::Utility {
 

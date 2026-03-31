@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -14,11 +14,15 @@
 #include "AppState.hpp"
 #include "Fluxion.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
+#include "Graphite/Application/Layers/Utility/TDispatcher.hpp"
+#include "LogsViewLayerActions.hpp"
 
 namespace Fluxion::Application::Layers {
 
 class LogsViewLayer
     : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>
+    , public Graphite::Application::Layers::Utility::
+          TDispatcher<LogsViewLayer, EFluxionAction::LogsViewLayerAction, Actions::LogsViewLayer::LogsViewLayerActionPayload>
 {
 public:
     static std::string_view GetLayerName() noexcept;

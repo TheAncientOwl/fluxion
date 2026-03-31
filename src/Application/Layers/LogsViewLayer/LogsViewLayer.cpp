@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -42,6 +42,7 @@ void LogsViewLayer::OnAdd()
 void LogsViewLayer::OnIterate()
 {
     LOG_SCOPE("");
+    m_application->GetApplicationState().logs.visible_chunk.SyncFront();
 }
 
 void LogsViewLayer::OnRender()
@@ -74,6 +75,7 @@ inline std::string_view LogsViewLayer::GetDisplayName() const noexcept
 
 void LogsViewLayer::RenderLogsTable()
 {
+    LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
     auto const& headers{app_state.logs_logic->GetTableHeader()};
 
@@ -98,36 +100,44 @@ void LogsViewLayer::RenderLogsTable()
         ImGuiListClipper clipper{};
         clipper.Begin(static_cast<int>(app_state.logs_logic->GetTotalLogs()));
 
-        // TODO: resize the data when the imported logs change
-        static std::vector<std::vector<std::string>> s_logs_chunk{};
-
         while (clipper.Step())
         {
-            const size_t new_size = static_cast<size_t>(clipper.DisplayEnd - clipper.DisplayStart);
+            // 1. Dispatch the request for the currently visible range
+            Dispatch(
+                Actions::LogsViewLayer::LogsViewLayerActionPayload{
+                    .type = Actions::LogsViewLayer::ELogsViewActionLayerType::UpdateVisibleLogs,
+                    .visible_logs_indices = {.begin = clipper.DisplayStart, .end = clipper.DisplayEnd}});
+            LOG_INFO("Requested update begin {} | end {}", clipper.DisplayStart, clipper.DisplayEnd);
 
-            if (new_size > s_logs_chunk.size())
-            {
-                auto const old_size = s_logs_chunk.size();
-                s_logs_chunk.resize(new_size);
+            // 2. Calculate exactly how many rows ImGui expects us to render this step
+            auto const rows_to_render =
+                static_cast<std::size_t>(clipper.DisplayEnd - clipper.DisplayStart);
+            LOG_INFO("Rendering {}* rows", rows_to_render);
 
-                for (size_t row_idx = old_size; row_idx < new_size; ++row_idx)
-                {
-                    s_logs_chunk[row_idx].resize(headers.size());
-                }
-            }
-
-            auto const filled_size = app_state.logs_logic->GetLogsChunk(
-                static_cast<size_t>(clipper.DisplayStart),
-                static_cast<size_t>(clipper.DisplayEnd),
-                s_logs_chunk);
-
-            for (size_t log_idx = 0, size = std::min(new_size, filled_size); log_idx < size; ++log_idx)
+            // 3. Render EXACTLY that many rows
+            for (std::size_t i = 0; i < rows_to_render; ++i)
             {
                 ImGui::TableNextRow();
-                for (auto const& log_field : s_logs_chunk[log_idx])
+
+                // Check if we have valid data in the 'front' buffer for this relative row.
+                // Because of double-buffering, there might be a 1-frame delay where
+                // filled_size doesn't match rows_to_render.
+                if (i < app_state.logs.visible_chunk.front.filled_size)
                 {
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(log_field.c_str());
+                    for (auto const& log_field : app_state.logs.visible_chunk.front.data[i])
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(log_field.c_str());
+                    }
+                }
+                else
+                {
+                    // Fallback: Render empty cells to maintain table structure and Y-cursor math
+                    for (size_t col = 0; col < headers.size(); ++col)
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted("...");
+                    }
                 }
             }
         }

@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -18,7 +18,7 @@
 #include "Layers/DevLayer/DevLayer.hpp"
 #include "Layers/FiltersLayer//FiltersLayerActions.hpp"
 #include "Layers/FiltersLayer/FiltersLayer.hpp"
-#include "Layers/LogsViewLayer.hpp"
+#include "Layers/LogsViewLayer/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"
 
 namespace Fluxion::Application {
@@ -50,6 +50,8 @@ void FluxionApplication::AppInit()
 
     // TODO: this is only for testing purpose during impl
     m_app_state.logs_logic = std::make_unique<DummyPlugin>();
+    // TODO: this is only for dev purpose, this should be moved somewhere else.
+    m_app_state.logs.table_header = m_app_state.logs_logic->GetTableHeader();
 
     AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
     AddLayer<Layers::DevLayer>(
@@ -85,6 +87,12 @@ void FluxionApplication::OnProcessAction(Graphite::Common::Utility::TAppAction<E
         Layers::Actions::FiltersLayer::HandleFiltersLayerAction(
             m_app_state,
             std::any_cast<Layers::Actions::FiltersLayer::FilterActionPayload>(action.payload));
+        break;
+    }
+    case Fluxion::Application::EFluxionAction::LogsViewLayerAction: {
+        Layers::Actions::LogsViewLayer::HandleLogsViewLayersLayerAction(
+            m_app_state,
+            std::any_cast<Layers::Actions::LogsViewLayer::LogsViewLayerActionPayload>(action.payload));
         break;
     }
     default: {

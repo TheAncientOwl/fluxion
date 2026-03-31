@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Application state.
 ///
 
@@ -15,13 +15,22 @@
 
 #include "Fluxion/API/Data.hpp"
 #include "Fluxion/API/IFluxionPlugin.hpp"
+#include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
+#include "Graphite/Common/DataStructures/TDoubleBufferedVector.hpp"
 
 namespace Fluxion::Application {
 
 enum class EFluxionAction : std::uint8_t
 {
     None = 0,
-    FilterAction = 1
+    FilterAction = 1,
+    LogsViewLayerAction = 2
+};
+
+struct VisibleLogsChunk
+{
+    std::vector<std::vector<std::string>> data{};
+    std::size_t filled_size{};
 };
 
 struct AppState
@@ -39,6 +48,12 @@ struct AppState
         bool debug{true};
         bool filters{true};
     } layers_active{};
+
+    struct
+    {
+        Graphite::Common::DataStructures::TDoubleBuffer<VisibleLogsChunk> visible_chunk{};
+        std::vector<std::string> table_header{}; // todo: replace string with proper struct
+    } logs{};
 };
 
 namespace DefaultState {
