@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -33,7 +33,7 @@ public:
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
     virtual void ApplyFilters(std::vector<std::shared_ptr<Fluxion::API::Data::FiltersTab>> const& tabs) = 0;
 
-    virtual Fluxion::API::Data::LogsTableHeader GetTableHeader() const = 0;
+    virtual std::vector<Fluxion::API::Data::LogsTableColumnDetails> GetTableHeader() const = 0;
     virtual std::size_t GetTotalLogs() const = 0;
 
     /**

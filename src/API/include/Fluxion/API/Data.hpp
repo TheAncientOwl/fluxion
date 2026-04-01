@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief General data.
 ///
 
@@ -36,7 +36,11 @@ struct OnDisableData
 
 }; // namespace Plugin
 
-using LogsTableHeader = std::vector<std::string>;
+struct LogsTableColumnDetails
+{
+    Graphite::Common::Utility::UniqueID id{};
+    std::string display_name;
+};
 
 // clang-format off
 enum class EFilterComponentFlag : std::uint8_t

@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -93,7 +93,7 @@ void LogsViewLayer::RenderLogsTable()
 
         for (auto const& header : headers)
         {
-            ImGui::TableSetupColumn(header.c_str());
+            ImGui::TableSetupColumn(header.display_name.c_str());
         }
         ImGui::TableHeadersRow();
 

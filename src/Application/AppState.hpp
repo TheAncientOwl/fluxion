@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Application state.
 ///
 
@@ -52,7 +52,7 @@ struct AppState
     struct
     {
         Graphite::Common::DataStructures::TSwapDoubleBuffer<VisibleLogsChunk> visible_chunk{};
-        std::vector<std::string> table_header{}; // todo: replace string with proper struct
+        std::vector<Fluxion::API::Data::LogsTableColumnDetails> table_header{};
     } logs{};
 };
 

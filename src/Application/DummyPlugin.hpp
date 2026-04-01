@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -80,9 +80,14 @@ public:
         // No filtering for dummy plugin
     }
 
-    Fluxion::API::Data::LogsTableHeader GetTableHeader() const override
+    std::vector<Fluxion::API::Data::LogsTableColumnDetails> GetTableHeader() const override
     {
-        return {"Timestamp", "Channel", "Level", "Payload"};
+        static std::vector<Fluxion::API::Data::LogsTableColumnDetails> s_table_header{
+            {Graphite::Common::Utility::UniqueID::Generate(), "Timestamp"},
+            {Graphite::Common::Utility::UniqueID::Generate(), "Channel"},
+            {Graphite::Common::Utility::UniqueID::Generate(), "Level"},
+            {Graphite::Common::Utility::UniqueID::Generate(), "Payload"}};
+        return s_table_header;
     }
 
     std::size_t GetTotalLogs() const override { return m_logs.size(); }
