@@ -24,6 +24,7 @@ target_link_libraries(graphite_common_impl PRIVATE
     project_compile_options
     external_imgui
     graphite_common_interface
+    graphite_logger_interface
 )
 
 target_include_directories(graphite_common_impl PRIVATE
