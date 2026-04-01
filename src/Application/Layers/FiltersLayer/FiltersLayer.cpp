@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.24
+/// @version 0.25
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -419,7 +419,6 @@ void FiltersLayer::RenderFilter(
 
     ImGui::Separator();
 
-    ImGui::Indent(32.0f);
     for (auto& component_ptr : filter.components.GetFront())
     {
         RenderFilterComponent(owning_tab_id, filter.id, *component_ptr);
@@ -531,7 +530,7 @@ void FiltersLayer::RenderFilterComponent(
     bool const is_equals{component[EFilterComponentFlag::IsEquals]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
     Graphite::Common::UI::IconButton(
-        ICON_CI_CHEVRON_RIGHT, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
+        ICON_CI_THREE_BARS, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
             component[EFilterComponentFlag::IsEquals] = !is_equals;
         });
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
