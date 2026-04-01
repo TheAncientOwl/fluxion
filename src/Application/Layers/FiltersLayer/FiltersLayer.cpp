@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.23
+/// @version 0.24
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -466,20 +466,37 @@ void FiltersLayer::RenderFilterComponent(
     });
     UIHelpers::Styles::PopRedButton();
 
-    // TODO: update when plugin implementation supports headers with IDs
-    constexpr std::size_t c_dummy_options_size{3};
-    const char* items[c_dummy_options_size] = {"Option 1", "Option 2", "Option 3"};
-    static std::size_t selected_index = 0; // stores currently selected index
+    auto const& header = m_application->GetApplicationState().logs.table_header;
+
+    std::optional<std::size_t> selected_index{};
+    for (std::size_t i = 0; i < header.size(); ++i)
+    {
+        if (header[i].id == component.over_field_id)
+        {
+            selected_index = i;
+            break;
+        }
+    }
+    if (!static_cast<bool>(selected_index) && !header.empty())
+    {
+        selected_index = 0;
+        component.over_field_id = header.front().id;
+    }
+
     ImGui::SameLine();
     ImGui::PushItemWidth(125);
-    if (ImGui::BeginCombo("##alternative", items[selected_index]))
+    const char* preview_value = header.empty() || !static_cast<bool>(selected_index)
+                                    ? "None"
+                                    : header[*selected_index].display_name.c_str();
+    if (ImGui::BeginCombo("##alternative", preview_value))
     {
-        for (std::size_t select_index = 0; select_index < c_dummy_options_size; ++select_index)
+        for (std::size_t select_index = 0; select_index < header.size(); ++select_index)
         {
-            bool is_selected = (selected_index == select_index);
-            if (ImGui::Selectable(items[select_index], is_selected))
+            bool is_selected = (*selected_index == select_index);
+            if (ImGui::Selectable(header[select_index].display_name.c_str(), is_selected))
             {
                 selected_index = select_index;
+                component.over_field_id = header[select_index].id;
             }
             if (is_selected)
             {

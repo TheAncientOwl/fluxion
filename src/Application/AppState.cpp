@@ -5,7 +5,7 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see AppState.hpp.
 ///
 
@@ -49,6 +49,7 @@ std::vector<Fluxion::API::Data::FiltersTab::Ptr> MakeDefaultTabs()
     // Create the component
     auto component_ptr = std::make_shared<FilterComponent>();
     component_ptr->id = UniqueID::Generate();
+    component_ptr->over_field_id = UniqueID::Default();
     (*component_ptr)[EFilterComponentFlag::IsEquals] = true;
 
     // 1. Initialize Component Double Buffer
