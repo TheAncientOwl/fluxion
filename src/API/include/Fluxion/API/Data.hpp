@@ -5,17 +5,18 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief General data.
 ///
 
 #pragma once
 
+#include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
 
-#include "Graphite/Common/DataStructures/TDoubleBufferedVector.hpp"
+#include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Utility/TWithFlags.hpp"
 #include "Graphite/Common/Utility/UniqueID.hpp"
 
@@ -50,6 +51,8 @@ enum class EFilterComponentFlag : std::uint8_t
 struct FilterComponent
     : public Graphite::Common::Utility::TWithFlags<FilterComponent, EFilterComponentFlag>
 {
+    using Ptr = std::shared_ptr<FilterComponent>;
+
     Graphite::Common::Utility::UniqueID id{};
     Graphite::Common::Utility::UniqueID over_field_id{};
     std::string data{};
@@ -75,9 +78,11 @@ enum class EFilterFlag : std::uint8_t
 
 struct Filter : public Graphite::Common::Utility::TWithFlags<Filter, EFilterFlag>
 {
+    using Ptr = std::shared_ptr<Filter>;
+
     Graphite::Common::Utility::UniqueID id{};
     std::string name{};
-    Graphite::Common::DataStructures::TDoubleBufferedVector<FilterComponent> components{};
+    Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<FilterComponent::Ptr>> components{};
     FilterColors colors{};
     std::uint8_t priority{};
 
@@ -94,16 +99,16 @@ enum class EFiltersTabFlag : std::uint8_t
 
 struct FiltersTab : public Graphite::Common::Utility::TWithFlags<FiltersTab, EFiltersTabFlag>
 {
+    using Ptr = std::shared_ptr<FiltersTab>;
+
     Graphite::Common::Utility::UniqueID id{};
     std::string name{};
-    Graphite::Common::DataStructures::TDoubleBufferedVector<Filter> filters{};
+    Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<Filter::Ptr>> filters{};
     std::string imgui_id{};
 
     void UpdateImGuiID();
 
     friend std::ostream& operator<<(std::ostream& os, const FiltersTab& v);
 };
-
-using FiltersTabs = Graphite::Common::DataStructures::TDoubleBufferedVector<FiltersTab>;
 
 } // namespace Fluxion::API::Data

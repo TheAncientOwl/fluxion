@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Application state.
 ///
 
@@ -16,7 +16,6 @@
 #include "Fluxion/API/Data.hpp"
 #include "Fluxion/API/IFluxionPlugin.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
-#include "Graphite/Common/DataStructures/TDoubleBufferedVector.hpp"
 
 namespace Fluxion::Application {
 
@@ -39,7 +38,8 @@ struct AppState
 
     struct
     {
-        Fluxion::API::Data::FiltersTabs tabs{};
+        Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<Fluxion::API::Data::FiltersTab::Ptr>>
+            tabs{};
     } filters{};
 
     struct
@@ -51,7 +51,7 @@ struct AppState
 
     struct
     {
-        Graphite::Common::DataStructures::TDoubleBuffer<VisibleLogsChunk> visible_chunk{};
+        Graphite::Common::DataStructures::TSwapDoubleBuffer<VisibleLogsChunk> visible_chunk{};
         std::vector<std::string> table_header{}; // todo: replace string with proper struct
     } logs{};
 };
@@ -60,7 +60,7 @@ namespace DefaultState {
 
 AppState Make();
 
-Fluxion::API::Data::FiltersTabs::StorageType MakeDefaultTabs();
+std::vector<Fluxion::API::Data::FiltersTab::Ptr> MakeDefaultTabs();
 
 } // namespace DefaultState
 

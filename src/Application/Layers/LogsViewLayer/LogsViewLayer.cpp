@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -42,7 +42,7 @@ void LogsViewLayer::OnAdd()
 void LogsViewLayer::OnIterate()
 {
     LOG_SCOPE("");
-    m_application->GetApplicationState().logs.visible_chunk.SyncFront();
+    m_application->GetApplicationState().logs.visible_chunk.SyncFrontBufferSwap();
 }
 
 void LogsViewLayer::OnRender()
@@ -122,9 +122,10 @@ void LogsViewLayer::RenderLogsTable()
                 // Check if we have valid data in the 'front' buffer for this relative row.
                 // Because of double-buffering, there might be a 1-frame delay where
                 // filled_size doesn't match rows_to_render.
-                if (i < app_state.logs.visible_chunk.front.filled_size)
+                auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
+                if (i < front_buffer.filled_size)
                 {
-                    for (auto const& log_field : app_state.logs.visible_chunk.front.data[i])
+                    for (auto const& log_field : front_buffer.data[i])
                     {
                         ImGui::TableNextColumn();
                         ImGui::TextUnformatted(log_field.c_str());

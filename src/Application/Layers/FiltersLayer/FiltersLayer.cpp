@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.22
+/// @version 0.23
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -55,13 +55,13 @@ void FiltersLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    app_state.filters.tabs.SyncFront();
-    for (auto& tab : app_state.filters.tabs.front)
+    app_state.filters.tabs.SyncFrontBufferCopy();
+    for (auto& tab : app_state.filters.tabs.GetFront())
     {
-        tab->filters.SyncFront();
-        for (auto& filter : tab->filters.front)
+        tab->filters.SyncFrontBufferCopy();
+        for (auto& filter : tab->filters.GetFront())
         {
-            filter->components.SyncFront();
+            filter->components.SyncFrontBufferCopy();
         }
     }
 
@@ -224,11 +224,12 @@ void FiltersLayer::RenderFiltersTabs()
     LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
     // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
-    LOG_DEBUG("FiltersTabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.front));
+    LOG_DEBUG(
+        "FiltersTabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.GetFront()));
 
     if (ImGui::BeginTabBar("FiltersTabs"))
     {
-        for (auto& tab : app_state.filters.tabs.front)
+        for (auto& tab : app_state.filters.tabs.GetFront())
         {
             if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
@@ -301,7 +302,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
         tab.UpdateImGuiID();
     }
 
-    for (auto& filter : tab.filters.front)
+    for (auto& filter : tab.filters.GetFront())
     {
         RenderFilter(tab_ptr->id, *filter);
 
@@ -419,7 +420,7 @@ void FiltersLayer::RenderFilter(
     ImGui::Separator();
 
     ImGui::Indent(32.0f);
-    for (auto& component_ptr : filter.components.front)
+    for (auto& component_ptr : filter.components.GetFront())
     {
         RenderFilterComponent(owning_tab_id, filter.id, *component_ptr);
     }

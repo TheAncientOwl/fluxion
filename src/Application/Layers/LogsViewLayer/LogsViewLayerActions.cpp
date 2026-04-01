@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -27,27 +27,34 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
     LOG_INFO("begin {} | end {}", action.visible_logs_indices.begin, action.visible_logs_indices.end);
     // TODO: resize the data when the imported logs change
 
-    auto& logs_chunk = application_state.logs.visible_chunk.back.data;
+    application_state.logs.visible_chunk.UpdateBackBufferSwap(
+        // 1. Prepare Back Buffer
+        [action, columns_count = application_state.logs.table_header.size()](
+            VisibleLogsChunk& visible_logs_chunk) {
+            auto& logs_chunk = visible_logs_chunk.data;
 
-    if (auto const new_size =
-            static_cast<size_t>(action.visible_logs_indices.end - action.visible_logs_indices.begin);
-        new_size > logs_chunk.size())
-    {
-        auto const old_size = logs_chunk.size();
-        logs_chunk.resize(new_size);
+            if (auto const new_size = static_cast<size_t>(
+                    action.visible_logs_indices.end - action.visible_logs_indices.begin);
+                new_size > logs_chunk.size())
+            {
+                auto const old_size = logs_chunk.size();
+                logs_chunk.resize(new_size);
 
-        for (size_t row_idx = old_size; row_idx < new_size; ++row_idx)
-        {
-            logs_chunk[row_idx].resize(application_state.logs.table_header.size());
-        }
-    }
+                for (size_t row_idx = old_size; row_idx < new_size; ++row_idx)
+                {
+                    logs_chunk[row_idx].resize(columns_count);
+                }
+            }
+        },
+        // 2. Update Back Buffer
+        [action, &logs_logic = application_state.logs_logic](VisibleLogsChunk& visible_logs_chunk) {
+            auto& logs_chunk = visible_logs_chunk.data;
 
-    application_state.logs.visible_chunk.back.filled_size = application_state.logs_logic->GetLogsChunk(
-        static_cast<size_t>(action.visible_logs_indices.begin),
-        static_cast<size_t>(action.visible_logs_indices.end),
-        logs_chunk);
-
-    application_state.logs.visible_chunk.MarkDirty();
+            visible_logs_chunk.filled_size = logs_logic->GetLogsChunk(
+                static_cast<size_t>(action.visible_logs_indices.begin),
+                static_cast<size_t>(action.visible_logs_indices.end),
+                logs_chunk);
+        });
 }
 
 void HandleLogsViewLayersLayerAction(AppState& application_state, LogsViewLayerActionPayload const& action)

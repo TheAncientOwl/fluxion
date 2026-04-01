@@ -5,7 +5,7 @@
 ///
 /// @file DataIO.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief IO related utilities.
 ///
 
@@ -131,8 +131,9 @@ inline std::ostream& operator<<(std::ostream& os, const Filter& v)
         first = false;
     }
     os << "Filter(id=" << v.id << ", name=\"" << v.name
-       << "\", components={.back=" << v.components.back << " | .front=" << v.components.front
-       << ", priority=" << +v.priority << ", colors=" << v.colors << ", flags=" << flags_str << ")";
+       << "\", components={.back=" << v.components.GetBack()
+       << " | .front=" << v.components.GetFront() << ", priority=" << +v.priority
+       << ", colors=" << v.colors << ", flags=" << flags_str << ")";
     return os;
 }
 
@@ -147,8 +148,9 @@ inline std::ostream& operator<<(std::ostream& os, const FiltersTab& v)
         flags_str += "IsActive";
         first = false;
     }
-    os << "FiltersTab(id=" << v.id << ", name=\"" << v.name << "\", filters={.back=" << v.filters.back
-       << " | .front=" << v.filters.front << ", flags=" << flags_str << ")";
+    os << "FiltersTab(id=" << v.id << ", name=\"" << v.name
+       << "\", filters={.back=" << v.filters.GetBack() << " | .front=" << v.filters.GetFront()
+       << ", flags=" << flags_str << ")";
     return os;
 }
 
@@ -250,8 +252,8 @@ struct std::formatter<Fluxion::API::Data::Filter>
         out = std::format_to(out, "Filter(id=");
         out = std::format_to(out, "{}", f.id);
         out = std::format_to(out, ", name=\"{}\"", f.name);
-        out = std::format_to(out, ", components.back={}", f.components.back.size());
-        out = std::format_to(out, ", components.front={}", f.components.front.size());
+        out = std::format_to(out, ", components.back={}", f.components.GetBack().size());
+        out = std::format_to(out, ", components.front={}", f.components.GetFront().size());
         out = std::format_to(out, ", priority={}", +f.priority);
         out = std::format_to(out, ", flags={}", flags_str);
         out = std::format_to(out, ")");
@@ -280,8 +282,8 @@ struct std::formatter<Fluxion::API::Data::FiltersTab>
         out = std::format_to(out, "FiltersTab(id=");
         out = std::format_to(out, "{}", ft.id);
         out = std::format_to(out, ", name=\"{}\"", ft.name);
-        out = std::format_to(out, ", filters.back={}", ft.filters.back.size());
-        out = std::format_to(out, ", filters.front={}", ft.filters.front.size());
+        out = std::format_to(out, ", filters.back={}", ft.filters.GetBack().size());
+        out = std::format_to(out, ", filters.front={}", ft.filters.GetFront().size());
         out = std::format_to(out, ", flags={}", flags_str);
         out = std::format_to(out, ")");
         return out;

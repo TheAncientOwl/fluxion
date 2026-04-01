@@ -5,64 +5,61 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see AppState.hpp.
 ///
 
 #include "AppState.hpp"
 
 namespace Fluxion::Application::DefaultState {
-
 AppState Make()
 {
     AppState app_state{};
 
-    app_state.filters.tabs.back = MakeDefaultTabs();
-    app_state.filters.tabs.front = app_state.filters.tabs.back;
+    auto default_tabs = MakeDefaultTabs();
+
+    // app_state.filters.tabs is a TCopyDoubleBuffer
+    // We initialize both front and back with the same starting vector.
+    // Since it's a vector of shared_ptr, it's just copying pointers, not the Tab objects.
+    app_state.filters.tabs.Init(std::vector(default_tabs), std::move(default_tabs));
 
     return app_state;
 }
 
-Fluxion::API::Data::FiltersTabs::StorageType MakeDefaultTabs()
+std::vector<Fluxion::API::Data::FiltersTab::Ptr> MakeDefaultTabs()
 {
     using namespace Fluxion::API::Data;
     using UniqueID = Graphite::Common::Utility::UniqueID;
 
-    FiltersTabs::StorageType tabs{};
-    {
-        auto tab_ptr = tabs.emplace_back(std::make_shared<FiltersTab>());
-        auto& tab = *tab_ptr;
-        tab.id = UniqueID::Generate();
-        tab.name = "Tab1";
-        tab[EFiltersTabFlag::IsActive] = true;
-        tab.UpdateImGuiID();
+    // Create the primary tab
+    auto tab_ptr = std::make_shared<FiltersTab>();
+    tab_ptr->id = UniqueID::Generate();
+    tab_ptr->name = "Tab1";
+    (*tab_ptr)[EFiltersTabFlag::IsActive] = true;
+    tab_ptr->UpdateImGuiID();
 
-        {
-            auto filter_ptr = tab.filters.back.emplace_back(std::make_shared<Filter>());
-            tab.filters.front.emplace_back(filter_ptr);
+    // Create the filter
+    auto filter_ptr = std::make_shared<Filter>();
+    filter_ptr->id = UniqueID::Generate();
+    filter_ptr->name = "Filter1";
+    filter_ptr->colors =
+        FilterColors{.foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+    (*filter_ptr)[EFilterFlag::IsActive] = true;
 
-            auto& filter = *filter_ptr;
-            filter.id = UniqueID::Generate();
-            filter.name = "Filter1";
-            filter.colors = FilterColors{
-                .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
-            filter[EFilterFlag::IsActive] = true;
-            filter[EFilterFlag::IsHighlightOnly] = false;
-            filter[EFilterFlag::IsCollapsed] = false;
+    // Create the component
+    auto component_ptr = std::make_shared<FilterComponent>();
+    component_ptr->id = UniqueID::Generate();
+    (*component_ptr)[EFilterComponentFlag::IsEquals] = true;
 
-            {
-                auto component_ptr =
-                    filter.components.back.emplace_back(std::make_shared<FilterComponent>());
-                filter.components.front.push_back(component_ptr);
-                auto& component = *component_ptr;
-                component.id = UniqueID::Generate();
-                component[EFilterComponentFlag::IsRegex] = false;
-                component[EFilterComponentFlag::IsEquals] = true;
-                component[EFilterComponentFlag::IsCaseSensitive] = false;
-            }
-        }
-    }
-    return tabs;
+    // 1. Initialize Component Double Buffer
+    // We provide two vectors containing the same shared_ptr
+    filter_ptr->components.Init({component_ptr}, {component_ptr});
+
+    // 2. Initialize Filter Double Buffer
+    tab_ptr->filters.Init({filter_ptr}, {filter_ptr});
+
+    // Return as a single vector (this will be used by AppState::Make to Init)
+    return {tab_ptr};
 }
 
 } // namespace Fluxion::Application::DefaultState
