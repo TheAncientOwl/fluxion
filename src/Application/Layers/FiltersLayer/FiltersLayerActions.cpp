@@ -68,18 +68,45 @@ void handle<EFilterActionType::RemoveFiltersTab>(AppState& application_state, Fi
         action.component_id == std::nullopt,
         "component should be nullopt for RemoveFiltersTab action");
 
-    application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto const tab_it = FindByID(tabs_back, *action.tab_id);
-        if (tab_it != tabs_back.end())
-        {
-            tabs_back.erase(tab_it);
-        }
-        else
-        {
-            LOG_WARN(
-                "Failed to RemoveFiltersTab with tab ID {} because it does not exist", *action.tab_id);
-        }
-    });
+    application_state.filters.tabs.UpdateBackBufferCopy(
+        [&](std::vector<Fluxion::API::Data::FiltersTab::Ptr>& tabs_back) {
+            auto const tab_it = FindByID(tabs_back, *action.tab_id);
+            if (tab_it != tabs_back.end())
+            {
+                tabs_back.erase(tab_it);
+            }
+            else
+            {
+                LOG_WARN(
+                    "Failed to RemoveFiltersTab with tab ID {} because it does not exist",
+                    *action.tab_id);
+            }
+            if (tabs_back.empty())
+            {
+                // Create a new FiltersTab
+                auto tab_ptr = tabs_back.emplace_back(std::make_shared<FiltersTab>());
+                tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+                tab_ptr->name = "New Tab";
+                (*tab_ptr)[EFiltersTabFlag::IsActive] = true;
+                tab_ptr->UpdateImGuiID();
+
+                // Initialize nested structures: one Filter with one FilterComponent
+                auto filter_ptr = std::make_shared<Filter>();
+                filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+                filter_ptr->name = "New Filter";
+                filter_ptr->colors = {
+                    .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
+                (*filter_ptr)[EFilterFlag::IsActive] = true;
+
+                auto comp_ptr = std::make_shared<FilterComponent>();
+                comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+                (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
+
+                filter_ptr->components.Init({comp_ptr}, {comp_ptr});
+                tab_ptr->filters.Init({filter_ptr}, {filter_ptr});
+            }
+            tabs_back.shrink_to_fit();
+        });
 }
 
 template <>
@@ -193,6 +220,22 @@ void handle<EFilterActionType::RemoveFilter>(AppState& application_state, Filter
                     "Failed to RemoveFilter with filter ID {} because it does not exist",
                     *action.filter_id);
             }
+
+            if (filters_back.empty())
+            {
+                auto filter_ptr = filters_back.emplace_back(std::make_shared<Filter>());
+                filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+                filter_ptr->name = "New Filter";
+                filter_ptr->colors = {
+                    .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
+                (*filter_ptr)[EFilterFlag::IsActive] = true;
+
+                auto comp_ptr = std::make_shared<FilterComponent>();
+                comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+                (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
+                filter_ptr->components.Init({comp_ptr}, {comp_ptr});
+            }
+            filters_back.shrink_to_fit();
         });
     });
 }
@@ -314,6 +357,14 @@ void handle<EFilterActionType::RemoveFilterComponent>(
                         "exist",
                         *action.component_id);
                 }
+
+                if (comps_back.empty())
+                {
+                    auto comp_ptr = comps_back.emplace_back(std::make_shared<FilterComponent>());
+                    comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+                    (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
+                }
+                comps_back.shrink_to_fit();
             });
         });
     });
