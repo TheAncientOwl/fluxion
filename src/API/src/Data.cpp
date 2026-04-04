@@ -5,7 +5,7 @@
 ///
 /// @file FiltersTabs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see Fluxion/Data.hpp::FiltersTabs.
 ///
 
@@ -17,6 +17,19 @@ void FiltersTab::UpdateImGuiID()
 {
     imgui_id = name + "###" + id.ToString();
 }
+
+namespace Logs {
+
+IndexToLogRowMapWriter::IndexToLogRowMapWriter(IndexToLogRowMap& map) : m_map{map}
+{
+}
+
+LogRow& IndexToLogRowMapWriter::operator[](std::size_t const index)
+{
+    return m_map.try_emplace(index).first->second;
+}
+
+}; // namespace Logs
 
 // // ---------------- FilterComponent ----------------
 

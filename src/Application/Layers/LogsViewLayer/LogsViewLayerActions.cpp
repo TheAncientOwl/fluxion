@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -24,36 +24,41 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
     LogsViewLayerActionPayload const& action)
 {
     LOG_SCOPE("");
-    LOG_INFO("begin {} | end {}", action.visible_logs_indices.begin, action.visible_logs_indices.end);
+    // LOG_INFO("begin {} | end {}", action.visible_logs_indices.begin, action.visible_logs_indices.end);
     // TODO: resize the data when the imported logs change
 
     application_state.logs.visible_chunk.UpdateBackBufferSwap(
         // 1. Prepare Back Buffer
         [action, columns_count = application_state.logs.table_header.size()](
             VisibleLogsChunk& visible_logs_chunk) {
-            auto& logs_chunk = visible_logs_chunk.data;
-
-            if (auto const new_size = static_cast<size_t>(
-                    action.visible_logs_indices.end - action.visible_logs_indices.begin);
-                new_size > logs_chunk.size())
+            if (action.visible_logs_indices.empty())
             {
-                auto const old_size = logs_chunk.size();
-                logs_chunk.resize(new_size);
-
-                for (size_t row_idx = old_size; row_idx < new_size; ++row_idx)
-                {
-                    logs_chunk[row_idx].resize(columns_count);
-                }
+                return;
             }
+
+            LOG_DEBUG("Begin culling. Map size: {}", visible_logs_chunk.logs.size());
+
+            std::erase_if(
+                visible_logs_chunk.logs, [&indices = action.visible_logs_indices](auto const& item) {
+                    const auto idx = item.first;
+                    // Check if idx is inside any valid interval
+                    for (auto const& interval : indices)
+                    {
+                        if (idx >= interval.begin && idx <= interval.end)
+                        {
+                            return false; // Keep it
+                        }
+                    }
+                    return true; // Cull it
+                });
+
+            LOG_DEBUG("Culling complete. Map size: {}", visible_logs_chunk.logs.size());
         },
         // 2. Update Back Buffer
         [action, &logs_logic = application_state.logs_logic](VisibleLogsChunk& visible_logs_chunk) {
-            auto& logs_chunk = visible_logs_chunk.data;
-
-            visible_logs_chunk.filled_size = logs_logic->GetLogsChunk(
-                static_cast<size_t>(action.visible_logs_indices.begin),
-                static_cast<size_t>(action.visible_logs_indices.end),
-                logs_chunk);
+            logs_logic->GetLogsChunk(
+                action.visible_logs_indices,
+                Fluxion::API::Data::Logs::IndexToLogRowMapWriter{visible_logs_chunk.logs});
         });
 }
 

@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -18,6 +18,8 @@ namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 enum class EFilterActionType : std::uint8_t
 {
     None = 0,
+    ApplyFilters,
+    DisableFilters,
     AddFiltersTab,
     RemoveFiltersTab,
     DuplicateFiltersTab,

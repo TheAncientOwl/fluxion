@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.25
+/// @version 0.26
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -20,77 +20,6 @@
 #include "Fluxion/API/DataIO.hpp"
 
 namespace Fluxion::Application::Layers {
-
-std::string_view FiltersLayer::GetLayerName() noexcept
-{
-    return "FiltersLayer";
-}
-
-std::string_view FiltersLayer::GetName() const noexcept
-{
-    return FiltersLayer::GetLayerName();
-}
-
-FiltersLayer::FiltersLayer(
-    FluxionApplication::FluxionApplication::Ptr application,
-    Graphite::Application::Layers::ZIndex const z_index)
-    : TSoftMenuCloseableLayer{std::move(application), z_index}
-{
-    LOG_SCOPE("");
-}
-
-void FiltersLayer::OnAdd()
-{
-    LOG_SCOPE("");
-}
-
-void FiltersLayer::OnIterate()
-{
-    LOG_SCOPE("");
-}
-
-void FiltersLayer::OnRender()
-{
-    LOG_SCOPE("");
-
-    auto& app_state{m_application->GetApplicationState()};
-
-    app_state.filters.tabs.SyncFrontBufferCopy();
-    for (auto& tab : app_state.filters.tabs.GetFront())
-    {
-        tab->filters.SyncFrontBufferCopy();
-        for (auto& filter : tab->filters.GetFront())
-        {
-            filter->components.SyncFrontBufferCopy();
-        }
-    }
-
-    ImGui::Begin(ICON_CI_WAND " Filters", &app_state.layers_active.filters);
-
-    RenderFiltersTabs();
-
-    ImGui::End();
-}
-
-void FiltersLayer::OnRemove()
-{
-    LOG_SCOPE("");
-}
-
-inline bool FiltersLayer::IsActive() const noexcept
-{
-    return m_application->GetApplicationState().layers_active.filters;
-}
-
-inline void FiltersLayer::SetIsActive(bool const open)
-{
-    m_application->GetApplicationState().layers_active.filters = open;
-}
-
-inline std::string_view FiltersLayer::GetDisplayName() const noexcept
-{
-    return "Filters";
-}
 
 namespace UIHelpers {
 
@@ -219,6 +148,115 @@ void PopButtonGripper()
 
 } // namespace UIHelpers
 
+std::string_view FiltersLayer::GetLayerName() noexcept
+{
+    return "FiltersLayer";
+}
+
+std::string_view FiltersLayer::GetName() const noexcept
+{
+    return FiltersLayer::GetLayerName();
+}
+
+FiltersLayer::FiltersLayer(
+    FluxionApplication::FluxionApplication::Ptr application,
+    Graphite::Application::Layers::ZIndex const z_index)
+    : TSoftMenuCloseableLayer{std::move(application), z_index}
+{
+    LOG_SCOPE("");
+}
+
+void FiltersLayer::OnAdd()
+{
+    LOG_SCOPE("");
+}
+
+void FiltersLayer::OnIterate()
+{
+    LOG_SCOPE("");
+}
+
+void FiltersLayer::OnRender()
+{
+    LOG_SCOPE("");
+
+    auto& app_state{m_application->GetApplicationState()};
+
+    app_state.filters.tabs.SyncFrontBufferCopy();
+    for (auto& tab : app_state.filters.tabs.GetFront())
+    {
+        tab->filters.SyncFrontBufferCopy();
+        for (auto& filter : tab->filters.GetFront())
+        {
+            filter->components.SyncFrontBufferCopy();
+        }
+    }
+
+    ImGui::Begin(ICON_CI_WAND " Filters", &app_state.layers_active.filters);
+
+    RenderToolbar();
+    RenderFiltersTabs();
+
+    ImGui::End();
+}
+
+void FiltersLayer::OnRemove()
+{
+    LOG_SCOPE("");
+}
+
+inline bool FiltersLayer::IsActive() const noexcept
+{
+    return m_application->GetApplicationState().layers_active.filters;
+}
+
+inline void FiltersLayer::SetIsActive(bool const open)
+{
+    m_application->GetApplicationState().layers_active.filters = open;
+}
+
+inline std::string_view FiltersLayer::GetDisplayName() const noexcept
+{
+    return "Filters";
+}
+
+void FiltersLayer::RenderToolbar()
+{
+    ImGui::BeginChild("##filters-toolbar", ImVec2(0, ImGui::GetFrameHeightWithSpacing()));
+
+    Graphite::Common::UI::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
+        Dispatch(
+            {.type = Actions::FiltersLayer::EFilterActionType::AddFiltersTab,
+             .tab_id = std::nullopt,
+             .filter_id = std::nullopt,
+             .component_id = std::nullopt});
+    });
+
+    ImGui::SameLine();
+    Graphite::Common::UI::IconButton(ICON_CI_WAND, "Apply Filters", [&]() {
+        Dispatch({
+            .type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
+            .tab_id = std::nullopt,
+            .filter_id = std::nullopt,
+            .component_id = std::nullopt,
+        });
+    });
+
+    ImGui::SameLine();
+    UIHelpers::Styles::PushRedButton();
+    Graphite::Common::UI::IconButton(ICON_CI_MUTE, "Disable Filters", [&]() {
+        Dispatch({
+            .type = Actions::FiltersLayer::EFilterActionType::DisableFilters,
+            .tab_id = std::nullopt,
+            .filter_id = std::nullopt,
+            .component_id = std::nullopt,
+        });
+    });
+    UIHelpers::Styles::PopRedButton();
+
+    ImGui::EndChild();
+}
+
 void FiltersLayer::RenderFiltersTabs()
 {
     LOG_SCOPE("");
@@ -256,15 +294,6 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilter,
              .tab_id = tab_ptr->id,
-             .filter_id = std::nullopt,
-             .component_id = std::nullopt});
-    });
-
-    ImGui::SameLine();
-    Graphite::Common::UI::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
-        Dispatch(
-            {.type = Actions::FiltersLayer::EFilterActionType::AddFiltersTab,
-             .tab_id = std::nullopt,
              .filter_id = std::nullopt,
              .component_id = std::nullopt});
     });

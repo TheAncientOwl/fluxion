@@ -5,7 +5,7 @@
 ///
 /// @file TWithFlags.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Utility class to reduce the size of an object when multiple flags (0/1) are used.
 /// As in - use one single value, its bits representing flag states.
 ///
@@ -73,8 +73,7 @@ public:
      * @param flag The flag to check.
      * @return true if the flag is set, false otherwise.
      */
-    [[nodiscard]]
-    inline bool operator[](Enum const flag) const noexcept
+    [[nodiscard]] inline bool operator[](Enum const flag) const noexcept
     {
         return (flags & static_cast<Storage>(flag)) != 0;
     }

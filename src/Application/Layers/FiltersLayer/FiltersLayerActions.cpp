@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -19,7 +19,7 @@ using namespace Fluxion::API::Data;
 template <typename T>
 auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::UniqueID const& id)
 {
-    return std::find_if(vec.begin(), vec.end(), [&](const auto& ptr) { return ptr->id == id; });
+    return std::find_if(vec.begin(), vec.end(), [&](auto const& ptr) { return ptr->id == id; });
 }
 
 template <EFilterActionType ActionType>
@@ -319,6 +319,20 @@ void handle<EFilterActionType::RemoveFilterComponent>(
     });
 }
 
+template <>
+void handle<EFilterActionType::ApplyFilters>(AppState& application_state, FilterActionPayload const& /* action */)
+{
+    LOG_SCOPE("");
+    application_state.logs_logic->ApplyFilters(application_state.filters.tabs.GetBack());
+}
+
+template <>
+void handle<EFilterActionType::DisableFilters>(AppState& application_state, FilterActionPayload const& /* action */)
+{
+    LOG_SCOPE("");
+    application_state.logs_logic->DisableFilters();
+}
+
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action)
 {
     if (action.type == EFilterActionType::None)
@@ -335,6 +349,15 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
 
     switch (action.type)
     {
+    case EFilterActionType::ApplyFilters: {
+        handle<EFilterActionType::ApplyFilters>(application_state, action);
+        break;
+    }
+    case EFilterActionType::DisableFilters: {
+        handle<EFilterActionType::DisableFilters>(application_state, action);
+        break;
+    }
+
     case EFilterActionType::AddFiltersTab: {
         handle<EFilterActionType::AddFiltersTab>(application_state, action);
         break;

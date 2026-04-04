@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -89,52 +89,64 @@ void LogsViewLayer::RenderLogsTable()
                 ImGuiTableFlags_SizingFixedFit,
             ImVec2(0.0f, 0.0f)))
     {
-        ImGui::TableSetupScrollFreeze(1, 1);
-
+        // 1. Render Table Header
         for (auto const& header : headers)
         {
             ImGui::TableSetupColumn(header.display_name.c_str());
         }
+        ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableHeadersRow();
 
+        // 2. Render Logs Rows
         ImGuiListClipper clipper{};
         clipper.Begin(static_cast<int>(app_state.logs_logic->GetTotalLogs()));
 
+        std::vector<Fluxion::API::Data::Logs::Range> ranges{};
         while (clipper.Step())
         {
-            // 1. Dispatch the request for the currently visible range
-            Dispatch(
-                Actions::LogsViewLayer::LogsViewLayerActionPayload{
-                    .type = Actions::LogsViewLayer::ELogsViewActionLayerType::UpdateVisibleLogs,
-                    .visible_logs_indices = {.begin = clipper.DisplayStart, .end = clipper.DisplayEnd}});
-            LOG_INFO("Requested update begin {} | end {}", clipper.DisplayStart, clipper.DisplayEnd);
+            // if it's not first ImGui rendered row, we can request chunk with margin
+            if (clipper.DisplayStart != 0 && clipper.DisplayEnd != 1)
+            {
+                static auto constexpr margin{25};
+                ranges.emplace_back(
+                    static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
+                    static_cast<std::size_t>(std::min(
+                        static_cast<int>(app_state.logs_logic->GetTotalLogs()),
+                        clipper.DisplayEnd + margin)));
+            }
+            else
+            {
+                ranges.emplace_back(0, 1);
+            }
 
-            // 2. Calculate exactly how many rows ImGui expects us to render this step
-            auto const rows_to_render =
-                static_cast<std::size_t>(clipper.DisplayEnd - clipper.DisplayStart);
-            LOG_INFO("Rendering {}* rows", rows_to_render);
+            auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
 
-            // 3. Render EXACTLY that many rows
-            for (std::size_t i = 0; i < rows_to_render; ++i)
+            LOG_DEBUG("Front render  => start {} | end {}", clipper.DisplayStart, clipper.DisplayEnd);
+            for (auto row_idx = clipper.DisplayStart; row_idx < clipper.DisplayEnd; ++row_idx)
             {
                 ImGui::TableNextRow();
 
-                // Check if we have valid data in the 'front' buffer for this relative row.
-                // Because of double-buffering, there might be a 1-frame delay where
-                // filled_size doesn't match rows_to_render.
-                auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
-                if (i < front_buffer.filled_size)
+                auto const it = front_buffer.logs.find(static_cast<std::size_t>(row_idx));
+                if (it != front_buffer.logs.cend())
                 {
-                    for (auto const& log_field : front_buffer.data[i])
+                    auto const& row{it->second};
+
+                    ImGui::TableSetBgColor(
+                        ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(row.metadata.colors.background));
+                    ImGui::PushStyleColor(ImGuiCol_Text, row.metadata.colors.foreground);
+
+                    for (auto const& field : row.data)
                     {
                         ImGui::TableNextColumn();
-                        ImGui::TextUnformatted(log_field.c_str());
+                        ImGui::TextUnformatted(field.c_str());
                     }
+
+                    ImGui::PopStyleColor();
                 }
                 else
                 {
-                    // Fallback: Render empty cells to maintain table structure and Y-cursor math
-                    for (size_t col = 0; col < headers.size(); ++col)
+                    // Placeholder for the "Sync Gap" frame / Missing data
+                    for (auto _ = 0u; _ < headers.size(); ++_)
                     {
                         ImGui::TableNextColumn();
                         ImGui::TextUnformatted("...");
@@ -142,6 +154,17 @@ void LogsViewLayer::RenderLogsTable()
                 }
             }
         }
+
+        for (auto const& range : ranges)
+        {
+            LOG_DEBUG("Front request => start {} | end {}", range.begin, range.end);
+        }
+
+        Dispatch(
+            Actions::LogsViewLayer::LogsViewLayerActionPayload{
+                .type = Actions::LogsViewLayer::ELogsViewActionLayerType::UpdateVisibleLogs,
+                .visible_logs_indices = std::move(ranges)});
+
         ImGui::EndTable();
     }
     ImGui::PopStyleVar();

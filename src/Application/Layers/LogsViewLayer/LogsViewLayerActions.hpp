@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Actions of @see LogsViewLayer.hpp
 ///
 
@@ -24,11 +24,7 @@ enum class ELogsViewActionLayerType : std::uint8_t
 struct LogsViewLayerActionPayload
 {
     ELogsViewActionLayerType type{ELogsViewActionLayerType::None};
-    struct
-    {
-        int begin{};
-        int end{};
-    } visible_logs_indices{};
+    std::vector<Fluxion::API::Data::Logs::Range> visible_logs_indices{};
 };
 
 void HandleLogsViewLayersLayerAction(AppState& application_state, LogsViewLayerActionPayload const& action);

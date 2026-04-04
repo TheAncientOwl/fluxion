@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief General data.
 ///
 
@@ -14,6 +14,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
@@ -35,6 +36,47 @@ struct OnDisableData
 };
 
 }; // namespace Plugin
+
+struct FilterColors
+{
+    ImVec4 foreground{};
+    ImVec4 background{};
+};
+
+namespace Logs {
+
+struct Range
+{
+    std::size_t begin{};
+    std::size_t end{};
+};
+
+struct LogRowMetadata
+{
+    FilterColors colors{
+        FilterColors{.foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.0f}}};
+};
+
+struct LogRow
+{
+    std::vector<std::string> data{};
+    LogRowMetadata metadata{};
+};
+
+using IndexToLogRowMap = std::unordered_map<std::size_t, LogRow>;
+
+class IndexToLogRowMapWriter
+{
+public:
+    explicit IndexToLogRowMapWriter(IndexToLogRowMap& map);
+
+    LogRow& operator[](std::size_t const index);
+
+private:
+    IndexToLogRowMap& m_map;
+};
+
+}; // namespace Logs
 
 struct LogsTableColumnDetails
 {
@@ -62,12 +104,6 @@ struct FilterComponent
     std::string data{};
 
     friend std::ostream& operator<<(std::ostream& os, const FilterComponent& v);
-};
-
-struct FilterColors
-{
-    ImVec4 foreground{};
-    ImVec4 background{};
 };
 
 // clang-format off

@@ -5,14 +5,13 @@
 ///
 /// @file IFluxionPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
 #pragma once
 
 #include <filesystem>
-#include <string>
 #include <vector>
 
 #include "Graphite/Common/Plugin/GraphiteExport.hpp"
@@ -32,6 +31,7 @@ public:
 
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
     virtual void ApplyFilters(std::vector<std::shared_ptr<Fluxion::API::Data::FiltersTab>> const& tabs) = 0;
+    virtual void DisableFilters() = 0;
 
     virtual std::vector<Fluxion::API::Data::LogsTableColumnDetails> GetTableHeader() const = 0;
     virtual std::size_t GetTotalLogs() const = 0;
@@ -41,14 +41,12 @@ public:
      *
      * @param begin inclusive
      * @param end exclusive
-     * @param out vector<vector<string>> with memory already allocated
+     * @param out_logs map<index, row> to be updated
      *
-     * @return how many rows were filled
      */
-    virtual std::size_t GetLogsChunk(
-        std::size_t const begin,
-        std::size_t const end,
-        std::vector<std::vector<std::string>>& out) const = 0;
+    virtual void GetLogsChunk(
+        std::vector<Fluxion::API::Data::Logs::Range> const& ranges,
+        Fluxion::API::Data::Logs::IndexToLogRowMapWriter out_logs) const = 0;
 
     virtual ~IFluxionPlugin() = default;
 };

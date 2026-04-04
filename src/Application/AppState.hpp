@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Application state.
 ///
 
@@ -28,7 +28,7 @@ enum class EFluxionAction : std::uint8_t
 
 struct VisibleLogsChunk
 {
-    std::vector<std::vector<std::string>> data{};
+    Fluxion::API::Data::Logs::IndexToLogRowMap logs{};
     std::size_t filled_size{};
 };
 
