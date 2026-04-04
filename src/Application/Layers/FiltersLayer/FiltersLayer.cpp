@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.26
+/// @version 0.27
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -17,7 +17,7 @@
 #include "FiltersLayer.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 
-#include "Fluxion/API/DataIO.hpp"
+#include "Fluxion/API/DataFormatters.hpp" // IWYU pragma: keep
 
 namespace Fluxion::Application::Layers {
 
@@ -262,8 +262,7 @@ void FiltersLayer::RenderFiltersTabs()
     LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
     // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
-    LOG_DEBUG(
-        "FiltersTabs: {}", Fluxion::Utils::Format::format_vector(app_state.filters.tabs.GetFront()));
+    LOG_DEBUG("FiltersTabs: {}", app_state.filters.tabs.GetFront());
 
     if (ImGui::BeginTabBar("FiltersTabs"))
     {
