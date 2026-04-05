@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Application state.
 ///
 
@@ -26,11 +26,27 @@ enum class EFluxionAction : std::uint8_t
     LogsViewLayerAction = 2
 };
 
+namespace Internal {
+
 struct VisibleLogsChunk
 {
     Fluxion::API::Data::Logs::IndexToLogRowMap logs{};
     std::size_t filled_size{};
 };
+
+// clang-format off
+enum class EFiltersMetadataFlag : std::uint8_t {
+    None        = 0,      // 00000000
+    Applied     = 1 << 0, // 00000001
+    SavedToDisk = 1 << 1, // 00000010
+};
+// clang-format on
+
+struct FiltersMetadata : Graphite::Common::Utility::TWithFlags<FiltersMetadata, EFiltersMetadataFlag>
+{
+};
+
+} // namespace Internal
 
 struct AppState
 {
@@ -40,6 +56,7 @@ struct AppState
     {
         Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<Fluxion::API::Data::Filters::Tab::Ptr>>
             tabs{};
+        Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Internal::FiltersMetadata> metadata;
     } filters{};
 
     struct
@@ -51,7 +68,7 @@ struct AppState
 
     struct
     {
-        Graphite::Common::DataStructures::TSwapDoubleBuffer<VisibleLogsChunk> visible_chunk{};
+        Graphite::Common::DataStructures::TSwapDoubleBuffer<Internal::VisibleLogsChunk> visible_chunk{};
         std::vector<Fluxion::API::Data::Logs::ColumnDetails> table_header{};
     } logs{};
 };

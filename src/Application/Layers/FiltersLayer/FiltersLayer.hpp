@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -40,6 +40,9 @@ public: // Public API
     inline bool IsActive() const noexcept override;
     inline void SetIsActive(bool const open) override;
     inline std::string_view GetDisplayName() const noexcept override;
+
+private: // Private API
+    void MarkFiltersMetadataDirty();
 
 private: // Private Rendering API
     void RenderToolbar();

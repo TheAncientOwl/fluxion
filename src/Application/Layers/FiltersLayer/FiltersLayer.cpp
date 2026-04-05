@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.27
+/// @version 0.28
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -182,6 +182,8 @@ void FiltersLayer::OnRender()
 
     auto& app_state{m_application->GetApplicationState()};
 
+    app_state.filters.metadata.SyncFrontBufferCopy();
+
     app_state.filters.tabs.SyncFrontBufferCopy();
     for (auto& tab : app_state.filters.tabs.GetFront())
     {
@@ -220,6 +222,15 @@ inline std::string_view FiltersLayer::GetDisplayName() const noexcept
     return "Filters";
 }
 
+void FiltersLayer::MarkFiltersMetadataDirty()
+{
+    m_application->GetApplicationState().filters.metadata.UpdateBackBufferCopyLocking(
+        [](Internal::FiltersMetadata& metadata) {
+            metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+            metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+        });
+}
+
 void FiltersLayer::RenderToolbar()
 {
     ImGui::BeginChild("##filters-toolbar", ImVec2(0, ImGui::GetFrameHeightWithSpacing()));
@@ -230,9 +241,14 @@ void FiltersLayer::RenderToolbar()
              .tab_id = std::nullopt,
              .filter_id = std::nullopt,
              .condition_id = std::nullopt});
+        MarkFiltersMetadataDirty();
     });
 
+    auto& app_state{m_application->GetApplicationState()};
+
     ImGui::SameLine();
+    ImGui::BeginDisabled(
+        app_state.filters.metadata.GetFront()[Internal::EFiltersMetadataFlag::Applied]);
     Graphite::Common::UI::IconButton(ICON_CI_WAND, "Apply Filters", [&]() {
         Dispatch({
             .type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
@@ -241,6 +257,7 @@ void FiltersLayer::RenderToolbar()
             .condition_id = std::nullopt,
         });
     });
+    ImGui::EndDisabled();
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
@@ -322,12 +339,14 @@ void FiltersLayer::RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> t
     if (ImGui::Checkbox("Active", &is_active))
     {
         tab[API::Data::Filters::ETabFlag::IsActive] = is_active;
+        MarkFiltersMetadataDirty();
     }
 
     ImGui::SameLine();
     if (Graphite::Common::UI::InputText("##tab_name", tab.name))
     {
         tab.UpdateImGuiID();
+        MarkFiltersMetadataDirty();
     }
 
     for (auto& filter : tab.filters.GetFront())
@@ -417,7 +436,10 @@ void FiltersLayer::RenderFilter(
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
-    Graphite::Common::UI::InputText("##filter_name", filter.name);
+    if (Graphite::Common::UI::InputText("##filter_name", filter.name))
+    {
+        MarkFiltersMetadataDirty();
+    }
     ImGui::PopStyleColor(2); // input text and background colors
 
     ImGui::Separator();
@@ -436,6 +458,7 @@ void FiltersLayer::RenderFilter(
     if (ImGui::Checkbox("Active", &is_active))
     {
         filter[EFilterFlag::IsActive] = is_active;
+        MarkFiltersMetadataDirty();
     }
 
     ImGui::SameLine();
@@ -443,6 +466,7 @@ void FiltersLayer::RenderFilter(
     if (ImGui::Checkbox("Highlight Only", &is_highlight_only))
     {
         filter[EFilterFlag::IsHighlightOnly] = is_highlight_only;
+        MarkFiltersMetadataDirty();
     }
 
     ImGui::Separator();
@@ -524,6 +548,7 @@ void FiltersLayer::RenderCondition(
             {
                 selected_index = select_index;
                 condition.over_column_id = header[select_index].id;
+                MarkFiltersMetadataDirty();
             }
             if (is_selected)
             {
@@ -539,32 +564,44 @@ void FiltersLayer::RenderCondition(
     ImGui::SameLine();
     bool const is_regex{condition[EConditionFlag::IsRegex]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
-    Graphite::Common::UI::IconButton(
-        ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
-            condition[EConditionFlag::IsRegex] = !is_regex;
-        });
+    if (Graphite::Common::UI::IconButton(
+            ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
+                condition[EConditionFlag::IsRegex] = !is_regex;
+            }))
+    {
+        MarkFiltersMetadataDirty();
+    };
     UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
 
     ImGui::SameLine();
     bool const is_case_sensitive{condition[EConditionFlag::IsCaseSensitive]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
-    Graphite::Common::UI::IconButton(
-        ICON_CI_CASE_SENSITIVE,
-        is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On",
-        [&] { condition[EConditionFlag::IsCaseSensitive] = !is_case_sensitive; });
+    if (Graphite::Common::UI::IconButton(
+            ICON_CI_CASE_SENSITIVE,
+            is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On",
+            [&] { condition[EConditionFlag::IsCaseSensitive] = !is_case_sensitive; }))
+    {
+        MarkFiltersMetadataDirty();
+    };
     UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
 
     ImGui::SameLine();
     bool const is_equals{condition[EConditionFlag::IsEquals]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
-    Graphite::Common::UI::IconButton(
-        ICON_CI_THREE_BARS, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
-            condition[EConditionFlag::IsEquals] = !is_equals;
-        });
+    if (Graphite::Common::UI::IconButton(
+            ICON_CI_THREE_BARS, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
+                condition[EConditionFlag::IsEquals] = !is_equals;
+            }))
+    {
+        MarkFiltersMetadataDirty();
+    };
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
 
     ImGui::SameLine();
-    Graphite::Common::UI::InputText("##condition_data", condition.data);
+    if (Graphite::Common::UI::InputText("##condition_data", condition.data))
+    {
+        MarkFiltersMetadataDirty();
+    }
 
     ImGui::EndChild();
 }

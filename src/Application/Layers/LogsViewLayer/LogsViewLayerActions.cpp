@@ -30,7 +30,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
     application_state.logs.visible_chunk.UpdateBackBufferSwap(
         // 1. Prepare Back Buffer
         [action, columns_count = application_state.logs.table_header.size()](
-            VisibleLogsChunk& visible_logs_chunk) {
+            Internal::VisibleLogsChunk& visible_logs_chunk) {
             if (action.visible_logs_indices.empty())
             {
                 return;
@@ -55,7 +55,8 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
             LOG_DEBUG("Culling complete. Map size: {}", visible_logs_chunk.logs.size());
         },
         // 2. Update Back Buffer
-        [action, &logs_logic = application_state.logs_logic](VisibleLogsChunk& visible_logs_chunk) {
+        [action,
+         &logs_logic = application_state.logs_logic](Internal::VisibleLogsChunk& visible_logs_chunk) {
             logs_logic->GetLogs(
                 action.visible_logs_indices,
                 Fluxion::API::Data::Logs::IndexToLogRowMapWriter{visible_logs_chunk.logs});

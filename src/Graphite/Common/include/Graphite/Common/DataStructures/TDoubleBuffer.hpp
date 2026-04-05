@@ -5,7 +5,7 @@
 ///
 /// @file TDoubleBuffer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief A thread-safe double-buffering data structure.
 ///
 
@@ -28,7 +28,9 @@ concept BackBufferCallable = std::invocable<F, T&> && std::same_as<std::invoke_r
 enum class EDoubleBufferSyncPolicy
 {
     Swap = 0,
-    Copy = 1
+    Copy = 1,
+    SwapLocking = 2,
+    CopyLocking = 3,
 };
 
 /**
@@ -81,13 +83,35 @@ public: // IO API
      * @warning The 'back' buffer will contain the previous 'front' buffer after call.
      */
     bool SyncFrontBufferSwap()
-        requires(TSyncPolicy == EDoubleBufferSyncPolicy::Swap)
+        requires(
+            TSyncPolicy == EDoubleBufferSyncPolicy::Swap ||
+            TSyncPolicy == EDoubleBufferSyncPolicy::SwapLocking)
     {
         return InternalSync([](T& front, T& back) { std::swap(front, back); });
     }
 
     /**
      * @brief Update the back buffer, usually after it was swapped with the front one.
+     * @note Thread Safe
+     *
+     * @tparam TBufferPreparer Here you can reserve / allocate memory for the back buffer if needed.
+     * @tparam TBufferUpdater Here you can modify the back buffer.
+     */
+    template <Concepts::BackBufferCallable<T> TBufferPreparer, Concepts::BackBufferCallable<T> TBufferUpdater>
+    void UpdateBackBufferSwapLocking(TBufferPreparer&& buffer_preparer, TBufferUpdater&& buffer_updater)
+        requires(TSyncPolicy == EDoubleBufferSyncPolicy::SwapLocking)
+    {
+        {
+            std::lock_guard lock{m_mutex};
+            std::invoke(std::forward<TBufferPreparer>(buffer_preparer), m_back);
+            std::invoke(std::forward<TBufferUpdater>(buffer_updater), m_back);
+        }
+        MarkDirty();
+    }
+
+    /**
+     * @brief Update the back buffer, usually after it was swapped with the front one.
+     * @note Not Thread Safe
      *
      * @tparam TBufferPreparer Here you can reserve / allocate memory for the back buffer if needed.
      * @tparam TBufferUpdater Here you can modify the back buffer.
@@ -108,13 +132,33 @@ public: // IO API
      * @note Only available when TSyncPolicy == EDoubleBufferSyncPolicy::FrontSwap.
      */
     bool SyncFrontBufferCopy()
-        requires(TSyncPolicy == EDoubleBufferSyncPolicy::Copy)
+        requires(
+            TSyncPolicy == EDoubleBufferSyncPolicy::Copy ||
+            TSyncPolicy == EDoubleBufferSyncPolicy::CopyLocking)
     {
         return InternalSync([](T& front, T& back) { front = back; });
     }
 
     /**
      * @brief Update the back buffer.
+     * @note Thread Safe
+     *
+     * @tparam TBufferUpdater Here you can modify the back buffer.
+     */
+    template <Concepts::BackBufferCallable<T> TBufferUpdater>
+    void UpdateBackBufferCopyLocking(TBufferUpdater&& buffer_updater)
+        requires(TSyncPolicy == EDoubleBufferSyncPolicy::CopyLocking)
+    {
+        {
+            std::lock_guard lock{m_mutex};
+            std::invoke(std::forward<TBufferUpdater>(buffer_updater), m_back);
+        }
+        MarkDirty();
+    }
+
+    /**
+     * @brief Update the back buffer.
+     * @note Not Thread Safe
      *
      * @tparam TBufferUpdater Here you can modify the back buffer.
      */
@@ -122,7 +166,10 @@ public: // IO API
     void UpdateBackBufferCopy(TBufferUpdater&& buffer_updater)
         requires(TSyncPolicy == EDoubleBufferSyncPolicy::Copy)
     {
-        std::invoke(std::forward<TBufferUpdater>(buffer_updater), m_back);
+        {
+            std::lock_guard lock{m_mutex};
+            std::invoke(std::forward<TBufferUpdater>(buffer_updater), m_back);
+        }
         MarkDirty();
     }
 
@@ -219,5 +266,11 @@ using TCopyDoubleBuffer = TDoubleBuffer<T, EDoubleBufferSyncPolicy::Copy>;
 
 template <typename T>
 using TSwapDoubleBuffer = TDoubleBuffer<T, EDoubleBufferSyncPolicy::Swap>;
+
+template <typename T>
+using TCopyLockingDoubleBuffer = TDoubleBuffer<T, EDoubleBufferSyncPolicy::CopyLocking>;
+
+template <typename T>
+using TSwapLockingDoubleBuffer = TDoubleBuffer<T, EDoubleBufferSyncPolicy::SwapLocking>;
 
 } // namespace Graphite::Common::DataStructures

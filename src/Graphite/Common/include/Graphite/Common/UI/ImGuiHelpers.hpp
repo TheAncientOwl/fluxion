@@ -5,7 +5,7 @@
 ///
 /// @file ImGuiHelpers.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Wrappers for ImGui UI elements.
 ///
 
@@ -31,13 +31,16 @@ void ItemHoverTooltip(const char* fmt, Args&&... args)
 }
 
 template <typename TAction>
-inline void IconButton(const char* icon, const char* tooltip, TAction&& action)
+inline bool IconButton(const char* icon, const char* tooltip, TAction&& action)
 {
+    bool clicked{false};
     if (ImGui::Button(icon))
     {
+        clicked = true;
         action();
     }
     ItemHoverTooltip(tooltip);
+    return clicked;
 }
 
 enum class EInputTextWidth : std::uint8_t

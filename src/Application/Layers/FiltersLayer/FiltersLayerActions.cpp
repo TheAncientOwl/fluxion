@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -386,43 +386,91 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     {
     case EFilterActionType::ApplyFilters: {
         handle<EFilterActionType::ApplyFilters>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = true;
+            });
         break;
     }
     case EFilterActionType::DisableFilters: {
         handle<EFilterActionType::DisableFilters>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+            });
         break;
     }
 
     case EFilterActionType::AddTab: {
         handle<EFilterActionType::AddTab>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::RemoveTab: {
         handle<EFilterActionType::RemoveTab>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::DuplicateTab: {
         handle<EFilterActionType::DuplicateTab>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::AddFilter: {
         handle<EFilterActionType::AddFilter>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::RemoveFilter: {
         handle<EFilterActionType::RemoveFilter>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::DuplicateFilter: {
         handle<EFilterActionType::DuplicateFilter>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::AddCondition: {
         handle<EFilterActionType::AddCondition>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     case EFilterActionType::RemoveCondition: {
         handle<EFilterActionType::RemoveCondition>(application_state, action);
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Internal::FiltersMetadata& metadata) {
+                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
+                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            });
         break;
     }
     default: {
