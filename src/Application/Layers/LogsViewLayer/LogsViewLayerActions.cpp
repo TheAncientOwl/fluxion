@@ -56,7 +56,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
         },
         // 2. Update Back Buffer
         [action, &logs_logic = application_state.logs_logic](VisibleLogsChunk& visible_logs_chunk) {
-            logs_logic->GetLogsChunk(
+            logs_logic->GetLogs(
                 action.visible_logs_indices,
                 Fluxion::API::Data::Logs::IndexToLogRowMapWriter{visible_logs_chunk.logs});
         });

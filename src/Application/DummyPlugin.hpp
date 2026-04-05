@@ -33,8 +33,8 @@ struct FilteredLogRow
     Fluxion::API::Data::Logs::LogRowMetadata metadata{};
 };
 
-struct ComputedComponent
-    : Graphite::Common::Utility::TWithFlags<ComputedComponent, Fluxion::API::Data::EFilterComponentFlag>
+struct ComputedCondition
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::Data::Filters::EConditionFlag>
 {
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
@@ -44,15 +44,15 @@ struct ActiveFilter
 {
     Graphite::Common::Utility::UniqueID id;
     std::uint8_t priority{};
-    std::vector<ComputedComponent> components{};
+    std::vector<ComputedCondition> conditions{};
     Fluxion::API::Data::Logs::LogRowMetadata log_row_metadata{};
 };
 
 inline std::vector<ActiveFilter> ComputeActiveFilters(
-    std::vector<Fluxion::API::Data::FiltersTab::Ptr> const& tabs,
-    std::vector<Fluxion::API::Data::LogsTableColumnDetails> const& header)
+    std::vector<Fluxion::API::Data::Filters::Tab::Ptr> const& tabs,
+    std::vector<Fluxion::API::Data::Logs::ColumnDetails> const& header)
 {
-    using namespace Fluxion::API::Data;
+    using namespace Fluxion::API::Data::Filters;
     std::vector<ActiveFilter> out{};
 
     auto get_column_index = [&header](Graphite::Common::Utility::UniqueID const id) {
@@ -72,7 +72,7 @@ inline std::vector<ActiveFilter> ComputeActiveFilters(
     for (auto const& tab_ptr : tabs)
     {
         auto const& tab{*tab_ptr};
-        if (!tab[EFiltersTabFlag::IsActive])
+        if (!tab[ETabFlag::IsActive])
         {
             continue;
         }
@@ -85,36 +85,34 @@ inline std::vector<ActiveFilter> ComputeActiveFilters(
                 continue;
             }
 
-            std::vector<ComputedComponent> out_components{};
-            for (auto const& component_ptr : filter.components.GetBack())
+            std::vector<ComputedCondition> out_conditions{};
+            for (auto const& condition_ptr : filter.conditions.GetBack())
             {
-                auto const& component{*component_ptr};
-                auto& out_component = out_components.emplace_back();
-                out_component.column_index = get_column_index(component.over_field_id);
+                auto const& condition{*condition_ptr};
+                auto& out_condition = out_conditions.emplace_back();
+                out_condition.column_index = get_column_index(condition.over_column_id);
 
-                out_component[EFilterComponentFlag::IsRegex] =
-                    component[EFilterComponentFlag::IsRegex];
-                out_component[EFilterComponentFlag::IsEquals] =
-                    component[EFilterComponentFlag::IsEquals];
-                out_component[EFilterComponentFlag::IsCaseSensitive] =
-                    component[EFilterComponentFlag::IsCaseSensitive];
+                out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
+                out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
+                out_condition[EConditionFlag::IsCaseSensitive] =
+                    condition[EConditionFlag::IsCaseSensitive];
 
-                if (component[EFilterComponentFlag::IsRegex])
+                if (condition[EConditionFlag::IsRegex])
                 {
-                    out_component.condition = std::regex{component.data};
+                    out_condition.condition = std::regex{condition.data};
                 }
                 else
                 {
-                    out_component.condition = component.data;
+                    out_condition.condition = condition.data;
                 }
             }
 
-            if (!out_components.empty())
+            if (!out_conditions.empty())
             {
                 out.emplace_back(
                     filter.id,
                     filter.priority,
-                    std::move(out_components),
+                    std::move(out_conditions),
                     Fluxion::API::Data::Logs::LogRowMetadata{.colors = filter.colors});
             }
         }
@@ -182,10 +180,10 @@ public:
         // No import functionality for dummy plugin
     }
 
-    void ApplyFilters(std::vector<Fluxion::API::Data::FiltersTab::Ptr> const& tabs) override
+    void ApplyFilters(std::vector<Fluxion::API::Data::Filters::Tab::Ptr> const& tabs) override
     {
         LOG_SCOPE("");
-        using namespace Fluxion::API::Data;
+        using namespace Fluxion::API::Data::Filters;
 
         auto const active_filters = DummyImpl::ComputeActiveFilters(tabs, GetTableHeader());
         LOG_DEBUG("Active filters size: {}", active_filters.size());
@@ -196,16 +194,16 @@ public:
             for (auto const& filter : active_filters)
             {
                 bool matches{true};
-                for (auto const& component : filter.components)
+                for (auto const& condition : filter.conditions)
                 {
-                    auto const& target{log[component.column_index]};
+                    auto const& target{log[condition.column_index]};
 
                     bool const equals{
-                        component[EFilterComponentFlag::IsRegex]
-                            ? std::regex_match(target, std::get<std::regex>(component.condition))
-                            : target == std::get<std::string>(component.condition)};
+                        condition[EConditionFlag::IsRegex]
+                            ? std::regex_match(target, std::get<std::regex>(condition.condition))
+                            : target == std::get<std::string>(condition.condition)};
 
-                    if (component[EFilterComponentFlag::IsEquals] != equals)
+                    if (condition[EConditionFlag::IsEquals] != equals)
                     {
                         matches = false;
                         break;
@@ -233,9 +231,9 @@ public:
         }
     }
 
-    std::vector<Fluxion::API::Data::LogsTableColumnDetails> GetTableHeader() const override
+    std::vector<Fluxion::API::Data::Logs::ColumnDetails> GetTableHeader() const override
     {
-        static std::vector<Fluxion::API::Data::LogsTableColumnDetails> s_table_header{
+        static std::vector<Fluxion::API::Data::Logs::ColumnDetails> s_table_header{
             {Graphite::Common::Utility::UniqueID::Generate(), "Timestamp"},
             {Graphite::Common::Utility::UniqueID::Generate(), "Channel"},
             {Graphite::Common::Utility::UniqueID::Generate(), "Level"},
@@ -245,7 +243,7 @@ public:
 
     std::size_t GetTotalLogs() const override { return m_filtered_logs.size(); }
 
-    void GetLogsChunk(
+    void GetLogs(
         std::vector<Fluxion::API::Data::Logs::Range> const& ranges,
         Fluxion::API::Data::Logs::IndexToLogRowMapWriter out_logs) const override
     {

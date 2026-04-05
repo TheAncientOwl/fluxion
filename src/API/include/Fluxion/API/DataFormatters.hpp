@@ -71,9 +71,9 @@ struct std::formatter<ImVec4> : std::formatter<std::string_view>
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::FilterColors> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::API::Data::Filters::Highlight> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::FilterColors& c, format_context& ctx) const
+    auto format(const Fluxion::API::Data::Filters::Highlight& c, format_context& ctx) const
     {
         return std::formatter<std::string_view>::format(
             std::format("FG:{} BG:{}", c.foreground, c.background), ctx);
@@ -81,45 +81,46 @@ struct std::formatter<Fluxion::API::Data::FilterColors> : std::formatter<std::st
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::FilterComponent> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::API::Data::Filters::Condition> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::FilterComponent& fc, format_context& ctx) const
+    auto format(const Fluxion::API::Data::Filters::Condition& fc, format_context& ctx) const
     {
         return std::formatter<std::string_view>::format(
-            std::format("Component(ID: {}, Field: {}, Data: '{}')", fc.id, fc.over_field_id, fc.data),
+            std::format(
+                "Condition(ID: {}, ColumnID: {}, Data: '{}')", fc.id, fc.over_column_id, fc.data),
             ctx);
     }
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Filter> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::API::Data::Filters::Filter> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::Filter& f, format_context& ctx) const
+    auto format(const Fluxion::API::Data::Filters::Filter& f, format_context& ctx) const
     {
-        const auto& components = f.components.GetBack();
-        // Now 'std::formatter<vector<shared_ptr<FilterComponent>>>' is "defined" (as a shell)
+        const auto& conditions = f.conditions.GetBack();
+        // Now 'std::formatter<vector<shared_ptr<FilterCondition>>>' is "defined" (as a shell)
         // so this line won't trigger an "undefined template" error.
         return std::formatter<std::string_view>::format(
             std::format(
-                "Filter(Name: '{}', Active: {}, Components: {})",
+                "Filter(Name: '{}', Active: {}, Conditions: {})",
                 f.name,
-                f[Fluxion::API::Data::EFilterFlag::IsActive],
-                components),
+                f[Fluxion::API::Data::Filters::EFilterFlag::IsActive],
+                conditions),
             ctx);
     }
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::FiltersTab> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::API::Data::Filters::Tab> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::FiltersTab& tab, format_context& ctx) const
+    auto format(const Fluxion::API::Data::Filters::Tab& tab, format_context& ctx) const
     {
         const auto& filters = tab.filters.GetBack();
         return std::formatter<std::string_view>::format(
             std::format(
                 "Tab(Name: '{}', Active: {}, Filters: {})",
                 tab.name,
-                tab[Fluxion::API::Data::EFiltersTabFlag::IsActive],
+                tab[Fluxion::API::Data::Filters::ETabFlag::IsActive],
                 filters),
             ctx);
     }

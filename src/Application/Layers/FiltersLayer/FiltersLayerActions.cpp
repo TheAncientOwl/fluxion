@@ -14,7 +14,7 @@
 
 namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 
-using namespace Fluxion::API::Data;
+using namespace Fluxion::API::Data::Filters;
 
 template <typename T>
 auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::UniqueID const& id)
@@ -25,19 +25,18 @@ auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::U
 template <EFilterActionType ActionType>
 void handle(AppState& application_state, FilterActionPayload const& action) = delete;
 template <>
-void handle<EFilterActionType::AddFiltersTab>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::AddTab>(AppState& application_state, FilterActionPayload const& action)
 {
-    GRAPHITE_ASSERT(action.tab_id == std::nullopt, "tab should be nullopt for AddFiltersTab action");
+    GRAPHITE_ASSERT(action.tab_id == std::nullopt, "tab should be nullopt for AddTab action");
+    GRAPHITE_ASSERT(action.filter_id == std::nullopt, "filter should be nullopt for AddTab action");
     GRAPHITE_ASSERT(
-        action.filter_id == std::nullopt, "filter should be nullopt for AddFiltersTab action");
-    GRAPHITE_ASSERT(
-        action.component_id == std::nullopt, "component should be nullopt for AddFiltersTab action");
+        action.condition_id == std::nullopt, "condition should be nullopt for AddTab action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto tab_ptr = tabs_back.emplace_back(std::make_shared<FiltersTab>());
+        auto tab_ptr = tabs_back.emplace_back(std::make_shared<Tab>());
         tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
         tab_ptr->name = "New Tab";
-        (*tab_ptr)[EFiltersTabFlag::IsActive] = true;
+        (*tab_ptr)[ETabFlag::IsActive] = true;
         tab_ptr->UpdateImGuiID();
 
         // Initialize nested structures
@@ -48,28 +47,26 @@ void handle<EFilterActionType::AddFiltersTab>(AppState& application_state, Filte
             .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
         (*filter_ptr)[EFilterFlag::IsActive] = true;
 
-        auto comp_ptr = std::make_shared<FilterComponent>();
+        auto comp_ptr = std::make_shared<Condition>();
         comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-        (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
+        (*comp_ptr)[EConditionFlag::IsEquals] = true;
 
-        filter_ptr->components.Init({comp_ptr}, {comp_ptr});
+        filter_ptr->conditions.Init({comp_ptr}, {comp_ptr});
         tab_ptr->filters.Init({filter_ptr}, {filter_ptr});
     });
 }
 
 template <>
-void handle<EFilterActionType::RemoveFiltersTab>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::RemoveTab>(AppState& application_state, FilterActionPayload const& action)
 {
+    GRAPHITE_ASSERT(action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveTab action");
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveFiltersTab action");
+        action.filter_id == std::nullopt, "filter should be nullopt for RemoveTab action");
     GRAPHITE_ASSERT(
-        action.filter_id == std::nullopt, "filter should be nullopt for RemoveFiltersTab action");
-    GRAPHITE_ASSERT(
-        action.component_id == std::nullopt,
-        "component should be nullopt for RemoveFiltersTab action");
+        action.condition_id == std::nullopt, "condition should be nullopt for RemoveTab action");
 
     application_state.filters.tabs.UpdateBackBufferCopy(
-        [&](std::vector<Fluxion::API::Data::FiltersTab::Ptr>& tabs_back) {
+        [&](std::vector<Fluxion::API::Data::Filters::Tab::Ptr>& tabs_back) {
             auto const tab_it = FindByID(tabs_back, *action.tab_id);
             if (tab_it != tabs_back.end())
             {
@@ -78,19 +75,18 @@ void handle<EFilterActionType::RemoveFiltersTab>(AppState& application_state, Fi
             else
             {
                 LOG_WARN(
-                    "Failed to RemoveFiltersTab with tab ID {} because it does not exist",
-                    *action.tab_id);
+                    "Failed to RemoveTab with tab ID {} because it does not exist", *action.tab_id);
             }
             if (tabs_back.empty())
             {
-                // Create a new FiltersTab
-                auto tab_ptr = tabs_back.emplace_back(std::make_shared<FiltersTab>());
+                // Create a new Tab
+                auto tab_ptr = tabs_back.emplace_back(std::make_shared<Tab>());
                 tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
                 tab_ptr->name = "New Tab";
-                (*tab_ptr)[EFiltersTabFlag::IsActive] = true;
+                (*tab_ptr)[ETabFlag::IsActive] = true;
                 tab_ptr->UpdateImGuiID();
 
-                // Initialize nested structures: one Filter with one FilterComponent
+                // Initialize nested structures: one Filter with one Condition
                 auto filter_ptr = std::make_shared<Filter>();
                 filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
                 filter_ptr->name = "New Filter";
@@ -98,11 +94,11 @@ void handle<EFilterActionType::RemoveFiltersTab>(AppState& application_state, Fi
                     .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
                 (*filter_ptr)[EFilterFlag::IsActive] = true;
 
-                auto comp_ptr = std::make_shared<FilterComponent>();
+                auto comp_ptr = std::make_shared<Condition>();
                 comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-                (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
+                (*comp_ptr)[EConditionFlag::IsEquals] = true;
 
-                filter_ptr->components.Init({comp_ptr}, {comp_ptr});
+                filter_ptr->conditions.Init({comp_ptr}, {comp_ptr});
                 tab_ptr->filters.Init({filter_ptr}, {filter_ptr});
             }
             tabs_back.shrink_to_fit();
@@ -110,29 +106,24 @@ void handle<EFilterActionType::RemoveFiltersTab>(AppState& application_state, Fi
 }
 
 template <>
-void handle<EFilterActionType::DuplicateFiltersTab>(
-    AppState& application_state,
-    FilterActionPayload const& action)
+void handle<EFilterActionType::DuplicateTab>(AppState& application_state, FilterActionPayload const& action)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateFiltersTab action");
+        action.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateTab action");
     GRAPHITE_ASSERT(
-        action.filter_id == std::nullopt, "filter should be nullopt for DuplicateFiltersTab action");
+        action.filter_id == std::nullopt, "filter should be nullopt for DuplicateTab action");
     GRAPHITE_ASSERT(
-        action.component_id == std::nullopt,
-        "component should be nullopt for DuplicateFiltersTab action");
+        action.condition_id == std::nullopt, "condition should be nullopt for DuplicateTab action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto const tab_it = FindByID(tabs_back, *action.tab_id);
         if (tab_it == tabs_back.end())
         {
-            LOG_WARN(
-                "Failed to DuplicateFiltersTab with tab ID {} because it does not exist",
-                *action.tab_id);
+            LOG_WARN("Failed to DuplicateTab with tab ID {} because it does not exist", *action.tab_id);
             return;
         }
 
-        auto duplicated_tab = std::make_shared<FiltersTab>(**tab_it);
+        auto duplicated_tab = std::make_shared<Tab>(**tab_it);
         duplicated_tab->id = Graphite::Common::Utility::UniqueID::Generate();
         duplicated_tab->name += "*";
         duplicated_tab->UpdateImGuiID();
@@ -146,15 +137,15 @@ void handle<EFilterActionType::DuplicateFiltersTab>(
             auto filter_dup = std::make_shared<Filter>(*filter_ptr);
             filter_dup->id = Graphite::Common::Utility::UniqueID::Generate();
 
-            auto current_comps = filter_dup->components.GetBack();
-            std::vector<FilterComponent::Ptr> new_comps_list;
+            auto current_comps = filter_dup->conditions.GetBack();
+            std::vector<Condition::Ptr> new_comps_list;
             for (auto& comp_ptr : current_comps)
             {
-                auto comp_dup = std::make_shared<FilterComponent>(*comp_ptr);
+                auto comp_dup = std::make_shared<Condition>(*comp_ptr);
                 comp_dup->id = Graphite::Common::Utility::UniqueID::Generate();
                 new_comps_list.push_back(std::move(comp_dup));
             }
-            filter_dup->components.Init(std::vector(new_comps_list), std::move(new_comps_list));
+            filter_dup->conditions.Init(std::vector(new_comps_list), std::move(new_comps_list));
             new_filters_list.push_back(std::move(filter_dup));
         }
         duplicated_tab->filters.Init(std::vector(new_filters_list), std::move(new_filters_list));
@@ -170,7 +161,7 @@ void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterAct
     GRAPHITE_ASSERT(
         action.filter_id == std::nullopt, "filter should be nullopt for AddFilter action");
     GRAPHITE_ASSERT(
-        action.component_id == std::nullopt, "component should be nullopt for AddFilter action");
+        action.condition_id == std::nullopt, "condition should be nullopt for AddFilter action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_it = FindByID(tabs_back, *action.tab_id);
@@ -185,10 +176,10 @@ void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterAct
                 .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
             (*new_filter)[EFilterFlag::IsActive] = true;
 
-            auto comp_ptr = std::make_shared<FilterComponent>();
+            auto comp_ptr = std::make_shared<Condition>();
             comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-            (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
-            new_filter->components.Init({comp_ptr}, {comp_ptr});
+            (*comp_ptr)[EConditionFlag::IsEquals] = true;
+            new_filter->conditions.Init({comp_ptr}, {comp_ptr});
         });
     });
 }
@@ -201,7 +192,7 @@ void handle<EFilterActionType::RemoveFilter>(AppState& application_state, Filter
     GRAPHITE_ASSERT(
         action.filter_id != std::nullopt, "filter should NOT be nullopt for RemoveFilter action");
     GRAPHITE_ASSERT(
-        action.component_id == std::nullopt, "component should be nullopt for RemoveFilter action");
+        action.condition_id == std::nullopt, "condition should be nullopt for RemoveFilter action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_it = FindByID(tabs_back, *action.tab_id);
@@ -230,10 +221,10 @@ void handle<EFilterActionType::RemoveFilter>(AppState& application_state, Filter
                     .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
                 (*filter_ptr)[EFilterFlag::IsActive] = true;
 
-                auto comp_ptr = std::make_shared<FilterComponent>();
+                auto comp_ptr = std::make_shared<Condition>();
                 comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-                (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
-                filter_ptr->components.Init({comp_ptr}, {comp_ptr});
+                (*comp_ptr)[EConditionFlag::IsEquals] = true;
+                filter_ptr->conditions.Init({comp_ptr}, {comp_ptr});
             }
             filters_back.shrink_to_fit();
         });
@@ -248,8 +239,8 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
     GRAPHITE_ASSERT(
         action.filter_id != std::nullopt, "filter should NOT be nullopt for DuplicateFilter action");
     GRAPHITE_ASSERT(
-        action.component_id == std::nullopt,
-        "component should be nullopt for DuplicateFilter action");
+        action.condition_id == std::nullopt,
+        "condition should be nullopt for DuplicateFilter action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_it = FindByID(tabs_back, *action.tab_id);
@@ -270,15 +261,15 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
             duplicate_filter->id = Graphite::Common::Utility::UniqueID::Generate();
             duplicate_filter->name += "*";
 
-            auto current_comps = duplicate_filter->components.GetBack();
-            std::vector<FilterComponent::Ptr> new_comps_list;
+            auto current_comps = duplicate_filter->conditions.GetBack();
+            std::vector<Condition::Ptr> new_comps_list;
             for (auto& comp_ptr : current_comps)
             {
-                auto comp_dup = std::make_shared<FilterComponent>(*comp_ptr);
+                auto comp_dup = std::make_shared<Condition>(*comp_ptr);
                 comp_dup->id = Graphite::Common::Utility::UniqueID::Generate();
                 new_comps_list.push_back(std::move(comp_dup));
             }
-            duplicate_filter->components.Init(std::vector(new_comps_list), std::move(new_comps_list));
+            duplicate_filter->conditions.Init(std::vector(new_comps_list), std::move(new_comps_list));
 
             filters_back.insert(std::next(filter_it), std::move(duplicate_filter));
         });
@@ -286,18 +277,14 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
 }
 
 template <>
-void handle<EFilterActionType::AddFilterComponent>(
-    AppState& application_state,
-    FilterActionPayload const& action)
+void handle<EFilterActionType::AddCondition>(AppState& application_state, FilterActionPayload const& action)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for AddFilterComponent action");
+        action.tab_id != std::nullopt, "tab should NOT be nullopt for AddCondition action");
     GRAPHITE_ASSERT(
-        action.filter_id != std::nullopt,
-        "filter should NOT be nullopt for AddFilterComponent action");
+        action.filter_id != std::nullopt, "filter should NOT be nullopt for AddCondition action");
     GRAPHITE_ASSERT(
-        action.component_id == std::nullopt,
-        "component should be nullopt for AddFilterComponent action");
+        action.condition_id == std::nullopt, "condition should be nullopt for AddCondition action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_it = FindByID(tabs_back, *action.tab_id);
@@ -310,28 +297,25 @@ void handle<EFilterActionType::AddFilterComponent>(
                 filter_it != filters_back.end(),
                 "Failed to find filter with ID " + action.filter_id->ToString());
 
-            (*filter_it)->components.UpdateBackBufferCopy([&](auto& comps_back) {
-                auto new_comp = comps_back.emplace_back(std::make_shared<FilterComponent>());
+            (*filter_it)->conditions.UpdateBackBufferCopy([&](auto& comps_back) {
+                auto new_comp = comps_back.emplace_back(std::make_shared<Condition>());
                 new_comp->id = Graphite::Common::Utility::UniqueID::Generate();
-                (*new_comp)[EFilterComponentFlag::IsEquals] = true;
+                (*new_comp)[EConditionFlag::IsEquals] = true;
             });
         });
     });
 }
 
 template <>
-void handle<EFilterActionType::RemoveFilterComponent>(
-    AppState& application_state,
-    FilterActionPayload const& action)
+void handle<EFilterActionType::RemoveCondition>(AppState& application_state, FilterActionPayload const& action)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveFilterComponent action");
+        action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveCondition action");
     GRAPHITE_ASSERT(
-        action.filter_id != std::nullopt,
-        "filter should NOT be nullopt for RemoveFilterComponent action");
+        action.filter_id != std::nullopt, "filter should NOT be nullopt for RemoveCondition action");
     GRAPHITE_ASSERT(
-        action.component_id != std::nullopt,
-        "component should NOT be nullopt for RemoveFilterComponent action");
+        action.condition_id != std::nullopt,
+        "condition should NOT be nullopt for RemoveCondition action");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_it = FindByID(tabs_back, *action.tab_id);
@@ -344,8 +328,8 @@ void handle<EFilterActionType::RemoveFilterComponent>(
                 filter_it != filters_back.end(),
                 "Failed to find filter with ID " + action.filter_id->ToString());
 
-            (*filter_it)->components.UpdateBackBufferCopy([&](auto& comps_back) {
-                auto comp_it = FindByID(comps_back, *action.component_id);
+            (*filter_it)->conditions.UpdateBackBufferCopy([&](auto& comps_back) {
+                auto comp_it = FindByID(comps_back, *action.condition_id);
                 if (comp_it != comps_back.end())
                 {
                     comps_back.erase(comp_it);
@@ -353,16 +337,16 @@ void handle<EFilterActionType::RemoveFilterComponent>(
                 else
                 {
                     LOG_WARN(
-                        "Failed to RemoveFilterComponent with component ID {} because it does not "
+                        "Failed to RemoveCondition with condition ID {} because it does not "
                         "exist",
-                        *action.component_id);
+                        *action.condition_id);
                 }
 
                 if (comps_back.empty())
                 {
-                    auto comp_ptr = comps_back.emplace_back(std::make_shared<FilterComponent>());
+                    auto comp_ptr = comps_back.emplace_back(std::make_shared<Condition>());
                     comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-                    (*comp_ptr)[EFilterComponentFlag::IsEquals] = true;
+                    (*comp_ptr)[EConditionFlag::IsEquals] = true;
                 }
                 comps_back.shrink_to_fit();
             });
@@ -392,11 +376,11 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     }
 
     LOG_TRACE(
-        "Handling action type {} -> tab: {} | filter: {} | component: {}",
+        "Handling action type {} -> tab: {} | filter: {} | condition: {}",
         static_cast<std::uint32_t>(action.type),
         action.tab_id ? action.tab_id->ToString() : "nullopt",
         action.filter_id ? action.filter_id->ToString() : "nullopt",
-        action.component_id ? action.component_id->ToString() : "nullopt");
+        action.condition_id ? action.condition_id->ToString() : "nullopt");
 
     switch (action.type)
     {
@@ -409,16 +393,16 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
 
-    case EFilterActionType::AddFiltersTab: {
-        handle<EFilterActionType::AddFiltersTab>(application_state, action);
+    case EFilterActionType::AddTab: {
+        handle<EFilterActionType::AddTab>(application_state, action);
         break;
     }
-    case EFilterActionType::RemoveFiltersTab: {
-        handle<EFilterActionType::RemoveFiltersTab>(application_state, action);
+    case EFilterActionType::RemoveTab: {
+        handle<EFilterActionType::RemoveTab>(application_state, action);
         break;
     }
-    case EFilterActionType::DuplicateFiltersTab: {
-        handle<EFilterActionType::DuplicateFiltersTab>(application_state, action);
+    case EFilterActionType::DuplicateTab: {
+        handle<EFilterActionType::DuplicateTab>(application_state, action);
         break;
     }
     case EFilterActionType::AddFilter: {
@@ -433,21 +417,21 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         handle<EFilterActionType::DuplicateFilter>(application_state, action);
         break;
     }
-    case EFilterActionType::AddFilterComponent: {
-        handle<EFilterActionType::AddFilterComponent>(application_state, action);
+    case EFilterActionType::AddCondition: {
+        handle<EFilterActionType::AddCondition>(application_state, action);
         break;
     }
-    case EFilterActionType::RemoveFilterComponent: {
-        handle<EFilterActionType::RemoveFilterComponent>(application_state, action);
+    case EFilterActionType::RemoveCondition: {
+        handle<EFilterActionType::RemoveCondition>(application_state, action);
         break;
     }
     default: {
         LOG_WARN(
-            "Unknown action type {} -> tab: {} | filter: {} | component: {}",
+            "Unknown action type {} -> tab: {} | filter: {} | condition: {}",
             static_cast<std::uint32_t>(action.type),
             action.tab_id ? action.tab_id->ToString() : "nullopt",
             action.filter_id ? action.filter_id->ToString() : "nullopt",
-            action.component_id ? action.component_id->ToString() : "nullopt");
+            action.condition_id ? action.condition_id->ToString() : "nullopt");
         break;
     }
 

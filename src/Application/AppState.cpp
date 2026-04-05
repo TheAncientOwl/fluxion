@@ -26,16 +26,17 @@ AppState Make()
     return app_state;
 }
 
-std::vector<Fluxion::API::Data::FiltersTab::Ptr> MakeDefaultTabs()
+std::vector<Fluxion::API::Data::Filters::Tab::Ptr> MakeDefaultTabs()
 {
     using namespace Fluxion::API::Data;
+    using namespace Fluxion::API::Data::Filters;
     using UniqueID = Graphite::Common::Utility::UniqueID;
 
     // Create the primary tab
-    auto tab_ptr = std::make_shared<FiltersTab>();
+    auto tab_ptr = std::make_shared<Tab>();
     tab_ptr->id = UniqueID::Generate();
     tab_ptr->name = "Tab1";
-    (*tab_ptr)[EFiltersTabFlag::IsActive] = true;
+    (*tab_ptr)[ETabFlag::IsActive] = true;
     tab_ptr->UpdateImGuiID();
 
     // Create the filter
@@ -43,18 +44,18 @@ std::vector<Fluxion::API::Data::FiltersTab::Ptr> MakeDefaultTabs()
     filter_ptr->id = UniqueID::Generate();
     filter_ptr->name = "Filter1";
     filter_ptr->colors =
-        FilterColors{.foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+        Highlight{.foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
     (*filter_ptr)[EFilterFlag::IsActive] = true;
 
-    // Create the component
-    auto component_ptr = std::make_shared<FilterComponent>();
-    component_ptr->id = UniqueID::Generate();
-    component_ptr->over_field_id = UniqueID::Default();
-    (*component_ptr)[EFilterComponentFlag::IsEquals] = true;
+    // Create the condition
+    auto condition_ptr = std::make_shared<Condition>();
+    condition_ptr->id = UniqueID::Generate();
+    condition_ptr->over_column_id = UniqueID::Default();
+    (*condition_ptr)[EConditionFlag::IsEquals] = true;
 
-    // 1. Initialize Component Double Buffer
+    // 1. Initialize Conditions Double Buffer
     // We provide two vectors containing the same shared_ptr
-    filter_ptr->components.Init({component_ptr}, {component_ptr});
+    filter_ptr->conditions.Init({condition_ptr}, {condition_ptr});
 
     // 2. Initialize Filter Double Buffer
     tab_ptr->filters.Init({filter_ptr}, {filter_ptr});

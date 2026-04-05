@@ -43,16 +43,16 @@ public: // Public API
 
 private: // Private Rendering API
     void RenderToolbar();
-    void RenderFiltersTabs();
+    void RenderTabs();
 
-    void RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr);
+    void RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> tab_ptr);
     void RenderFilter(
         Graphite::Common::Utility::UniqueID const& owning_tab_id,
-        Fluxion::API::Data::Filter& filter);
-    void RenderFilterComponent(
+        Fluxion::API::Data::Filters::Filter& filter);
+    void RenderCondition(
         Graphite::Common::Utility::UniqueID const& owning_tab_id,
         Graphite::Common::Utility::UniqueID const& owning_filter_id,
-        Fluxion::API::Data::FilterComponent& component);
+        Fluxion::API::Data::Filters::Condition& condition);
 };
 
 } // namespace Fluxion::Application::Layers

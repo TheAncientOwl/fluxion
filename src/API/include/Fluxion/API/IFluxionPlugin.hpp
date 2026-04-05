@@ -30,21 +30,20 @@ public:
     virtual void RenderMenuLayer() = 0;
 
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
-    virtual void ApplyFilters(std::vector<std::shared_ptr<Fluxion::API::Data::FiltersTab>> const& tabs) = 0;
+    virtual void ApplyFilters(std::vector<Fluxion::API::Data::Filters::Tab::Ptr> const& tabs) = 0;
     virtual void DisableFilters() = 0;
 
-    virtual std::vector<Fluxion::API::Data::LogsTableColumnDetails> GetTableHeader() const = 0;
+    virtual std::vector<Fluxion::API::Data::Logs::ColumnDetails> GetTableHeader() const = 0;
     virtual std::size_t GetTotalLogs() const = 0;
 
     /**
-     * @brief Get the Logs Chunk object
+     * @brief Request logs
      *
-     * @param begin inclusive
-     * @param end exclusive
+     * @param ranges list of reequested chunks {begin inclusive, end exclusive}
      * @param out_logs map<index, row> to be updated
      *
      */
-    virtual void GetLogsChunk(
+    virtual void GetLogs(
         std::vector<Fluxion::API::Data::Logs::Range> const& ranges,
         Fluxion::API::Data::Logs::IndexToLogRowMapWriter out_logs) const = 0;
 

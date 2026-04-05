@@ -20,14 +20,14 @@ enum class EFilterActionType : std::uint8_t
     None = 0,
     ApplyFilters,
     DisableFilters,
-    AddFiltersTab,
-    RemoveFiltersTab,
-    DuplicateFiltersTab,
+    AddTab,
+    RemoveTab,
+    DuplicateTab,
     AddFilter,
     RemoveFilter,
     DuplicateFilter,
-    AddFilterComponent,
-    RemoveFilterComponent
+    AddCondition,
+    RemoveCondition
 };
 
 struct FilterActionPayload
@@ -35,7 +35,7 @@ struct FilterActionPayload
     EFilterActionType type{EFilterActionType::None};
     std::optional<Graphite::Common::Utility::UniqueID> tab_id{};
     std::optional<Graphite::Common::Utility::UniqueID> filter_id{};
-    std::optional<Graphite::Common::Utility::UniqueID> component_id{};
+    std::optional<Graphite::Common::Utility::UniqueID> condition_id{};
 };
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action);

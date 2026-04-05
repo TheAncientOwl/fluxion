@@ -25,7 +25,7 @@ namespace UIHelpers {
 
 void ColorsPicker(
     const char* id,
-    Fluxion::API::Data::FilterColors& colors,
+    Fluxion::API::Data::Filters::Highlight& colors,
     ImVec4 const& display,
     std::string_view const preview)
 {
@@ -188,14 +188,14 @@ void FiltersLayer::OnRender()
         tab->filters.SyncFrontBufferCopy();
         for (auto& filter : tab->filters.GetFront())
         {
-            filter->components.SyncFrontBufferCopy();
+            filter->conditions.SyncFrontBufferCopy();
         }
     }
 
     ImGui::Begin(ICON_CI_WAND " Filters", &app_state.layers_active.filters);
 
     RenderToolbar();
-    RenderFiltersTabs();
+    RenderTabs();
 
     ImGui::End();
 }
@@ -226,10 +226,10 @@ void FiltersLayer::RenderToolbar()
 
     Graphite::Common::UI::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
         Dispatch(
-            {.type = Actions::FiltersLayer::EFilterActionType::AddFiltersTab,
+            {.type = Actions::FiltersLayer::EFilterActionType::AddTab,
              .tab_id = std::nullopt,
              .filter_id = std::nullopt,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
 
     ImGui::SameLine();
@@ -238,7 +238,7 @@ void FiltersLayer::RenderToolbar()
             .type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
             .tab_id = std::nullopt,
             .filter_id = std::nullopt,
-            .component_id = std::nullopt,
+            .condition_id = std::nullopt,
         });
     });
 
@@ -249,7 +249,7 @@ void FiltersLayer::RenderToolbar()
             .type = Actions::FiltersLayer::EFilterActionType::DisableFilters,
             .tab_id = std::nullopt,
             .filter_id = std::nullopt,
-            .component_id = std::nullopt,
+            .condition_id = std::nullopt,
         });
     });
     UIHelpers::Styles::PopRedButton();
@@ -257,21 +257,21 @@ void FiltersLayer::RenderToolbar()
     ImGui::EndChild();
 }
 
-void FiltersLayer::RenderFiltersTabs()
+void FiltersLayer::RenderTabs()
 {
     LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
     // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
-    LOG_DEBUG("FiltersTabs: {}", app_state.filters.tabs.GetFront());
+    LOG_DEBUG("Tabs: {}", app_state.filters.tabs.GetFront());
 
-    if (ImGui::BeginTabBar("FiltersTabs"))
+    if (ImGui::BeginTabBar("Tabs"))
     {
         for (auto& tab : app_state.filters.tabs.GetFront())
         {
             if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
                 LOG_INFO("Rendering filter tab {}", tab->imgui_id.c_str());
-                RenderFiltersTab(tab);
+                RenderTab(tab);
                 ImGui::EndTabItem();
             }
         }
@@ -279,7 +279,7 @@ void FiltersLayer::RenderFiltersTabs()
     }
 }
 
-void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersTab> tab_ptr)
+void FiltersLayer::RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> tab_ptr)
 {
     GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
@@ -294,34 +294,34 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilter,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
 
     ImGui::SameLine();
     Graphite::Common::UI::IconButton(ICON_CI_COPY, "Duplicate Tab", [&] {
         Dispatch(
-            {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFiltersTab,
+            {.type = Actions::FiltersLayer::EFilterActionType::DuplicateTab,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
     Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Tab", [&] {
         Dispatch(
-            {.type = Actions::FiltersLayer::EFilterActionType::RemoveFiltersTab,
+            {.type = Actions::FiltersLayer::EFilterActionType::RemoveTab,
              .tab_id = tab_ptr->id,
              .filter_id = std::nullopt,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
     UIHelpers::Styles::PopRedButton();
 
     ImGui::SameLine();
-    bool is_active{tab[API::Data::EFiltersTabFlag::IsActive]};
+    bool is_active{tab[API::Data::Filters::ETabFlag::IsActive]};
     if (ImGui::Checkbox("Active", &is_active))
     {
-        tab[API::Data::EFiltersTabFlag::IsActive] = is_active;
+        tab[API::Data::Filters::ETabFlag::IsActive] = is_active;
     }
 
     ImGui::SameLine();
@@ -340,7 +340,7 @@ void FiltersLayer::RenderFiltersTab(std::shared_ptr<Fluxion::API::Data::FiltersT
 
 void FiltersLayer::RenderFilter(
     Graphite::Common::Utility::UniqueID const& owning_tab_id,
-    Fluxion::API::Data::Filter& filter)
+    Fluxion::API::Data::Filters::Filter& filter)
 {
     GRAPHITE_ASSERT(
         filter.id != Graphite::Common::Utility::UniqueID::Default(),
@@ -356,7 +356,7 @@ void FiltersLayer::RenderFilter(
     ImGui::BeginChild(s_filter_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
     ImGui::Separator();
 
-    using EFilterFlag = Fluxion::API::Data::EFilterFlag;
+    using EFilterFlag = Fluxion::API::Data::Filters::EFilterFlag;
 
     UIHelpers::Styles::PushButtonGripper();
     Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {
@@ -377,7 +377,7 @@ void FiltersLayer::RenderFilter(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFilter,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
 
     ImGui::SameLine();
@@ -387,7 +387,7 @@ void FiltersLayer::RenderFilter(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilter,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
     UIHelpers::Styles::PopRedButton();
 
@@ -423,12 +423,12 @@ void FiltersLayer::RenderFilter(
     ImGui::Separator();
 
     ImGui::Indent(32.0f);
-    Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Component", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Condition", [&] {
         Dispatch(
-            {.type = Actions::FiltersLayer::EFilterActionType::AddFilterComponent,
+            {.type = Actions::FiltersLayer::EFilterActionType::AddCondition,
              .tab_id = owning_tab_id,
              .filter_id = filter.id,
-             .component_id = std::nullopt});
+             .condition_id = std::nullopt});
     });
 
     ImGui::SameLine();
@@ -447,22 +447,22 @@ void FiltersLayer::RenderFilter(
 
     ImGui::Separator();
 
-    for (auto& component_ptr : filter.components.GetFront())
+    for (auto& condition_ptr : filter.conditions.GetFront())
     {
-        RenderFilterComponent(owning_tab_id, filter.id, *component_ptr);
+        RenderCondition(owning_tab_id, filter.id, *condition_ptr);
     }
 
     ImGui::EndChild();
 }
 
-void FiltersLayer::RenderFilterComponent(
+void FiltersLayer::RenderCondition(
     Graphite::Common::Utility::UniqueID const& owning_tab_id,
     Graphite::Common::Utility::UniqueID const& owning_filter_id,
-    Fluxion::API::Data::FilterComponent& component)
+    Fluxion::API::Data::Filters::Condition& condition)
 {
     GRAPHITE_ASSERT(
-        component.id != Graphite::Common::Utility::UniqueID::Default(),
-        "Received component with default ID for rendering...");
+        condition.id != Graphite::Common::Utility::UniqueID::Default(),
+        "Received condition with default ID for rendering...");
     GRAPHITE_ASSERT(
         owning_tab_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_tab_id as default ID for rendering...");
@@ -470,26 +470,26 @@ void FiltersLayer::RenderFilterComponent(
         owning_filter_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_filter_id as default ID for rendering...");
 
-    LOG_SCOPE("ID: \"{}\"", component.id);
+    LOG_SCOPE("ID: \"{}\"", condition.id);
 
-    char s_component_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
-    component.id.Dump(s_component_id);
-    ImGui::BeginChild(s_component_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
+    char s_condition_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
+    condition.id.Dump(s_condition_id);
+    ImGui::BeginChild(s_condition_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 
     UIHelpers::Styles::PushButtonGripper();
-    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Component", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Condition", [&] {
         // TODO: Implement move
     });
     UIHelpers::Styles::PopButtonGripper();
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
-    Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Component", [&] {
+    Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Condition", [&] {
         Dispatch(
-            {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilterComponent,
+            {.type = Actions::FiltersLayer::EFilterActionType::RemoveCondition,
              .tab_id = owning_tab_id,
              .filter_id = owning_filter_id,
-             .component_id = component.id});
+             .condition_id = condition.id});
     });
     UIHelpers::Styles::PopRedButton();
 
@@ -498,7 +498,7 @@ void FiltersLayer::RenderFilterComponent(
     std::optional<std::size_t> selected_index{};
     for (std::size_t i = 0; i < header.size(); ++i)
     {
-        if (header[i].id == component.over_field_id)
+        if (header[i].id == condition.over_column_id)
         {
             selected_index = i;
             break;
@@ -507,7 +507,7 @@ void FiltersLayer::RenderFilterComponent(
     if (!static_cast<bool>(selected_index) && !header.empty())
     {
         selected_index = 0;
-        component.over_field_id = header.front().id;
+        condition.over_column_id = header.front().id;
     }
 
     ImGui::SameLine();
@@ -523,7 +523,7 @@ void FiltersLayer::RenderFilterComponent(
             if (ImGui::Selectable(header[select_index].display_name.c_str(), is_selected))
             {
                 selected_index = select_index;
-                component.over_field_id = header[select_index].id;
+                condition.over_column_id = header[select_index].id;
             }
             if (is_selected)
             {
@@ -534,37 +534,37 @@ void FiltersLayer::RenderFilterComponent(
     }
     ImGui::PopItemWidth();
 
-    using EFilterComponentFlag = Fluxion::API::Data::EFilterComponentFlag;
+    using EConditionFlag = Fluxion::API::Data::Filters::EConditionFlag;
 
     ImGui::SameLine();
-    bool const is_regex{component[EFilterComponentFlag::IsRegex]};
+    bool const is_regex{condition[EConditionFlag::IsRegex]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
     Graphite::Common::UI::IconButton(
         ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
-            component[EFilterComponentFlag::IsRegex] = !is_regex;
+            condition[EConditionFlag::IsRegex] = !is_regex;
         });
     UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
 
     ImGui::SameLine();
-    bool const is_case_sensitive{component[EFilterComponentFlag::IsCaseSensitive]};
+    bool const is_case_sensitive{condition[EConditionFlag::IsCaseSensitive]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
     Graphite::Common::UI::IconButton(
         ICON_CI_CASE_SENSITIVE,
         is_case_sensitive ? "Toggle CaseSensitive Off" : "Toggle CaseSensitive On",
-        [&] { component[EFilterComponentFlag::IsCaseSensitive] = !is_case_sensitive; });
+        [&] { condition[EConditionFlag::IsCaseSensitive] = !is_case_sensitive; });
     UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
 
     ImGui::SameLine();
-    bool const is_equals{component[EFilterComponentFlag::IsEquals]};
+    bool const is_equals{condition[EConditionFlag::IsEquals]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_equals);
     Graphite::Common::UI::IconButton(
         ICON_CI_THREE_BARS, is_equals ? "Toggle Equals Off" : "Toggle Equals On", [&] {
-            component[EFilterComponentFlag::IsEquals] = !is_equals;
+            condition[EConditionFlag::IsEquals] = !is_equals;
         });
     UIHelpers::Styles::PopButtonGrayIfOff(is_equals);
 
     ImGui::SameLine();
-    Graphite::Common::UI::InputText("##component_data", component.data);
+    Graphite::Common::UI::InputText("##condition_data", condition.data);
 
     ImGui::EndChild();
 }
