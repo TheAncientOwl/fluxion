@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -49,9 +49,9 @@ void FluxionApplication::AppInit()
     SetupFonts();
 
     // TODO: this is only for testing purpose during impl
-    m_app_state.logs_logic = std::make_unique<DummyPlugin>();
+    m_app_state.logs_plugin = std::make_unique<DummyPlugin>();
     // TODO: this is only for dev purpose, this should be moved somewhere else.
-    m_app_state.logs.table_header = m_app_state.logs_logic->GetTableHeader();
+    m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
 
     AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
     AddLayer<Layers::DevLayer>(

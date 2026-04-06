@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -55,8 +55,8 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
             LOG_DEBUG("Culling complete. Map size: {}", visible_logs_chunk.logs.size());
         },
         // 2. Update Back Buffer
-        [action,
-         &logs_logic = application_state.logs_logic](Internal::VisibleLogsChunk& visible_logs_chunk) {
+        [action, &logs_logic = application_state.logs_plugin](
+            Internal::VisibleLogsChunk& visible_logs_chunk) {
             logs_logic->GetLogs(
                 action.visible_logs_indices,
                 Fluxion::API::Data::Logs::IndexToLogRowMapWriter{visible_logs_chunk.logs});

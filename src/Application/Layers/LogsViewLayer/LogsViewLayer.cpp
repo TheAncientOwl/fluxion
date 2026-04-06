@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -77,7 +77,7 @@ void LogsViewLayer::RenderLogsTable()
 {
     LOG_SCOPE("");
     auto& app_state{m_application->GetApplicationState()};
-    auto const& headers{app_state.logs_logic->GetTableHeader()};
+    auto const& headers{app_state.logs_plugin->GetTableHeader()};
 
     ImGui::BeginChild("LogsTableRegion");
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 5));
@@ -99,7 +99,7 @@ void LogsViewLayer::RenderLogsTable()
 
         // 2. Render Logs Rows
         ImGuiListClipper clipper{};
-        clipper.Begin(static_cast<int>(app_state.logs_logic->GetTotalLogs()));
+        clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()));
 
         std::vector<Fluxion::API::Data::Logs::Range> ranges{};
         while (clipper.Step())
@@ -111,7 +111,7 @@ void LogsViewLayer::RenderLogsTable()
                 ranges.emplace_back(
                     static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
                     static_cast<std::size_t>(std::min(
-                        static_cast<int>(app_state.logs_logic->GetTotalLogs()),
+                        static_cast<int>(app_state.logs_plugin->GetTotalLogs()),
                         clipper.DisplayEnd + margin)));
             }
             else

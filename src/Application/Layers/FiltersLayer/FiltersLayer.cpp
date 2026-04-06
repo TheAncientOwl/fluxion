@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.29
+/// @version 0.30
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -230,7 +230,7 @@ inline std::string_view FiltersLayer::GetDisplayName() const noexcept
 void FiltersLayer::MarkFiltersMetadataDirty()
 {
     m_application->GetApplicationState().filters.metadata.UpdateBackBufferCopyLocking(
-        [](Internal::FiltersMetadata& metadata) {
+        [](Internal::FiltersGeneralMetadata& metadata) {
             metadata[Internal::EFiltersMetadataFlag::Applied] = false;
             metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
         });

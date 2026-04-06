@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -368,7 +368,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Filter
     std::vector<Fluxion::API::Data::Filters::Active::Filter> highlight_only{};
 
     auto const& tabs{application_state.filters.tabs.GetBack()};
-    auto const& header{application_state.logs_logic->GetTableHeader()};
+    auto const& header{application_state.logs_plugin->GetTableHeader()};
 
     auto get_column_index = [&header](Graphite::Common::Utility::UniqueID const id) {
         for (std::size_t index = 0; index < header.size(); ++index)
@@ -438,14 +438,14 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Filter
     LOG_DEBUG("Active filters size: {}", filters.size());
     LOG_DEBUG("HighlightOnly-Active filters size: {}", highlight_only.size());
 
-    application_state.logs_logic->ApplyFilters(std::move(filters), std::move(highlight_only));
+    application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
 }
 
 template <>
 void handle<EFilterActionType::DisableFilters>(AppState& application_state, FilterActionPayload const& /* action */)
 {
     LOG_SCOPE("");
-    application_state.logs_logic->DisableFilters();
+    application_state.logs_plugin->DisableFilters();
 }
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action)
@@ -467,7 +467,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::ApplyFilters: {
         handle<EFilterActionType::ApplyFilters>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = true;
             });
         break;
@@ -475,7 +475,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::DisableFilters: {
         handle<EFilterActionType::DisableFilters>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
             });
         break;
@@ -484,7 +484,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::AddTab: {
         handle<EFilterActionType::AddTab>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -493,7 +493,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::RemoveTab: {
         handle<EFilterActionType::RemoveTab>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -502,7 +502,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::DuplicateTab: {
         handle<EFilterActionType::DuplicateTab>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -511,7 +511,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::AddFilter: {
         handle<EFilterActionType::AddFilter>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -520,7 +520,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::RemoveFilter: {
         handle<EFilterActionType::RemoveFilter>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -529,7 +529,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::DuplicateFilter: {
         handle<EFilterActionType::DuplicateFilter>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -538,7 +538,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::AddCondition: {
         handle<EFilterActionType::AddCondition>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });
@@ -547,7 +547,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::RemoveCondition: {
         handle<EFilterActionType::RemoveCondition>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersMetadata& metadata) {
+            [](Internal::FiltersGeneralMetadata& metadata) {
                 metadata[Internal::EFiltersMetadataFlag::Applied] = false;
                 metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
             });

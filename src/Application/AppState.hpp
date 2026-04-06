@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Application state.
 ///
 
@@ -43,7 +43,8 @@ enum class EFiltersMetadataFlag : std::uint8_t {
 };
 // clang-format on
 
-struct FiltersMetadata : Graphite::Common::Utility::TWithFlags<FiltersMetadata, EFiltersMetadataFlag>
+struct FiltersGeneralMetadata
+    : Graphite::Common::Utility::TWithFlags<FiltersGeneralMetadata, EFiltersMetadataFlag>
 {
 };
 
@@ -51,13 +52,13 @@ struct FiltersMetadata : Graphite::Common::Utility::TWithFlags<FiltersMetadata, 
 
 struct AppState
 {
-    std::unique_ptr<Fluxion::API::IFluxionPlugin> logs_logic{nullptr};
+    std::unique_ptr<Fluxion::API::IFluxionPlugin> logs_plugin{nullptr};
 
     struct
     {
         Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<Fluxion::API::Data::Filters::Tab::Ptr>>
             tabs{};
-        Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Internal::FiltersMetadata> metadata;
+        Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Internal::FiltersGeneralMetadata> metadata;
 
         using IdToMetadataMap =
             std::unordered_map<Graphite::Common::Utility::UniqueID, Fluxion::API::Data::Logs::SharedFilterMetadata>;
