@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.5
+/// @version 1.6
 /// @brief UniqueID abstraction.
 ///
 
@@ -106,5 +106,14 @@ struct std::formatter<Graphite::Common::Utility::UniqueID>
         }
 
         return out;
+    }
+};
+
+template <>
+struct std::hash<Graphite::Common::Utility::UniqueID>
+{
+    std::size_t operator()(const Graphite::Common::Utility::UniqueID& id) const noexcept
+    {
+        return Graphite::Common::Utility::UniqueID::Hash{}(id);
     }
 };

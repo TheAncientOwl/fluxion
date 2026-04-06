@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.28
+/// @version 0.29
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -23,7 +23,7 @@ namespace Fluxion::Application::Layers {
 
 namespace UIHelpers {
 
-void ColorsPicker(
+bool ColorsPicker(
     const char* id,
     Fluxion::API::Data::Filters::Highlight& colors,
     ImVec4 const& display,
@@ -36,6 +36,7 @@ void ColorsPicker(
         ImGui::OpenPopup(id);
     }
 
+    bool modified{false};
     if (ImGui::BeginPopup(id))
     {
         // --- Checkbox to switch FG/BG ---
@@ -93,11 +94,15 @@ void ColorsPicker(
         ImGui::SliderFloat("##opacity", &target.w, 0.0f, 1.0f, "%.2f");
         ImGui::PopStyleColor(6);
 
-        ImGui::ColorPicker4(
-            "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview);
+        if (ImGui::ColorPicker4(
+                "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview))
+        {
+            modified = true;
+        }
 
         ImGui::EndPopup();
     }
+    return modified;
 }
 
 namespace Styles {
@@ -411,11 +416,17 @@ void FiltersLayer::RenderFilter(
     UIHelpers::Styles::PopRedButton();
 
     ImGui::SameLine();
-    UIHelpers::ColorsPicker(
-        "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet");
+    if (UIHelpers::ColorsPicker(
+            "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet"))
+    {
+        m_application->GetApplicationState().filters.id_to_metadata[filter.id].colors = filter.colors;
+    }
     ImGui::SameLine();
-    UIHelpers::ColorsPicker(
-        "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet");
+    if (UIHelpers::ColorsPicker(
+            "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet"))
+    {
+        m_application->GetApplicationState().filters.id_to_metadata[filter.id].colors = filter.colors;
+    }
 
     ImGui::SameLine();
     Graphite::Common::UI::VerticalSeparator();
@@ -426,6 +437,7 @@ void FiltersLayer::RenderFilter(
     if (ImGui::InputInt("##prio", &priority_tmp, 1, 1))
     {
         filter.priority = static_cast<std::uint8_t>(std::clamp(priority_tmp, 0, 255));
+        MarkFiltersMetadataDirty();
     }
     ImGui::PopItemWidth();
     Graphite::Common::UI::ItemHoverTooltip("Filter Priority");
@@ -562,18 +574,6 @@ void FiltersLayer::RenderCondition(
     using EConditionFlag = Fluxion::API::Data::Filters::EConditionFlag;
 
     ImGui::SameLine();
-    bool const is_regex{condition[EConditionFlag::IsRegex]};
-    UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
-    if (Graphite::Common::UI::IconButton(
-            ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
-                condition[EConditionFlag::IsRegex] = !is_regex;
-            }))
-    {
-        MarkFiltersMetadataDirty();
-    };
-    UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
-
-    ImGui::SameLine();
     bool const is_case_sensitive{condition[EConditionFlag::IsCaseSensitive]};
     UIHelpers::Styles::PushButtonGrayIfOff(is_case_sensitive);
     if (Graphite::Common::UI::IconButton(
@@ -584,6 +584,18 @@ void FiltersLayer::RenderCondition(
         MarkFiltersMetadataDirty();
     };
     UIHelpers::Styles::PopButtonGrayIfOff(is_case_sensitive);
+
+    ImGui::SameLine();
+    bool const is_regex{condition[EConditionFlag::IsRegex]};
+    UIHelpers::Styles::PushButtonGrayIfOff(is_regex);
+    if (Graphite::Common::UI::IconButton(
+            ICON_CI_REGEX, is_regex ? "Toggle Regex Off" : "Toggle Regex On", [&] {
+                condition[EConditionFlag::IsRegex] = !is_regex;
+            }))
+    {
+        MarkFiltersMetadataDirty();
+    };
+    UIHelpers::Styles::PopButtonGrayIfOff(is_regex);
 
     ImGui::SameLine();
     bool const is_equals{condition[EConditionFlag::IsEquals]};

@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -131,9 +131,11 @@ void LogsViewLayer::RenderLogsTable()
                 {
                     auto const& row{it->second};
 
+                    auto const& highlight{app_state.filters.id_to_metadata[row.metadata.highlight_id]};
+
                     ImGui::TableSetBgColor(
-                        ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(row.metadata.colors.background));
-                    ImGui::PushStyleColor(ImGuiCol_Text, row.metadata.colors.foreground);
+                        ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(highlight.colors.background));
+                    ImGui::PushStyleColor(ImGuiCol_Text, highlight.colors.foreground);
 
                     for (auto const& field : row.data)
                     {

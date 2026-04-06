@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -138,6 +138,8 @@ void handle<EFilterActionType::DuplicateTab>(AppState& application_state, Filter
         {
             auto filter_dup = std::make_shared<Filter>(*filter_ptr);
             filter_dup->id = Graphite::Common::Utility::UniqueID::Generate();
+            // TODO: fix shared style duplication in a thread-safe manner
+            filter_dup->colors = {};
 
             auto current_comps = filter_dup->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -262,6 +264,8 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
             auto duplicate_filter = std::make_shared<Filter>(**filter_it);
             duplicate_filter->id = Graphite::Common::Utility::UniqueID::Generate();
             duplicate_filter->name += "*";
+            // TODO: fix shared style duplication in a thread-safe manner
+            duplicate_filter->colors = {};
 
             auto current_comps = duplicate_filter->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;

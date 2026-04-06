@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -39,7 +39,6 @@ struct ActiveFilter
     Graphite::Common::Utility::UniqueID id;
     std::uint8_t priority{};
     std::vector<ComputedCondition> conditions{};
-    Fluxion::API::Data::Logs::LogRowMetadata log_row_metadata{};
 };
 
 inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::Data::Filters::Active::Filter> filters)
@@ -75,11 +74,7 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::Data::Filters
             }
         }
 
-        out.emplace_back(
-            filter.id,
-            filter.priority,
-            std::move(out_conditions),
-            Fluxion::API::Data::Logs::LogRowMetadata{.colors = filter.colors});
+        out.emplace_back(filter.id, filter.priority, std::move(out_conditions));
     }
 
     return out;
@@ -154,6 +149,7 @@ public:
         LOG_DEBUG("HighlightOnly-Active filters size: {}", highlight_only.size());
 
         m_filtered_logs.clear();
+        std::vector<std::uint8_t> priorities{};
         for (auto const& log : m_logs)
         {
             for (auto const& filter : filters)
@@ -180,7 +176,8 @@ public:
                     m_filtered_logs.emplace_back(
                         log,
                         Fluxion::API::Data::Logs::LogRowMetadata{
-                            .colors = {filter.log_row_metadata.colors}});
+                            .filter_id = filter.id, .highlight_id = filter.id});
+                    priorities.push_back(filter.priority);
                     break;
                 }
             }
@@ -191,10 +188,16 @@ public:
             DisableFilters();
         }
 
+        std::size_t idx{0};
         for (auto& filtered_log : m_filtered_logs)
         {
             for (auto const& highlight_filter : highlight_only)
             {
+                if (highlight_filter.priority < priorities[idx])
+                {
+                    continue;
+                }
+
                 bool matches{true};
                 for (auto const& condition : highlight_filter.conditions)
                 {
@@ -214,10 +217,11 @@ public:
 
                 if (matches)
                 {
-                    filtered_log.metadata = highlight_filter.log_row_metadata;
+                    filtered_log.metadata.highlight_id = highlight_filter.id;
                     break;
                 }
             }
+            ++idx;
         }
     }
 

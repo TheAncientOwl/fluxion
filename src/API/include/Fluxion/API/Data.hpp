@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief General data.
 ///
 
@@ -28,8 +28,8 @@ namespace Filters {
 
 struct Highlight
 {
-    ImVec4 foreground{};
-    ImVec4 background{};
+    ImVec4 foreground{1.0f, 1.0f, 1.0f, 1.0f};
+    ImVec4 background{0.0f, 0.0f, 0.0f, 0.0f};
 };
 
 // clang-format off
@@ -85,6 +85,7 @@ struct Filter
     std::vector<Condition> conditions{};
     Highlight colors{};
     std::uint8_t priority{};
+    bool highlight_only{false};
 };
 } // namespace Active
 
@@ -130,12 +131,18 @@ struct Range
     std::size_t end{};
 };
 
-// TODO: Add filter ID
-struct LogRowMetadata
+// TODO: Handle add/dupe filter
+struct SharedFilterMetadata
 {
     Filters::Highlight colors{Filters::Highlight{
         .foreground = {1.0f, 1.0f, 1.0f, 1.0f},
         .background = {0.0f, 0.0f, 0.0f, 0.0f}}};
+};
+
+struct LogRowMetadata
+{
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID highlight_id{Graphite::Common::Utility::UniqueID::Default()};
 };
 
 struct LogRow
