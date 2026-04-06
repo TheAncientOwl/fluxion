@@ -5,14 +5,13 @@
 ///
 /// @file Fluxion/Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief General data.
 ///
 
 #pragma once
 
 #include <memory>
-#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -73,6 +72,22 @@ struct Filter : public Graphite::Common::Utility::TWithFlags<Filter, EFilterFlag
     std::uint8_t priority{};
 };
 
+namespace Active {
+struct Condition : public Graphite::Common::Utility::TWithFlags<Condition, EConditionFlag>
+{
+    std::size_t column_index{};
+    std::string data{};
+};
+
+struct Filter
+{
+    Graphite::Common::Utility::UniqueID id{};
+    std::vector<Condition> conditions{};
+    Highlight colors{};
+    std::uint8_t priority{};
+};
+} // namespace Active
+
 // clang-format off
 enum class ETabFlag : std::uint8_t
 {
@@ -115,6 +130,7 @@ struct Range
     std::size_t end{};
 };
 
+// TODO: Add filter ID
 struct LogRowMetadata
 {
     Filters::Highlight colors{Filters::Highlight{

@@ -5,9 +5,11 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Main layer responsible for rendering logs table.
 ///
+
+#include <algorithm>
 
 #include "FiltersLayerActions.hpp"
 #include "Graphite/Logger.hpp"
@@ -358,7 +360,81 @@ template <>
 void handle<EFilterActionType::ApplyFilters>(AppState& application_state, FilterActionPayload const& /* action */)
 {
     LOG_SCOPE("");
-    application_state.logs_logic->ApplyFilters(application_state.filters.tabs.GetBack());
+    std::vector<Fluxion::API::Data::Filters::Active::Filter> filters{};
+    std::vector<Fluxion::API::Data::Filters::Active::Filter> highlight_only{};
+
+    auto const& tabs{application_state.filters.tabs.GetBack()};
+    auto const& header{application_state.logs_logic->GetTableHeader()};
+
+    auto get_column_index = [&header](Graphite::Common::Utility::UniqueID const id) {
+        for (std::size_t index = 0; index < header.size(); ++index)
+        {
+            if (header[index].id == id)
+            {
+                return index;
+            }
+        }
+
+        GRAPHITE_ASSERT(false, std::string{"Failed to find header with ID "} + id);
+
+        return std::size_t{0};
+    };
+
+    for (auto const& tab_ptr : tabs)
+    {
+        auto const& tab{*tab_ptr};
+        if (!tab[ETabFlag::IsActive])
+        {
+            continue;
+        }
+
+        for (auto const& filter_ptr : tab.filters.GetBack())
+        {
+            auto const& filter{*filter_ptr};
+            if (!filter[EFilterFlag::IsActive] || filter.conditions.GetBack().empty())
+            {
+                continue;
+            }
+
+            std::vector<Fluxion::API::Data::Filters::Active::Condition> out_conditions{};
+            out_conditions.reserve(filter.conditions.GetBack().size());
+            for (auto const& condition_ptr : filter.conditions.GetBack())
+            {
+                auto const& condition{*condition_ptr};
+                auto& out_condition = out_conditions.emplace_back();
+                out_condition.column_index = get_column_index(condition.over_column_id);
+                out_condition.data = condition.data;
+
+                out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
+                out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
+                out_condition[EConditionFlag::IsCaseSensitive] =
+                    condition[EConditionFlag::IsCaseSensitive];
+            }
+
+            if (filter[EFilterFlag::IsHighlightOnly])
+            {
+                highlight_only.emplace_back(
+                    filter.id, std::move(out_conditions), filter.colors, filter.priority);
+            }
+            else
+            {
+                filters.emplace_back(
+                    filter.id, std::move(out_conditions), filter.colors, filter.priority);
+            }
+        }
+    }
+
+    std::sort(filters.begin(), filters.end(), [](auto const& a, auto const& b) {
+        return a.priority > b.priority;
+    });
+    std::sort(highlight_only.begin(), highlight_only.end(), [](auto const& a, auto const& b) {
+        return a.priority > b.priority;
+    });
+
+    LOG_DEBUG("Active filters size: {}", filters.size());
+    LOG_DEBUG("HighlightOnly-Active filters size: {}", highlight_only.size());
+
+    application_state.logs_logic->ApplyFilters(std::move(filters), std::move(highlight_only));
 }
 
 template <>
