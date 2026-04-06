@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -23,26 +23,45 @@ namespace Fluxion::API {
 class IFluxionPlugin
 {
 public:
+    virtual std::string_view GetDisplayName() const = 0;
+
     virtual void OnEnable(Fluxion::API::Data::Plugin::OnEnableData const& data) const = 0;
     virtual void OnDisable(Fluxion::API::Data::Plugin::OnDisableData const& data) const = 0;
 
-    virtual std::string_view GetDisplayName() const = 0;
     virtual void RenderMenuLayer() = 0;
 
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
+
+    /**
+     * @brief Apply given filters.
+     *
+     * @param filters what logs are shown.
+     * @param highlight_only override of @param filters for the colors.
+     */
     virtual void ApplyFilters(
         std::vector<Fluxion::API::Data::Filters::Active::Filter> filters,
         std::vector<Fluxion::API::Data::Filters::Active::Filter> highlight_only) = 0;
+
+    /**
+     * @brief This should mark the filters as disabled.
+     */
     virtual void DisableFilters() = 0;
 
+    /**
+     * @brief Get the Table Header.
+     */
     virtual std::vector<Fluxion::API::Data::Logs::ColumnDetails> GetTableHeader() const = 0;
+
+    /**
+     * @brief Get the Total Filtered Logs.
+     */
     virtual std::size_t GetTotalLogs() const = 0;
 
     /**
-     * @brief Request logs
+     * @brief Request logs.
      *
-     * @param ranges list of reequested chunks {begin inclusive, end exclusive}
-     * @param out_logs map<index, row> to be updated
+     * @param ranges list of reequested chunks {begin inclusive, end exclusive}.
+     * @param out_logs map<index, row> to be updated.
      *
      */
     virtual void GetLogs(
