@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.15
+/// @version 0.16
 /// @brief Application state.
 ///
 
@@ -54,14 +54,17 @@ struct AppState
 {
     std::unique_ptr<Fluxion::API::IFluxionPlugin> logs_plugin{nullptr};
 
+    using IdToMetadataMap =
+        std::unordered_map<Graphite::Common::Utility::UniqueID, Fluxion::API::Data::Logs::SharedFilterMetadata>;
+    using IdToMetadataMapUpdates =
+        std::vector<std::pair<Graphite::Common::Utility::UniqueID, Fluxion::API::Data::Logs::SharedFilterMetadata>>;
     struct
     {
         Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<Fluxion::API::Data::Filters::Tab::Ptr>>
             tabs{};
         Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Internal::FiltersGeneralMetadata> metadata;
 
-        using IdToMetadataMap =
-            std::unordered_map<Graphite::Common::Utility::UniqueID, Fluxion::API::Data::Logs::SharedFilterMetadata>;
+        Graphite::Common::DataStructures::TSwapDoubleBuffer<IdToMetadataMapUpdates> id_to_metadata_updates{};
         IdToMetadataMap id_to_metadata{};
 
     } filters{};

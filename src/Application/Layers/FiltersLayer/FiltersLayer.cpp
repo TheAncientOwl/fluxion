@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.30
+/// @version 0.31
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -178,6 +178,14 @@ void FiltersLayer::OnAdd()
 
 void FiltersLayer::OnIterate()
 {
+    auto& app_state{m_application->GetApplicationState()};
+
+    app_state.filters.id_to_metadata_updates.SyncFrontBufferSwap();
+    for (auto& update : app_state.filters.id_to_metadata_updates.GetFront())
+    {
+        app_state.filters.id_to_metadata.emplace(update.first, std::move(update.second));
+    }
+
     LOG_SCOPE("");
 }
 

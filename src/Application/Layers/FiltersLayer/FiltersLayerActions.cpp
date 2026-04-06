@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -117,6 +117,8 @@ void handle<EFilterActionType::DuplicateTab>(AppState& application_state, Filter
     GRAPHITE_ASSERT(
         action.condition_id == std::nullopt, "condition should be nullopt for DuplicateTab action");
 
+    Fluxion::Application::AppState::IdToMetadataMapUpdates id_to_metadata_updates{};
+
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto const tab_it = FindByID(tabs_back, *action.tab_id);
         if (tab_it == tabs_back.end())
@@ -138,8 +140,8 @@ void handle<EFilterActionType::DuplicateTab>(AppState& application_state, Filter
         {
             auto filter_dup = std::make_shared<Filter>(*filter_ptr);
             filter_dup->id = Graphite::Common::Utility::UniqueID::Generate();
-            // TODO: fix shared style duplication in a thread-safe manner
-            filter_dup->colors = {};
+            id_to_metadata_updates.emplace_back(
+                filter_dup->id, Fluxion::API::Data::Filters::Highlight{filter_dup->colors});
 
             auto current_comps = filter_dup->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -156,6 +158,12 @@ void handle<EFilterActionType::DuplicateTab>(AppState& application_state, Filter
 
         tabs_back.insert(std::next(tab_it), std::move(duplicated_tab));
     });
+
+    application_state.filters.id_to_metadata_updates.UpdateBackBufferSwap(
+        [](auto& /**/) {},
+        [&](Fluxion::Application::AppState::IdToMetadataMapUpdates& back_updates) {
+            back_updates = std::move(id_to_metadata_updates);
+        });
 }
 
 template <>
@@ -246,6 +254,8 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
         action.condition_id == std::nullopt,
         "condition should be nullopt for DuplicateFilter action");
 
+    Fluxion::Application::AppState::IdToMetadataMapUpdates id_to_metadata_updates{};
+
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_it = FindByID(tabs_back, *action.tab_id);
         GRAPHITE_ASSERT(
@@ -264,8 +274,9 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
             auto duplicate_filter = std::make_shared<Filter>(**filter_it);
             duplicate_filter->id = Graphite::Common::Utility::UniqueID::Generate();
             duplicate_filter->name += "*";
-            // TODO: fix shared style duplication in a thread-safe manner
-            duplicate_filter->colors = {};
+            id_to_metadata_updates.emplace_back(
+                duplicate_filter->id,
+                Fluxion::API::Data::Filters::Highlight{duplicate_filter->colors});
 
             auto current_comps = duplicate_filter->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -280,6 +291,12 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
             filters_back.insert(std::next(filter_it), std::move(duplicate_filter));
         });
     });
+
+    application_state.filters.id_to_metadata_updates.UpdateBackBufferSwap(
+        [](auto& /**/) {},
+        [&](Fluxion::Application::AppState::IdToMetadataMapUpdates& back_updates) {
+            back_updates = std::move(id_to_metadata_updates);
+        });
 }
 
 template <>
