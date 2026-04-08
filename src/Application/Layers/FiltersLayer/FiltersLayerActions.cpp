@@ -16,7 +16,8 @@
 
 namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 
-using namespace Fluxion::API::Data::Filters;
+using namespace Fluxion::Application::Data;
+using namespace Fluxion::Application::Data::Filters;
 
 template <typename T>
 auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::UniqueID const& id)
@@ -67,44 +68,42 @@ void handle<EFilterActionType::RemoveTab>(AppState& application_state, FilterAct
     GRAPHITE_ASSERT(
         action.condition_id == std::nullopt, "condition should be nullopt for RemoveTab action");
 
-    application_state.filters.tabs.UpdateBackBufferCopy(
-        [&](std::vector<Fluxion::API::Data::Filters::Tab::Ptr>& tabs_back) {
-            auto const tab_it = FindByID(tabs_back, *action.tab_id);
-            if (tab_it != tabs_back.end())
-            {
-                tabs_back.erase(tab_it);
-            }
-            else
-            {
-                LOG_WARN(
-                    "Failed to RemoveTab with tab ID {} because it does not exist", *action.tab_id);
-            }
-            if (tabs_back.empty())
-            {
-                // Create a new Tab
-                auto tab_ptr = tabs_back.emplace_back(std::make_shared<Tab>());
-                tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-                tab_ptr->name = "New Tab";
-                (*tab_ptr)[ETabFlag::IsActive] = true;
-                tab_ptr->UpdateImGuiID();
+    application_state.filters.tabs.UpdateBackBufferCopy([&](std::vector<Tab::Ptr>& tabs_back) {
+        auto const tab_it = FindByID(tabs_back, *action.tab_id);
+        if (tab_it != tabs_back.end())
+        {
+            tabs_back.erase(tab_it);
+        }
+        else
+        {
+            LOG_WARN("Failed to RemoveTab with tab ID {} because it does not exist", *action.tab_id);
+        }
+        if (tabs_back.empty())
+        {
+            // Create a new Tab
+            auto tab_ptr = tabs_back.emplace_back(std::make_shared<Tab>());
+            tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+            tab_ptr->name = "New Tab";
+            (*tab_ptr)[ETabFlag::IsActive] = true;
+            tab_ptr->UpdateImGuiID();
 
-                // Initialize nested structures: one Filter with one Condition
-                auto filter_ptr = std::make_shared<Filter>();
-                filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-                filter_ptr->name = "New Filter";
-                filter_ptr->colors = {
-                    .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
-                (*filter_ptr)[EFilterFlag::IsActive] = true;
+            // Initialize nested structures: one Filter with one Condition
+            auto filter_ptr = std::make_shared<Filter>();
+            filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+            filter_ptr->name = "New Filter";
+            filter_ptr->colors = {
+                .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.25f}};
+            (*filter_ptr)[EFilterFlag::IsActive] = true;
 
-                auto comp_ptr = std::make_shared<Condition>();
-                comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-                (*comp_ptr)[EConditionFlag::IsEquals] = true;
+            auto comp_ptr = std::make_shared<Condition>();
+            comp_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+            (*comp_ptr)[EConditionFlag::IsEquals] = true;
 
-                filter_ptr->conditions.Init({comp_ptr}, {comp_ptr});
-                tab_ptr->filters.Init({filter_ptr}, {filter_ptr});
-            }
-            tabs_back.shrink_to_fit();
-        });
+            filter_ptr->conditions.Init({comp_ptr}, {comp_ptr});
+            tab_ptr->filters.Init({filter_ptr}, {filter_ptr});
+        }
+        tabs_back.shrink_to_fit();
+    });
 }
 
 template <>
@@ -141,7 +140,7 @@ void handle<EFilterActionType::DuplicateTab>(AppState& application_state, Filter
             auto filter_dup = std::make_shared<Filter>(*filter_ptr);
             filter_dup->id = Graphite::Common::Utility::UniqueID::Generate();
             id_to_metadata_updates.emplace_back(
-                filter_dup->id, Fluxion::API::Data::Filters::Highlight{filter_dup->colors});
+                filter_dup->id, Fluxion::API::Data::Common::Highlight{filter_dup->colors});
 
             auto current_comps = filter_dup->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -275,8 +274,7 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
             duplicate_filter->id = Graphite::Common::Utility::UniqueID::Generate();
             duplicate_filter->name += "*";
             id_to_metadata_updates.emplace_back(
-                duplicate_filter->id,
-                Fluxion::API::Data::Filters::Highlight{duplicate_filter->colors});
+                duplicate_filter->id, Fluxion::API::Data::Common::Highlight{duplicate_filter->colors});
 
             auto current_comps = duplicate_filter->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -381,8 +379,8 @@ template <>
 void handle<EFilterActionType::ApplyFilters>(AppState& application_state, FilterActionPayload const& /* action */)
 {
     LOG_SCOPE("");
-    std::vector<Fluxion::API::Data::Filters::Active::Filter> filters{};
-    std::vector<Fluxion::API::Data::Filters::Active::Filter> highlight_only{};
+    std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters{};
+    std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only{};
 
     auto const& tabs{application_state.filters.tabs.GetBack()};
     auto const& header{application_state.logs_plugin->GetTableHeader()};
@@ -417,7 +415,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Filter
                 continue;
             }
 
-            std::vector<Fluxion::API::Data::Filters::Active::Condition> out_conditions{};
+            std::vector<Fluxion::API::LogsPlugin::Data::Condition> out_conditions{};
             out_conditions.reserve(filter.conditions.GetBack().size());
             for (auto const& condition_ptr : filter.conditions.GetBack())
             {
@@ -426,10 +424,15 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Filter
                 out_condition.column_index = get_column_index(condition.over_column_id);
                 out_condition.data = condition.data;
 
-                out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
-                out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
-                out_condition[EConditionFlag::IsCaseSensitive] =
-                    condition[EConditionFlag::IsCaseSensitive];
+                using EInternalConditionFlag = EConditionFlag;
+                using EBridgeConditionFlag = Fluxion::API::LogsPlugin::Data::EConditionFlag;
+
+                out_condition[EBridgeConditionFlag::IsRegex] =
+                    condition[EInternalConditionFlag::IsRegex];
+                out_condition[EBridgeConditionFlag::IsEquals] =
+                    condition[EInternalConditionFlag::IsEquals];
+                out_condition[EBridgeConditionFlag::IsCaseSensitive] =
+                    condition[EInternalConditionFlag::IsCaseSensitive];
             }
 
             if (filter[EFilterFlag::IsHighlightOnly])
@@ -484,89 +487,85 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
     case EFilterActionType::ApplyFilters: {
         handle<EFilterActionType::ApplyFilters>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = true;
-            });
+            [](FiltersGeneralMetadata& metadata) { metadata[EFiltersMetadataFlag::Applied] = true; });
         break;
     }
     case EFilterActionType::DisableFilters: {
         handle<EFilterActionType::DisableFilters>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-            });
+            [](FiltersGeneralMetadata& metadata) { metadata[EFiltersMetadataFlag::Applied] = false; });
         break;
     }
 
     case EFilterActionType::AddTab: {
         handle<EFilterActionType::AddTab>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::RemoveTab: {
         handle<EFilterActionType::RemoveTab>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::DuplicateTab: {
         handle<EFilterActionType::DuplicateTab>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::AddFilter: {
         handle<EFilterActionType::AddFilter>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::RemoveFilter: {
         handle<EFilterActionType::RemoveFilter>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::DuplicateFilter: {
         handle<EFilterActionType::DuplicateFilter>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::AddCondition: {
         handle<EFilterActionType::AddCondition>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }
     case EFilterActionType::RemoveCondition: {
         handle<EFilterActionType::RemoveCondition>(application_state, action);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](Internal::FiltersGeneralMetadata& metadata) {
-                metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-                metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;
     }

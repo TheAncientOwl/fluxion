@@ -3,26 +3,17 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file FiltersTabs.cpp
+/// @file Data.cpp
 /// @author Alexandru Delegeanu
 /// @version 0.4
-/// @brief Implementation of @see Fluxion/Data.hpp::Tabs.
+/// @brief Implementation of api related stuff
 ///
 
-#include "Fluxion/API/Data.hpp"
+#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
 
-namespace Fluxion::API::Data {
+namespace Fluxion::API {
 
-namespace Filters {
-
-void Tab::UpdateImGuiID()
-{
-    imgui_id = name + "###" + id.ToString();
-}
-
-} // namespace Filters
-
-namespace Logs {
+namespace LogsPlugin::Data {
 
 IndexToLogRowMapWriter::IndexToLogRowMapWriter(IndexToLogRowMap& map) : m_map{map}
 {
@@ -33,6 +24,6 @@ LogRow& IndexToLogRowMapWriter::operator[](std::size_t const index)
     return m_map.try_emplace(index).first->second;
 }
 
-}; // namespace Logs
+}; // namespace LogsPlugin::Data
 
-} // namespace Fluxion::API::Data
+} // namespace Fluxion::API

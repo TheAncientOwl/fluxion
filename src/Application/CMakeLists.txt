@@ -1,7 +1,8 @@
+add_subdirectory(Data)
+
 # --- 1. Implementation ---
 add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Fluxion.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/AppState.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/DevLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/Modules/Logger.cpp
@@ -33,6 +34,8 @@ target_link_libraries(fluxion_app PUBLIC
     graphite_impl
     fluxion_api_interface
     fluxion_api_impl
+    fluxion_application_data_interface
+    fluxion_application_data_impl
 )
 
 target_include_directories(fluxion_app PRIVATE

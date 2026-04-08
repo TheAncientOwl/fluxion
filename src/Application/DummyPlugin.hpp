@@ -9,8 +9,8 @@
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
-#include "Fluxion/API/Data.hpp"
-#include "Fluxion/API/IFluxionPlugin.hpp"
+#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
+#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
 
 #include "Graphite/Logger.hpp"
 
@@ -28,7 +28,7 @@ namespace Fluxion::Application {
 namespace DummyImpl {
 
 struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::Data::Filters::EConditionFlag>
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
 {
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
@@ -41,9 +41,9 @@ struct ActiveFilter
     std::vector<ComputedCondition> conditions{};
 };
 
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::Data::Filters::Active::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
 {
-    using namespace Fluxion::API::Data::Filters;
+    using namespace Fluxion::API::LogsPlugin::Data;
     LOG_INFO("SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
@@ -82,7 +82,7 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::Data::Filters
 
 }; // namespace DummyImpl
 
-class DummyPlugin : public Fluxion::API::IFluxionPlugin
+class DummyPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
     DummyPlugin()
@@ -110,21 +110,17 @@ public:
         }
     }
 
-    void OnEnable(Fluxion::API::Data::Plugin::OnEnableData const& /*data*/) const override
+    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/) const override
     {
         // No action needed for dummy plugin
     }
 
-    void OnDisable(Fluxion::API::Data::Plugin::OnDisableData const& /*data*/) const override
+    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/) const override
     {
         // No action needed for dummy plugin
     }
 
-    std::string_view GetDisplayName() const override
-    {
-        static constexpr std::string_view name = "DummyPlugin";
-        return name;
-    }
+    std::string_view GetDisplayName() const override { return "DummyPlugin"; }
 
     void RenderMenuLayer() override
     {
@@ -137,11 +133,11 @@ public:
     }
 
     void ApplyFilters(
-        std::vector<Fluxion::API::Data::Filters::Active::Filter> _filters,
-        std::vector<Fluxion::API::Data::Filters::Active::Filter> _highlight_only) override
+        std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
+        std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only) override
     {
         LOG_SCOPE("");
-        using namespace Fluxion::API::Data::Filters;
+        using namespace Fluxion::API::LogsPlugin::Data;
 
         auto const filters = DummyImpl::Convert(std::move(_filters));
         auto const highlight_only = DummyImpl::Convert(std::move(_highlight_only));
@@ -175,7 +171,7 @@ public:
                 {
                     m_filtered_logs.emplace_back(
                         log,
-                        Fluxion::API::Data::Logs::LogRowMetadata{
+                        Fluxion::API::LogsPlugin::Data::LogRowMetadata{
                             .filter_id = filter.id, .highlight_id = filter.id});
                     priorities.push_back(filter.priority);
                     break;
@@ -186,6 +182,9 @@ public:
         if (filters.empty())
         {
             DisableFilters();
+            priorities.clear();
+            priorities.resize(m_filtered_logs.size());
+            std::fill(priorities.begin(), priorities.end(), 0);
         }
 
         std::size_t idx{0};
@@ -234,9 +233,9 @@ public:
         }
     }
 
-    std::vector<Fluxion::API::Data::Logs::ColumnDetails> GetTableHeader() const override
+    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const override
     {
-        static std::vector<Fluxion::API::Data::Logs::ColumnDetails> s_table_header{
+        static std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> s_table_header{
             {Graphite::Common::Utility::UniqueID::Generate(), "Timestamp"},
             {Graphite::Common::Utility::UniqueID::Generate(), "Channel"},
             {Graphite::Common::Utility::UniqueID::Generate(), "Level"},
@@ -247,8 +246,8 @@ public:
     std::size_t GetTotalLogs() const override { return m_filtered_logs.size(); }
 
     void GetLogs(
-        std::vector<Fluxion::API::Data::Logs::Range> const& ranges,
-        Fluxion::API::Data::Logs::IndexToLogRowMapWriter out_logs) const override
+        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
+        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override
     {
         for (auto const& range : ranges)
         {
@@ -282,7 +281,7 @@ public:
 
 private:
     std::vector<std::vector<std::string>> m_logs;
-    std::vector<Fluxion::API::Data::Logs::LogRow> m_filtered_logs;
+    std::vector<Fluxion::API::LogsPlugin::Data::LogRow> m_filtered_logs;
 };
 
 } // namespace Fluxion::Application

@@ -17,15 +17,17 @@
 #include "FiltersLayer.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 
-#include "Fluxion/API/DataFormatters.hpp" // IWYU pragma: keep
+#include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
 
 namespace Fluxion::Application::Layers {
+
+using namespace Fluxion::Application::Data;
 
 namespace UIHelpers {
 
 bool ColorsPicker(
     const char* id,
-    Fluxion::API::Data::Filters::Highlight& colors,
+    Fluxion::API::Data::Common::Highlight& colors,
     ImVec4 const& display,
     std::string_view const preview)
 {
@@ -238,9 +240,9 @@ inline std::string_view FiltersLayer::GetDisplayName() const noexcept
 void FiltersLayer::MarkFiltersMetadataDirty()
 {
     m_application->GetApplicationState().filters.metadata.UpdateBackBufferCopyLocking(
-        [](Internal::FiltersGeneralMetadata& metadata) {
-            metadata[Internal::EFiltersMetadataFlag::Applied] = false;
-            metadata[Internal::EFiltersMetadataFlag::SavedToDisk] = false;
+        [](Filters::FiltersGeneralMetadata& metadata) {
+            metadata[Filters::EFiltersMetadataFlag::Applied] = false;
+            metadata[Filters::EFiltersMetadataFlag::SavedToDisk] = false;
         });
 }
 
@@ -260,8 +262,7 @@ void FiltersLayer::RenderToolbar()
     auto& app_state{m_application->GetApplicationState()};
 
     ImGui::SameLine();
-    ImGui::BeginDisabled(
-        app_state.filters.metadata.GetFront()[Internal::EFiltersMetadataFlag::Applied]);
+    ImGui::BeginDisabled(app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::Applied]);
     Graphite::Common::UI::IconButton(ICON_CI_WAND, "Apply Filters", [&]() {
         Dispatch({
             .type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
@@ -309,7 +310,7 @@ void FiltersLayer::RenderTabs()
     }
 }
 
-void FiltersLayer::RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> tab_ptr)
+void FiltersLayer::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
 {
     GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
@@ -348,10 +349,10 @@ void FiltersLayer::RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> t
     UIHelpers::Styles::PopRedButton();
 
     ImGui::SameLine();
-    bool is_active{tab[API::Data::Filters::ETabFlag::IsActive]};
+    bool is_active{tab[Filters::ETabFlag::IsActive]};
     if (ImGui::Checkbox("Active", &is_active))
     {
-        tab[API::Data::Filters::ETabFlag::IsActive] = is_active;
+        tab[Filters::ETabFlag::IsActive] = is_active;
         MarkFiltersMetadataDirty();
     }
 
@@ -372,7 +373,7 @@ void FiltersLayer::RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> t
 
 void FiltersLayer::RenderFilter(
     Graphite::Common::Utility::UniqueID const& owning_tab_id,
-    Fluxion::API::Data::Filters::Filter& filter)
+    Filters::Filter& filter)
 {
     GRAPHITE_ASSERT(
         filter.id != Graphite::Common::Utility::UniqueID::Default(),
@@ -388,7 +389,7 @@ void FiltersLayer::RenderFilter(
     ImGui::BeginChild(s_filter_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
     ImGui::Separator();
 
-    using EFilterFlag = Fluxion::API::Data::Filters::EFilterFlag;
+    using EFilterFlag = Filters::EFilterFlag;
 
     UIHelpers::Styles::PushButtonGripper();
     Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {
@@ -502,7 +503,7 @@ void FiltersLayer::RenderFilter(
 void FiltersLayer::RenderCondition(
     Graphite::Common::Utility::UniqueID const& owning_tab_id,
     Graphite::Common::Utility::UniqueID const& owning_filter_id,
-    Fluxion::API::Data::Filters::Condition& condition)
+    Filters::Condition& condition)
 {
     GRAPHITE_ASSERT(
         condition.id != Graphite::Common::Utility::UniqueID::Default(),
@@ -579,7 +580,7 @@ void FiltersLayer::RenderCondition(
     }
     ImGui::PopItemWidth();
 
-    using EConditionFlag = Fluxion::API::Data::Filters::EConditionFlag;
+    using EConditionFlag = Filters::EConditionFlag;
 
     ImGui::SameLine();
     bool const is_case_sensitive{condition[EConditionFlag::IsCaseSensitive]};

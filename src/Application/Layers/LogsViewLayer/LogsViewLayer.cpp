@@ -101,7 +101,7 @@ void LogsViewLayer::RenderLogsTable()
         ImGuiListClipper clipper{};
         clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()));
 
-        std::vector<Fluxion::API::Data::Logs::Range> ranges{};
+        std::vector<Fluxion::API::LogsPlugin::Data::Range> ranges{};
         while (clipper.Step())
         {
             // if it's not first ImGui rendered row, we can request chunk with margin

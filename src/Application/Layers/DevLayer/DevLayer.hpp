@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "AppState.hpp"
 #include "Fluxion.hpp"
+#include "Fluxion/Application/Data/AppState.hpp"
 
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 

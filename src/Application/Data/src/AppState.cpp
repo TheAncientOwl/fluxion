@@ -9,7 +9,7 @@
 /// @brief Implementation of @see AppState.hpp.
 ///
 
-#include "AppState.hpp"
+#include "Fluxion/Application/Data/AppState.hpp"
 
 namespace Fluxion::Application::DefaultState {
 AppState Make()
@@ -26,10 +26,10 @@ AppState Make()
     return app_state;
 }
 
-std::vector<Fluxion::API::Data::Filters::Tab::Ptr> MakeDefaultTabs()
+std::vector<Fluxion::Application::Data::Filters::Tab::Ptr> MakeDefaultTabs()
 {
-    using namespace Fluxion::API::Data;
-    using namespace Fluxion::API::Data::Filters;
+    using namespace Fluxion::Application::Data;
+    using namespace Fluxion::Application::Data::Filters;
     using UniqueID = Graphite::Common::Utility::UniqueID;
 
     // Create the primary tab
@@ -43,8 +43,8 @@ std::vector<Fluxion::API::Data::Filters::Tab::Ptr> MakeDefaultTabs()
     auto filter_ptr = std::make_shared<Filter>();
     filter_ptr->id = UniqueID::Generate();
     filter_ptr->name = "Filter1";
-    filter_ptr->colors =
-        Highlight{.foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
+    filter_ptr->colors = Fluxion::API::Data::Common::Highlight{
+        .foreground = {1.0f, 1.0f, 1.0f, 1.0f}, .background = {0.0f, 0.0f, 0.0f, 0.2f}};
     (*filter_ptr)[EFilterFlag::IsActive] = true;
 
     // Create the condition

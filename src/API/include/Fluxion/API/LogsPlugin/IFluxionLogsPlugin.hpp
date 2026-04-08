@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file IFluxionPlugin.hpp
+/// @file IFluxionLogsPlugin.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.10
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
@@ -16,17 +16,21 @@
 
 #include "Graphite/Common/Plugin/GraphiteExport.hpp"
 
-#include "Fluxion/API/Data.hpp"
+#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
 
-namespace Fluxion::API {
+namespace Fluxion::API::LogsPlugin {
 
-class IFluxionPlugin
+/**
+ * @brief Logi responsible with logs I/O, filtering, search, etc...
+ *
+ */
+class IFluxionLogsPlugin
 {
 public:
     virtual std::string_view GetDisplayName() const = 0;
 
-    virtual void OnEnable(Fluxion::API::Data::Plugin::OnEnableData const& data) const = 0;
-    virtual void OnDisable(Fluxion::API::Data::Plugin::OnDisableData const& data) const = 0;
+    virtual void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) const = 0;
+    virtual void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) const = 0;
 
     virtual void RenderMenuLayer() = 0;
 
@@ -39,8 +43,8 @@ public:
      * @param highlight_only override of @param filters for the colors.
      */
     virtual void ApplyFilters(
-        std::vector<Fluxion::API::Data::Filters::Active::Filter> filters,
-        std::vector<Fluxion::API::Data::Filters::Active::Filter> highlight_only) = 0;
+        std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,
+        std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only) = 0;
 
     /**
      * @brief This should mark the filters as disabled.
@@ -50,7 +54,7 @@ public:
     /**
      * @brief Get the Table Header.
      */
-    virtual std::vector<Fluxion::API::Data::Logs::ColumnDetails> GetTableHeader() const = 0;
+    virtual std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const = 0;
 
     /**
      * @brief Get the Total Filtered Logs.
@@ -65,13 +69,13 @@ public:
      *
      */
     virtual void GetLogs(
-        std::vector<Fluxion::API::Data::Logs::Range> const& ranges,
-        Fluxion::API::Data::Logs::IndexToLogRowMapWriter out_logs) const = 0;
+        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
+        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const = 0;
 
-    virtual ~IFluxionPlugin() = default;
+    virtual ~IFluxionLogsPlugin() = default;
 };
 
-} // namespace Fluxion::API
+} // namespace Fluxion::API::LogsPlugin
 
-extern "C" GRAPHITE_EXPORT Fluxion::API::IFluxionPlugin* CreateFluxionPlugin();
-typedef Fluxion::API::IFluxionPlugin* (*CreateFluxionPluginFactory)();
+extern "C" GRAPHITE_EXPORT Fluxion::API::LogsPlugin::IFluxionLogsPlugin* CreateFluxionLogsPlugin();
+typedef Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*CreateFluxionLogsPluginFactory)();

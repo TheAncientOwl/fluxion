@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file DataFormatters.hpp
+/// @file Formatters.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.7
 /// @brief IO related utilities.
@@ -18,7 +18,7 @@
 
 #include "imgui.h"
 
-#include "Fluxion/API/Data.hpp"
+#include "Data.hpp"
 
 // ==========================================================================
 // 1. HEADER SHELLS (Declarations)
@@ -71,9 +71,9 @@ struct std::formatter<ImVec4> : std::formatter<std::string_view>
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Filters::Highlight> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::API::Data::Common::Highlight> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::Filters::Highlight& c, format_context& ctx) const
+    auto format(const Fluxion::API::Data::Common::Highlight& c, format_context& ctx) const
     {
         return std::formatter<std::string_view>::format(
             std::format("FG:{} BG:{}", c.foreground, c.background), ctx);
@@ -81,9 +81,10 @@ struct std::formatter<Fluxion::API::Data::Filters::Highlight> : std::formatter<s
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Filters::Condition> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::Application::Data::Filters::Condition>
+    : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::Filters::Condition& fc, format_context& ctx) const
+    auto format(const Fluxion::Application::Data::Filters::Condition& fc, format_context& ctx) const
     {
         return std::formatter<std::string_view>::format(
             std::format(
@@ -93,9 +94,9 @@ struct std::formatter<Fluxion::API::Data::Filters::Condition> : std::formatter<s
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Filters::Filter> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::Application::Data::Filters::Filter> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::Filters::Filter& f, format_context& ctx) const
+    auto format(const Fluxion::Application::Data::Filters::Filter& f, format_context& ctx) const
     {
         const auto& conditions = f.conditions.GetBack();
         // Now 'std::formatter<vector<shared_ptr<FilterCondition>>>' is "defined" (as a shell)
@@ -104,23 +105,23 @@ struct std::formatter<Fluxion::API::Data::Filters::Filter> : std::formatter<std:
             std::format(
                 "Filter(Name: '{}', Active: {}, Conditions: {})",
                 f.name,
-                f[Fluxion::API::Data::Filters::EFilterFlag::IsActive],
+                f[Fluxion::Application::Data::Filters::EFilterFlag::IsActive],
                 conditions),
             ctx);
     }
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Filters::Tab> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::Application::Data::Filters::Tab> : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::Filters::Tab& tab, format_context& ctx) const
+    auto format(const Fluxion::Application::Data::Filters::Tab& tab, format_context& ctx) const
     {
         const auto& filters = tab.filters.GetBack();
         return std::formatter<std::string_view>::format(
             std::format(
                 "Tab(Name: '{}', Active: {}, Filters: {})",
                 tab.name,
-                tab[Fluxion::API::Data::Filters::ETabFlag::IsActive],
+                tab[Fluxion::Application::Data::Filters::ETabFlag::IsActive],
                 filters),
             ctx);
     }

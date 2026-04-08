@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "AppState.hpp"
+#include "Fluxion/Application/Data/AppState.hpp"
 
 namespace Fluxion::Application::Layers::Actions::LogsViewLayer {
 
@@ -24,7 +24,7 @@ enum class ELogsViewActionLayerType : std::uint8_t
 struct LogsViewLayerActionPayload
 {
     ELogsViewActionLayerType type{ELogsViewActionLayerType::None};
-    std::vector<Fluxion::API::Data::Logs::Range> visible_logs_indices{};
+    std::vector<Fluxion::API::LogsPlugin::Data::Range> visible_logs_indices{};
 };
 
 void HandleLogsViewLayersLayerAction(AppState& application_state, LogsViewLayerActionPayload const& action);

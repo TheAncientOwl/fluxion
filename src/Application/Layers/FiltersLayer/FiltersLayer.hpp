@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "AppState.hpp"
 #include "FiltersLayerActions.hpp"
 #include "Fluxion.hpp"
+#include "Fluxion/Application/Data/AppState.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "Graphite/Application/Layers/Utility/TDispatcher.hpp"
 
@@ -48,14 +48,14 @@ private: // Private Rendering API
     void RenderToolbar();
     void RenderTabs();
 
-    void RenderTab(std::shared_ptr<Fluxion::API::Data::Filters::Tab> tab_ptr);
+    void RenderTab(std::shared_ptr<Fluxion::Application::Data::Filters::Tab> tab_ptr);
     void RenderFilter(
         Graphite::Common::Utility::UniqueID const& owning_tab_id,
-        Fluxion::API::Data::Filters::Filter& filter);
+        Fluxion::Application::Data::Filters::Filter& filter);
     void RenderCondition(
         Graphite::Common::Utility::UniqueID const& owning_tab_id,
         Graphite::Common::Utility::UniqueID const& owning_filter_id,
-        Fluxion::API::Data::Filters::Condition& condition);
+        Fluxion::Application::Data::Filters::Condition& condition);
 };
 
 } // namespace Fluxion::Application::Layers

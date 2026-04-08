@@ -10,10 +10,13 @@
 ///
 
 #include "LogsViewLayerActions.hpp"
-#include "AppState.hpp"
+#include "Fluxion/Application/Data/AppState.hpp"
 #include "Graphite/Logger.hpp"
 
 namespace Fluxion::Application::Layers::Actions::LogsViewLayer {
+
+using namespace Fluxion::Application::Data;
+using namespace Fluxion::Application::Data::Logs;
 
 template <ELogsViewActionLayerType ActionType>
 void handle(AppState& application_state, LogsViewLayerActionPayload const& action) = delete;
@@ -30,7 +33,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
     application_state.logs.visible_chunk.UpdateBackBufferSwap(
         // 1. Prepare Back Buffer
         [action, columns_count = application_state.logs.table_header.size()](
-            Internal::VisibleLogsChunk& visible_logs_chunk) {
+            VisibleLogsChunk& visible_logs_chunk) {
             if (action.visible_logs_indices.empty())
             {
                 return;
@@ -55,11 +58,10 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
             LOG_DEBUG("Culling complete. Map size: {}", visible_logs_chunk.logs.size());
         },
         // 2. Update Back Buffer
-        [action, &logs_logic = application_state.logs_plugin](
-            Internal::VisibleLogsChunk& visible_logs_chunk) {
+        [action, &logs_logic = application_state.logs_plugin](VisibleLogsChunk& visible_logs_chunk) {
             logs_logic->GetLogs(
                 action.visible_logs_indices,
-                Fluxion::API::Data::Logs::IndexToLogRowMapWriter{visible_logs_chunk.logs});
+                Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter{visible_logs_chunk.logs});
         });
 }
 
