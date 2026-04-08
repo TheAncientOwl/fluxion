@@ -56,6 +56,8 @@ struct AppState
     {
         Graphite::Common::DataStructures::TSwapDoubleBuffer<Data::Logs::VisibleLogsChunk> visible_chunk{};
         std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> table_header{};
+
+        Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Data::Logs::SearchedLog> searched_log{};
     } logs{};
 };
 

@@ -12,6 +12,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 #include "Graphite/Common/Plugin/GraphiteExport.hpp"
@@ -35,6 +36,9 @@ public:
     virtual void RenderMenuLayer() = 0;
 
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
+
+    virtual std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) = 0;
+    virtual std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) = 0;
 
     /**
      * @brief Apply given filters.

@@ -16,6 +16,22 @@
 
 namespace Fluxion::Application::Layers {
 
+namespace UIHelpers {
+
+void PushFoundRowStyles()
+{
+    ImGui::TableSetBgColor(
+        ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImVec4{0.0f, 0.4f, 0.0f, 1.0f}));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.9f, 0.0f, 1.0f));
+}
+
+void PopFoundRowStyles()
+{
+    ImGui::PopStyleColor(1);
+}
+
+}; // namespace UIHelpers
+
 std::string_view LogsViewLayer::GetLayerName() noexcept
 {
     return "LogsViewLayer";
@@ -133,9 +149,17 @@ void LogsViewLayer::RenderLogsTable()
 
                     auto const& highlight{app_state.filters.id_to_metadata[row.metadata.highlight_id]};
 
-                    ImGui::TableSetBgColor(
-                        ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(highlight.colors.background));
-                    ImGui::PushStyleColor(ImGuiCol_Text, highlight.colors.foreground);
+                    if (row_idx == app_state.logs.searched_log.GetFront().index)
+                    {
+                        UIHelpers::PushFoundRowStyles();
+                    }
+                    else
+                    {
+                        ImGui::TableSetBgColor(
+                            ImGuiTableBgTarget_RowBg0,
+                            ImGui::GetColorU32(highlight.colors.background));
+                        ImGui::PushStyleColor(ImGuiCol_Text, highlight.colors.foreground);
+                    }
 
                     for (auto const& field : row.data)
                     {
@@ -143,7 +167,14 @@ void LogsViewLayer::RenderLogsTable()
                         ImGui::TextUnformatted(field.c_str());
                     }
 
-                    ImGui::PopStyleColor();
+                    if (row_idx == app_state.logs.searched_log.GetFront().index)
+                    {
+                        UIHelpers::PopFoundRowStyles();
+                    }
+                    else
+                    {
+                        ImGui::PopStyleColor();
+                    }
                 }
                 else
                 {

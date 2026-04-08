@@ -188,6 +188,8 @@ void FiltersLayer::OnIterate()
         app_state.filters.id_to_metadata.emplace(update.first, std::move(update.second));
     }
 
+    app_state.logs.searched_log.SyncFrontBufferCopy();
+
     LOG_SCOPE("");
 }
 
@@ -253,9 +255,8 @@ void FiltersLayer::RenderToolbar()
     Graphite::Common::UI::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddTab,
-             .tab_id = std::nullopt,
-             .filter_id = std::nullopt,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = std::nullopt, .filter_id = std::nullopt, .condition_id = std::nullopt}});
         MarkFiltersMetadataDirty();
     });
 
@@ -264,24 +265,26 @@ void FiltersLayer::RenderToolbar()
     ImGui::SameLine();
     ImGui::BeginDisabled(app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::Applied]);
     Graphite::Common::UI::IconButton(ICON_CI_WAND, "Apply Filters", [&]() {
-        Dispatch({
-            .type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
-            .tab_id = std::nullopt,
-            .filter_id = std::nullopt,
-            .condition_id = std::nullopt,
-        });
+        Dispatch(
+            {.type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = std::nullopt,
+                 .filter_id = std::nullopt,
+                 .condition_id = std::nullopt,
+             }});
     });
     ImGui::EndDisabled();
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();
     Graphite::Common::UI::IconButton(ICON_CI_MUTE, "Disable Filters", [&]() {
-        Dispatch({
-            .type = Actions::FiltersLayer::EFilterActionType::DisableFilters,
-            .tab_id = std::nullopt,
-            .filter_id = std::nullopt,
-            .condition_id = std::nullopt,
-        });
+        Dispatch(
+            {.type = Actions::FiltersLayer::EFilterActionType::DisableFilters,
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = std::nullopt,
+                 .filter_id = std::nullopt,
+                 .condition_id = std::nullopt,
+             }});
     });
     UIHelpers::Styles::PopRedButton();
 
@@ -323,18 +326,16 @@ void FiltersLayer::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
     Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddFilter,
-             .tab_id = tab_ptr->id,
-             .filter_id = std::nullopt,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = tab_ptr->id, .filter_id = std::nullopt, .condition_id = std::nullopt}});
     });
 
     ImGui::SameLine();
     Graphite::Common::UI::IconButton(ICON_CI_COPY, "Duplicate Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateTab,
-             .tab_id = tab_ptr->id,
-             .filter_id = std::nullopt,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = tab_ptr->id, .filter_id = std::nullopt, .condition_id = std::nullopt}});
     });
 
     ImGui::SameLine();
@@ -342,9 +343,8 @@ void FiltersLayer::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
     Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveTab,
-             .tab_id = tab_ptr->id,
-             .filter_id = std::nullopt,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = tab_ptr->id, .filter_id = std::nullopt, .condition_id = std::nullopt}});
     });
     UIHelpers::Styles::PopRedButton();
 
@@ -408,9 +408,8 @@ void FiltersLayer::RenderFilter(
     Graphite::Common::UI::IconButton(ICON_CI_COPY, "Duplicate Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DuplicateFilter,
-             .tab_id = owning_tab_id,
-             .filter_id = filter.id,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = owning_tab_id, .filter_id = filter.id, .condition_id = std::nullopt}});
     });
 
     ImGui::SameLine();
@@ -418,9 +417,8 @@ void FiltersLayer::RenderFilter(
     Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Filter", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveFilter,
-             .tab_id = owning_tab_id,
-             .filter_id = filter.id,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = owning_tab_id, .filter_id = filter.id, .condition_id = std::nullopt}});
     });
     UIHelpers::Styles::PopRedButton();
 
@@ -452,6 +450,19 @@ void FiltersLayer::RenderFilter(
     Graphite::Common::UI::ItemHoverTooltip("Filter Priority");
 
     ImGui::SameLine();
+    Graphite::Common::UI::IconButton(ICON_CI_CHEVRON_LEFT, "Prev", [&]() {
+        Dispatch(
+            {.type = Actions::FiltersLayer::EFilterActionType::PrevLog,
+             .data = Actions::FiltersLayer::Payloads::SearchLog{.filter_id = filter.id}});
+    });
+    ImGui::SameLine();
+    Graphite::Common::UI::IconButton(ICON_CI_CHEVRON_RIGHT, "Next", [&]() {
+        Dispatch(
+            {.type = Actions::FiltersLayer::EFilterActionType::NextLog,
+             .data = Actions::FiltersLayer::Payloads::SearchLog{.filter_id = filter.id}});
+    });
+
+    ImGui::SameLine();
     Graphite::Common::UI::VerticalSeparator();
 
     ImGui::SameLine();
@@ -469,9 +480,8 @@ void FiltersLayer::RenderFilter(
     Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Condition", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddCondition,
-             .tab_id = owning_tab_id,
-             .filter_id = filter.id,
-             .condition_id = std::nullopt});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = owning_tab_id, .filter_id = filter.id, .condition_id = std::nullopt}});
     });
 
     ImGui::SameLine();
@@ -532,9 +542,8 @@ void FiltersLayer::RenderCondition(
     Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete Condition", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::RemoveCondition,
-             .tab_id = owning_tab_id,
-             .filter_id = owning_filter_id,
-             .condition_id = condition.id});
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = owning_tab_id, .filter_id = owning_filter_id, .condition_id = condition.id}});
     });
     UIHelpers::Styles::PopRedButton();
 

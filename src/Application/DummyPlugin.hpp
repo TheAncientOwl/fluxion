@@ -20,6 +20,7 @@
 #include <regex>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -139,6 +140,8 @@ public:
         LOG_SCOPE("");
         using namespace Fluxion::API::LogsPlugin::Data;
 
+        m_filter_to_search_log_index.clear();
+
         auto const filters = DummyImpl::Convert(std::move(_filters));
         auto const highlight_only = DummyImpl::Convert(std::move(_highlight_only));
         LOG_DEBUG("Active filters size: {}", filters.size());
@@ -226,6 +229,8 @@ public:
 
     void DisableFilters() override
     {
+        m_filter_to_search_log_index.clear();
+
         m_filtered_logs.clear();
         for (auto const& log : m_logs)
         {
@@ -279,9 +284,108 @@ public:
         }
     }
 
+    std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) override
+    {
+        LOG_SCOPE("");
+        auto& index = m_filter_to_search_log_index[filter_id];
+
+        LOG_INFO("Step 0");
+        if (m_filtered_logs.empty())
+        {
+            LOG_INFO("No logs to filter");
+            index = std::nullopt;
+            return std::nullopt;
+        }
+
+        std::size_t start = 0;
+        if (static_cast<bool>(index) && *index + 1 < m_filtered_logs.size())
+        {
+            start = *index + 1;
+        }
+
+        LOG_INFO("Step 1");
+        for (std::size_t log_idx = start; log_idx < m_filtered_logs.size(); ++log_idx)
+        {
+            if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
+                m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
+            {
+                index = log_idx;
+                return log_idx;
+            }
+        }
+
+        LOG_INFO("Step 2 wrap around");
+        // wrap around
+        for (std::size_t log_idx = 0; log_idx < start; ++log_idx)
+        {
+            if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
+                m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
+            {
+                index = log_idx;
+                return log_idx;
+            }
+        }
+
+        index = std::nullopt;
+        return std::nullopt;
+    }
+
+    std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) override
+    {
+        LOG_SCOPE("");
+        auto& index = m_filter_to_search_log_index[filter_id];
+
+        if (m_filtered_logs.empty())
+        {
+            index = std::nullopt;
+            return std::nullopt;
+        }
+
+        std::size_t start;
+        if (index.has_value() && *index > 0)
+        {
+            start = *index - 1;
+        }
+        else
+        {
+            start = m_filtered_logs.size() - 1; // wrap to end
+        }
+
+        // backward search
+        for (std::size_t log_idx = start + 1; log_idx-- > 0;)
+        {
+            if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
+                m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
+            {
+                index = log_idx;
+                return log_idx;
+            }
+        }
+
+        // wrap around (search from end to original position)
+        if (start != m_filtered_logs.size() - 1)
+        {
+            for (std::size_t log_idx = m_filtered_logs.size(); log_idx-- > start + 1;)
+            {
+                if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
+                    m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
+                {
+                    index = log_idx;
+                    return log_idx;
+                }
+            }
+        }
+
+        index = std::nullopt;
+        return std::nullopt;
+    }
+
 private:
     std::vector<std::vector<std::string>> m_logs;
     std::vector<Fluxion::API::LogsPlugin::Data::LogRow> m_filtered_logs;
+
+    std::unordered_map<Graphite::Common::Utility::UniqueID, std::optional<std::size_t>>
+        m_filter_to_search_log_index{};
 };
 
 } // namespace Fluxion::Application

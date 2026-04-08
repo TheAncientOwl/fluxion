@@ -12,6 +12,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -113,6 +114,12 @@ struct SharedFilterMetadata
     Fluxion::API::Data::Common::Highlight colors{Fluxion::API::Data::Common::Highlight{
         .foreground = {1.0f, 1.0f, 1.0f, 1.0f},
         .background = {0.0f, 0.0f, 0.0f, 0.0f}}};
+};
+
+struct SearchedLog
+{
+    std::optional<std::size_t> index{std::nullopt};
+    bool scrolled_to{false};
 };
 
 }; // namespace Logs

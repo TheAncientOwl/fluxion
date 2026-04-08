@@ -25,15 +25,17 @@ auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::U
     return std::find_if(vec.begin(), vec.end(), [&](auto const& ptr) { return ptr->id == id; });
 }
 
-template <EFilterActionType ActionType>
-void handle(AppState& application_state, FilterActionPayload const& action) = delete;
+template <EFilterActionType ActionType, typename TPayload>
+void handle(AppState& application_state, TPayload const& payload) = delete;
+
 template <>
-void handle<EFilterActionType::AddTab>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::AddTab>(AppState& application_state, Payloads::FiltersDataModify const& payload)
 {
-    GRAPHITE_ASSERT(action.tab_id == std::nullopt, "tab should be nullopt for AddTab action");
-    GRAPHITE_ASSERT(action.filter_id == std::nullopt, "filter should be nullopt for AddTab action");
+    GRAPHITE_ASSERT(payload.tab_id == std::nullopt, "tab should be nullopt for AddTab payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt, "condition should be nullopt for AddTab action");
+        payload.filter_id == std::nullopt, "filter should be nullopt for AddTab payload");
+    GRAPHITE_ASSERT(
+        payload.condition_id == std::nullopt, "condition should be nullopt for AddTab payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
         auto tab_ptr = tabs_back.emplace_back(std::make_shared<Tab>());
@@ -60,23 +62,26 @@ void handle<EFilterActionType::AddTab>(AppState& application_state, FilterAction
 }
 
 template <>
-void handle<EFilterActionType::RemoveTab>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::RemoveTab>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
-    GRAPHITE_ASSERT(action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveTab action");
     GRAPHITE_ASSERT(
-        action.filter_id == std::nullopt, "filter should be nullopt for RemoveTab action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveTab payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt, "condition should be nullopt for RemoveTab action");
+        payload.filter_id == std::nullopt, "filter should be nullopt for RemoveTab payload");
+    GRAPHITE_ASSERT(
+        payload.condition_id == std::nullopt, "condition should be nullopt for RemoveTab payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](std::vector<Tab::Ptr>& tabs_back) {
-        auto const tab_it = FindByID(tabs_back, *action.tab_id);
+        auto const tab_it = FindByID(tabs_back, *payload.tab_id);
         if (tab_it != tabs_back.end())
         {
             tabs_back.erase(tab_it);
         }
         else
         {
-            LOG_WARN("Failed to RemoveTab with tab ID {} because it does not exist", *action.tab_id);
+            LOG_WARN("Failed to RemoveTab with tab ID {} because it does not exist", *payload.tab_id);
         }
         if (tabs_back.empty())
         {
@@ -107,22 +112,26 @@ void handle<EFilterActionType::RemoveTab>(AppState& application_state, FilterAct
 }
 
 template <>
-void handle<EFilterActionType::DuplicateTab>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::DuplicateTab>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateTab action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateTab payload");
     GRAPHITE_ASSERT(
-        action.filter_id == std::nullopt, "filter should be nullopt for DuplicateTab action");
+        payload.filter_id == std::nullopt, "filter should be nullopt for DuplicateTab payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt, "condition should be nullopt for DuplicateTab action");
+        payload.condition_id == std::nullopt,
+        "condition should be nullopt for DuplicateTab payload");
 
     Fluxion::Application::AppState::IdToMetadataMapUpdates id_to_metadata_updates{};
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto const tab_it = FindByID(tabs_back, *action.tab_id);
+        auto const tab_it = FindByID(tabs_back, *payload.tab_id);
         if (tab_it == tabs_back.end())
         {
-            LOG_WARN("Failed to DuplicateTab with tab ID {} because it does not exist", *action.tab_id);
+            LOG_WARN(
+                "Failed to DuplicateTab with tab ID {} because it does not exist", *payload.tab_id);
             return;
         }
 
@@ -166,18 +175,21 @@ void handle<EFilterActionType::DuplicateTab>(AppState& application_state, Filter
 }
 
 template <>
-void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::AddFilter>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
-    GRAPHITE_ASSERT(action.tab_id != std::nullopt, "tab should NOT be nullopt for AddFilter action");
     GRAPHITE_ASSERT(
-        action.filter_id == std::nullopt, "filter should be nullopt for AddFilter action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for AddFilter payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt, "condition should be nullopt for AddFilter action");
+        payload.filter_id == std::nullopt, "filter should be nullopt for AddFilter payload");
+    GRAPHITE_ASSERT(
+        payload.condition_id == std::nullopt, "condition should be nullopt for AddFilter payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto tab_it = FindByID(tabs_back, *action.tab_id);
+        auto tab_it = FindByID(tabs_back, *payload.tab_id);
         GRAPHITE_ASSERT(
-            tab_it != tabs_back.end(), "Failed to find tab with ID " + action.tab_id->ToString());
+            tab_it != tabs_back.end(), "Failed to find tab with ID " + payload.tab_id->ToString());
 
         (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
             auto new_filter = filters_back.emplace_back(std::make_shared<Filter>());
@@ -196,22 +208,25 @@ void handle<EFilterActionType::AddFilter>(AppState& application_state, FilterAct
 }
 
 template <>
-void handle<EFilterActionType::RemoveFilter>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::RemoveFilter>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveFilter action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveFilter payload");
     GRAPHITE_ASSERT(
-        action.filter_id != std::nullopt, "filter should NOT be nullopt for RemoveFilter action");
+        payload.filter_id != std::nullopt, "filter should NOT be nullopt for RemoveFilter payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt, "condition should be nullopt for RemoveFilter action");
+        payload.condition_id == std::nullopt,
+        "condition should be nullopt for RemoveFilter payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto tab_it = FindByID(tabs_back, *action.tab_id);
+        auto tab_it = FindByID(tabs_back, *payload.tab_id);
         GRAPHITE_ASSERT(
-            tab_it != tabs_back.end(), "Failed to find tab with ID " + action.tab_id->ToString());
+            tab_it != tabs_back.end(), "Failed to find tab with ID " + payload.tab_id->ToString());
 
         (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
-            auto filter_it = FindByID(filters_back, *action.filter_id);
+            auto filter_it = FindByID(filters_back, *payload.filter_id);
             if (filter_it != filters_back.end())
             {
                 filters_back.erase(filter_it);
@@ -220,7 +235,7 @@ void handle<EFilterActionType::RemoveFilter>(AppState& application_state, Filter
             {
                 LOG_WARN(
                     "Failed to RemoveFilter with filter ID {} because it does not exist",
-                    *action.filter_id);
+                    *payload.filter_id);
             }
 
             if (filters_back.empty())
@@ -243,30 +258,33 @@ void handle<EFilterActionType::RemoveFilter>(AppState& application_state, Filter
 }
 
 template <>
-void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::DuplicateFilter>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateFilter action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateFilter payload");
     GRAPHITE_ASSERT(
-        action.filter_id != std::nullopt, "filter should NOT be nullopt for DuplicateFilter action");
+        payload.filter_id != std::nullopt,
+        "filter should NOT be nullopt for DuplicateFilter payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt,
-        "condition should be nullopt for DuplicateFilter action");
+        payload.condition_id == std::nullopt,
+        "condition should be nullopt for DuplicateFilter payload");
 
     Fluxion::Application::AppState::IdToMetadataMapUpdates id_to_metadata_updates{};
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto tab_it = FindByID(tabs_back, *action.tab_id);
+        auto tab_it = FindByID(tabs_back, *payload.tab_id);
         GRAPHITE_ASSERT(
-            tab_it != tabs_back.end(), "Failed to find tab with ID " + action.tab_id->ToString());
+            tab_it != tabs_back.end(), "Failed to find tab with ID " + payload.tab_id->ToString());
 
         (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
-            auto filter_it = FindByID(filters_back, *action.filter_id);
+            auto filter_it = FindByID(filters_back, *payload.filter_id);
             if (filter_it == filters_back.end())
             {
                 LOG_WARN(
                     "Failed to DuplicateFilter with filter ID {} because it does not exist",
-                    *action.filter_id);
+                    *payload.filter_id);
                 return;
             }
 
@@ -298,25 +316,28 @@ void handle<EFilterActionType::DuplicateFilter>(AppState& application_state, Fil
 }
 
 template <>
-void handle<EFilterActionType::AddCondition>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::AddCondition>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for AddCondition action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for AddCondition payload");
     GRAPHITE_ASSERT(
-        action.filter_id != std::nullopt, "filter should NOT be nullopt for AddCondition action");
+        payload.filter_id != std::nullopt, "filter should NOT be nullopt for AddCondition payload");
     GRAPHITE_ASSERT(
-        action.condition_id == std::nullopt, "condition should be nullopt for AddCondition action");
+        payload.condition_id == std::nullopt,
+        "condition should be nullopt for AddCondition payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto tab_it = FindByID(tabs_back, *action.tab_id);
+        auto tab_it = FindByID(tabs_back, *payload.tab_id);
         GRAPHITE_ASSERT(
-            tab_it != tabs_back.end(), "Failed to find tab with ID " + action.tab_id->ToString());
+            tab_it != tabs_back.end(), "Failed to find tab with ID " + payload.tab_id->ToString());
 
         (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
-            auto filter_it = FindByID(filters_back, *action.filter_id);
+            auto filter_it = FindByID(filters_back, *payload.filter_id);
             GRAPHITE_ASSERT(
                 filter_it != filters_back.end(),
-                "Failed to find filter with ID " + action.filter_id->ToString());
+                "Failed to find filter with ID " + payload.filter_id->ToString());
 
             (*filter_it)->conditions.UpdateBackBufferCopy([&](auto& comps_back) {
                 auto new_comp = comps_back.emplace_back(std::make_shared<Condition>());
@@ -328,29 +349,32 @@ void handle<EFilterActionType::AddCondition>(AppState& application_state, Filter
 }
 
 template <>
-void handle<EFilterActionType::RemoveCondition>(AppState& application_state, FilterActionPayload const& action)
+void handle<EFilterActionType::RemoveCondition>(
+    AppState& application_state,
+    Payloads::FiltersDataModify const& payload)
 {
     GRAPHITE_ASSERT(
-        action.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveCondition action");
+        payload.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveCondition payload");
     GRAPHITE_ASSERT(
-        action.filter_id != std::nullopt, "filter should NOT be nullopt for RemoveCondition action");
+        payload.filter_id != std::nullopt,
+        "filter should NOT be nullopt for RemoveCondition payload");
     GRAPHITE_ASSERT(
-        action.condition_id != std::nullopt,
-        "condition should NOT be nullopt for RemoveCondition action");
+        payload.condition_id != std::nullopt,
+        "condition should NOT be nullopt for RemoveCondition payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-        auto tab_it = FindByID(tabs_back, *action.tab_id);
+        auto tab_it = FindByID(tabs_back, *payload.tab_id);
         GRAPHITE_ASSERT(
-            tab_it != tabs_back.end(), "Failed to find tab with ID " + action.tab_id->ToString());
+            tab_it != tabs_back.end(), "Failed to find tab with ID " + payload.tab_id->ToString());
 
         (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
-            auto filter_it = FindByID(filters_back, *action.filter_id);
+            auto filter_it = FindByID(filters_back, *payload.filter_id);
             GRAPHITE_ASSERT(
                 filter_it != filters_back.end(),
-                "Failed to find filter with ID " + action.filter_id->ToString());
+                "Failed to find filter with ID " + payload.filter_id->ToString());
 
             (*filter_it)->conditions.UpdateBackBufferCopy([&](auto& comps_back) {
-                auto comp_it = FindByID(comps_back, *action.condition_id);
+                auto comp_it = FindByID(comps_back, *payload.condition_id);
                 if (comp_it != comps_back.end())
                 {
                     comps_back.erase(comp_it);
@@ -360,7 +384,7 @@ void handle<EFilterActionType::RemoveCondition>(AppState& application_state, Fil
                     LOG_WARN(
                         "Failed to RemoveCondition with condition ID {} because it does not "
                         "exist",
-                        *action.condition_id);
+                        *payload.condition_id);
                 }
 
                 if (comps_back.empty())
@@ -376,7 +400,7 @@ void handle<EFilterActionType::RemoveCondition>(AppState& application_state, Fil
 }
 
 template <>
-void handle<EFilterActionType::ApplyFilters>(AppState& application_state, FilterActionPayload const& /* action */)
+void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int const& /* no-payload */)
 {
     LOG_SCOPE("");
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters{};
@@ -459,46 +483,84 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Filter
     LOG_DEBUG("HighlightOnly-Active filters size: {}", highlight_only.size());
 
     application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
+
+    application_state.logs.searched_log.UpdateBackBufferCopyLocking(
+        [](Data::Logs::SearchedLog& searched_log) { searched_log.index = std::nullopt; });
 }
 
 template <>
-void handle<EFilterActionType::DisableFilters>(AppState& application_state, FilterActionPayload const& /* action */)
+void handle<EFilterActionType::DisableFilters>(AppState& application_state, int const& /* no-payload */)
 {
     LOG_SCOPE("");
     application_state.logs_plugin->DisableFilters();
+    application_state.logs.searched_log.UpdateBackBufferCopyLocking(
+        [](Data::Logs::SearchedLog& searched_log) { searched_log.index = std::nullopt; });
 }
 
-void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action)
+template <>
+void handle<EFilterActionType::NextLog>(AppState& application_state, Payloads::SearchLog const& payload)
 {
-    if (action.type == EFilterActionType::None)
+    LOG_SCOPE("");
+    application_state.logs.searched_log.UpdateBackBufferCopyLocking(
+        [&](Data::Logs::SearchedLog& searched_log) {
+            searched_log.index = application_state.logs_plugin->GetNextLog(payload.filter_id);
+            searched_log.scrolled_to = false;
+            LOG_INFO("NextSearched log index == {}", searched_log.index ? *searched_log.index : 0);
+        });
+}
+
+template <>
+void handle<EFilterActionType::PrevLog>(AppState& application_state, Payloads::SearchLog const& payload)
+{
+    LOG_SCOPE("");
+    application_state.logs.searched_log.UpdateBackBufferCopyLocking(
+        [&](Data::Logs::SearchedLog& searched_log) {
+            searched_log.index = application_state.logs_plugin->GetPrevLog(payload.filter_id);
+            searched_log.scrolled_to = false;
+            LOG_INFO("PrevSearched log index == {}", searched_log.index ? *searched_log.index : 0);
+        });
+}
+
+void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& payload)
+{
+    static auto constexpr c_no_payload{0};
+
+    if (payload.type == EFilterActionType::None)
     {
         return;
     }
 
-    LOG_TRACE(
-        "Handling action type {} -> tab: {} | filter: {} | condition: {}",
-        static_cast<std::uint32_t>(action.type),
-        action.tab_id ? action.tab_id->ToString() : "nullopt",
-        action.filter_id ? action.filter_id->ToString() : "nullopt",
-        action.condition_id ? action.condition_id->ToString() : "nullopt");
+    LOG_TRACE("Handling payload type {}", static_cast<std::uint32_t>(payload.type));
 
-    switch (action.type)
+    switch (payload.type)
     {
     case EFilterActionType::ApplyFilters: {
-        handle<EFilterActionType::ApplyFilters>(application_state, action);
+        handle<EFilterActionType::ApplyFilters>(application_state, c_no_payload);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) { metadata[EFiltersMetadataFlag::Applied] = true; });
         break;
     }
     case EFilterActionType::DisableFilters: {
-        handle<EFilterActionType::DisableFilters>(application_state, action);
+        handle<EFilterActionType::DisableFilters>(application_state, c_no_payload);
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) { metadata[EFiltersMetadataFlag::Applied] = false; });
         break;
     }
 
+    case EFilterActionType::NextLog: {
+        handle<EFilterActionType::NextLog>(
+            application_state, std::get<Payloads::SearchLog>(payload.data));
+        break;
+    };
+    case EFilterActionType::PrevLog: {
+        handle<EFilterActionType::PrevLog>(
+            application_state, std::get<Payloads::SearchLog>(payload.data));
+        break;
+    };
+
     case EFilterActionType::AddTab: {
-        handle<EFilterActionType::AddTab>(application_state, action);
+        handle<EFilterActionType::AddTab>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -507,7 +569,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::RemoveTab: {
-        handle<EFilterActionType::RemoveTab>(application_state, action);
+        handle<EFilterActionType::RemoveTab>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -516,7 +579,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::DuplicateTab: {
-        handle<EFilterActionType::DuplicateTab>(application_state, action);
+        handle<EFilterActionType::DuplicateTab>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -525,7 +589,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::AddFilter: {
-        handle<EFilterActionType::AddFilter>(application_state, action);
+        handle<EFilterActionType::AddFilter>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -534,7 +599,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::RemoveFilter: {
-        handle<EFilterActionType::RemoveFilter>(application_state, action);
+        handle<EFilterActionType::RemoveFilter>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -543,7 +609,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::DuplicateFilter: {
-        handle<EFilterActionType::DuplicateFilter>(application_state, action);
+        handle<EFilterActionType::DuplicateFilter>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -552,7 +619,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::AddCondition: {
-        handle<EFilterActionType::AddCondition>(application_state, action);
+        handle<EFilterActionType::AddCondition>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -561,7 +629,8 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     case EFilterActionType::RemoveCondition: {
-        handle<EFilterActionType::RemoveCondition>(application_state, action);
+        handle<EFilterActionType::RemoveCondition>(
+            application_state, std::get<Payloads::FiltersDataModify>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
@@ -570,12 +639,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     default: {
-        LOG_WARN(
-            "Unknown action type {} -> tab: {} | filter: {} | condition: {}",
-            static_cast<std::uint32_t>(action.type),
-            action.tab_id ? action.tab_id->ToString() : "nullopt",
-            action.filter_id ? action.filter_id->ToString() : "nullopt",
-            action.condition_id ? action.condition_id->ToString() : "nullopt");
+        LOG_WARN("Unknown payload type {}", static_cast<std::uint32_t>(payload.type));
         break;
     }
 

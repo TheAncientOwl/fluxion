@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <variant>
+
 #include "Fluxion/Application/Data/AppState.hpp"
 
 namespace Fluxion::Application::Layers::Actions::FiltersLayer {
@@ -20,6 +22,10 @@ enum class EFilterActionType : std::uint8_t
     None = 0,
     ApplyFilters,
     DisableFilters,
+
+    NextLog,
+    PrevLog,
+
     AddTab,
     RemoveTab,
     DuplicateTab,
@@ -30,12 +36,26 @@ enum class EFilterActionType : std::uint8_t
     RemoveCondition
 };
 
-struct FilterActionPayload
+namespace Payloads {
+
+struct FiltersDataModify
 {
-    EFilterActionType type{EFilterActionType::None};
     std::optional<Graphite::Common::Utility::UniqueID> tab_id{};
     std::optional<Graphite::Common::Utility::UniqueID> filter_id{};
     std::optional<Graphite::Common::Utility::UniqueID> condition_id{};
+};
+
+struct SearchLog
+{
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
+};
+
+}; // namespace Payloads
+
+struct FilterActionPayload
+{
+    EFilterActionType type{EFilterActionType::None};
+    std::variant<Payloads::FiltersDataModify, Payloads::SearchLog> data{};
 };
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action);
