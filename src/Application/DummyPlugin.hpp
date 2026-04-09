@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -91,8 +91,8 @@ public:
         static const std::vector<std::string> levels = {"info", "error", "debug", "trace"};
         static const std::vector<std::string> channels = {
             "Channel1", "Channel2", "Channel3", "Channel4"};
-        std::random_device rd;
-        std::mt19937 gen(rd());
+        constexpr std::uint32_t seed = 69420;
+        std::mt19937 gen(seed);
         std::uniform_int_distribution<> level_dist(0, static_cast<int>(levels.size() - 1));
         std::uniform_int_distribution<> channel_dist(0, static_cast<int>(channels.size() - 1));
 
