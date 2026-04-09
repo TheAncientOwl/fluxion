@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -14,12 +14,16 @@
 
 #include "DummyPlugin.hpp"
 #include "Fluxion.hpp"
+#include "Graphite/Logger.hpp"
 #include "Layers/BaseLayer.hpp"
 #include "Layers/DevLayer/DevLayer.hpp"
 #include "Layers/FiltersLayer//FiltersLayerActions.hpp"
 #include "Layers/FiltersLayer/FiltersLayer.hpp"
 #include "Layers/LogsViewLayer/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"
+
+DEFINE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
+USE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
 
 namespace Fluxion::Application {
 
@@ -28,17 +32,17 @@ FluxionApplication::FluxionApplication(
     AppState initial_state)
     : TGraphiteApplication{std::move(window_configuration), std::move(initial_state)}
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::FluxionApplication");
 }
 
 FluxionApplication::~FluxionApplication()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::~FluxionApplication()");
 }
 
 void FluxionApplication::AppInit()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::AppInit()");
     if (ImGui::GetCurrentContext() == nullptr)
     {
         ImGui::CreateContext();
@@ -63,6 +67,7 @@ void FluxionApplication::AppInit()
 
 void FluxionApplication::SetupFonts()
 {
+    LOG_SCOPE("::SetupFonts()");
     auto& io = ImGui::GetIO();
 
     io.Fonts->AddFontFromFileTTF("assets/fonts/JetBrainsMono-Medium.ttf", 15.5f);
@@ -77,7 +82,7 @@ void FluxionApplication::SetupFonts()
 
 void FluxionApplication::OnProcessAction(Graphite::Common::Utility::TAppAction<EFluxionAction> const& action)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnProcessAction()");
     switch (action.type)
     {
     case EFluxionAction::None: {

@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.11
+/// @version 1.12
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -23,6 +23,9 @@
 #include "LogFormatter.hpp"
 
 using namespace std::string_literals;
+
+DEFINE_LOG_SCOPE(Graphite::Logger);
+USE_LOG_SCOPE(Graphite::Logger);
 
 namespace Graphite::Logger {
 
@@ -42,7 +45,6 @@ GlobalLogLevel::GlobalLogLevel(ELogLevel const p_level, std::string p_icon, std:
 
 void Logger::SaveConfig()
 {
-    LOG_SCOPE("");
     auto const config_path = GetConfigFilePath();
     std::ofstream ofs(config_path, std::ios::trunc);
     if (!ofs.is_open())
@@ -140,6 +142,12 @@ std::filesystem::path Logger::GetConfigFilePath()
                   << " error: " << ec.message() << std::endl;
     }
     return config_dir / "app.graphite.logger.cfg";
+}
+
+std::string_view Logger::DefineLogScope(std::string_view scope)
+{
+    SetScopeEnabled(scope, true);
+    return scope;
 }
 
 void Logger::Enqueue(LogMessage&& msg)
@@ -381,7 +389,7 @@ void Logger::PrintMessage(const LogMessage& msg)
 
         Private::Formatter::formatScopeColored(std::cout, msg.scope, levelColor);
 
-        std::cout << sepColor << " » " << reset << msg.message << std::endl;
+        std::cout << sepColor << " » " << levelColor << msg.message << reset<< std::endl;
 
         m_log_file
             << "| " 

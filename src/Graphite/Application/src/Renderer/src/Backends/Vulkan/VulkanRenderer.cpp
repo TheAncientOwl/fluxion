@@ -5,12 +5,15 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
 #include "VulkanRenderer.hpp"
 #include "Graphite/Logger.hpp"
+
+DEFINE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
+USE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
 
 #include <exception>
 
@@ -413,18 +416,18 @@ namespace Graphite::Application::Renderer::Backends::Vulkan {
 
 VulkanRenderer::VulkanRenderer()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::VulkanRenderer()");
 }
 
 VulkanRenderer::~VulkanRenderer()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::~VulkanRenderer()");
     Cleanup();
 }
 
 void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& window_configuration)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::Init()");
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -621,7 +624,7 @@ void VulkanRenderer::Render(std::shared_ptr<IRenderable> user_interface)
 
 void VulkanRenderer::Cleanup()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::Cleanup()");
 
     if (!m_cleaned_up)
     {

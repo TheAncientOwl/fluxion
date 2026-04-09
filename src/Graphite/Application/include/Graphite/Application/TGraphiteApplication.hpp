@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.7
+/// @version 1.8
 /// @brief Main application.
 ///
 
@@ -27,6 +27,8 @@
 #include "Graphite/Renderer/Renderer.hpp"
 #include "Layers/TLayer.hpp"
 #include "WindowConfiguration.hpp"
+
+DEFINE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
 
 namespace Graphite::Application {
 
@@ -52,7 +54,8 @@ public: // Public Static API
 public: // Public API
     void Run()
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::Run()");
         Init();
         m_renderer->Render(this->shared_from_this());
         Shutdown();
@@ -72,7 +75,8 @@ public: // Public API
                  }
     Graphite::Common::Utility::UniqueID const& AddLayer(Args&&... args)
     {
-        LOG_SCOPE("{}", LayerImpl::GetLayerName().data());
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::AddLayer(): {}", LayerImpl::GetLayerName().data());
         auto layer = std::make_unique<LayerImpl>(std::forward<Args>(args)...);
 
         GRAPHITE_ASSERT(
@@ -100,7 +104,8 @@ public: // Public API
                  std::derived_from<LayerType, Layers::TLayer<ApplicationState, ActionEnum>>
     void ForEachLayer(std::function<void(LayerType&, bool const)> func)
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::ForEachLayer()");
         for (std::size_t idx = 0; idx < m_layers.size(); ++idx)
         {
             auto& layer{m_layers[idx]};
@@ -117,7 +122,8 @@ protected: // Shared API
         : m_window_configuration{std::move(window_configuration)}
         , m_app_state{std::move(initial_state)}
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::TGraphiteApplication()");
     }
 
 private: // Private API
@@ -125,7 +131,8 @@ private: // Private API
 
     void Init()
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::Init()");
         m_renderer = Graphite::Application::Renderer::CreateRenderer();
         m_renderer->Init(m_window_configuration);
 
@@ -136,14 +143,16 @@ private: // Private API
 
     void Render() override
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::Render()");
         IterateLayers();
         RenderLayers();
     }
 
     void Shutdown()
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::Shutdown()");
 
         // 1. Cleanup Layers
         while (!m_layers.empty())
@@ -168,7 +177,8 @@ private: // Private API
 
     void IterateLayers()
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::IterateLayers()");
         std::for_each(m_layers.begin(), m_layers.end(), [](auto& layer_ptr) {
             if (layer_ptr->IsActive())
             {
@@ -179,7 +189,8 @@ private: // Private API
 
     void RenderLayers()
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+        LOG_SCOPE("::RenderLayers()");
         m_removed_layers.clear();
         std::for_each(
             m_layers.begin(),
@@ -212,7 +223,8 @@ private: // Private API
 
         while (m_action_queue.WaitAndPop(action, m_worker_running))
         {
-            LOG_SCOPE("");
+            USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
+            LOG_SCOPE("::WorkerLoop()");
 
             if (!m_worker_running.load())
                 break;

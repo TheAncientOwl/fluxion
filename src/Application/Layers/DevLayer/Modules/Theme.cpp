@@ -5,17 +5,20 @@
 ///
 /// @file Theme.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see Theme.hpp.
 ///
 
 #include "Graphite/Logger.hpp"
 
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::Modules::DevLayer::Themes);
+USE_LOG_SCOPE(Fluxion::Application::Layers::Modules::DevLayer::Themes);
+
 namespace Fluxion::Application::Layers::Modules::DevLayer {
 
 void SetupImGuiDarkStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiDarkStyle()");
     ImGui::StyleColorsDark();
 
     ImGuiStyle& style = ImGui::GetStyle();
@@ -46,7 +49,7 @@ void SetupImGuiDarkStyle()
 
 void SetupForestGreenStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupForestGreenStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -168,7 +171,7 @@ void SetupForestGreenStyle()
 
 void SetupImGuiAmethystStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiAmethystStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -266,7 +269,7 @@ void SetupImGuiAmethystStyle()
 
 void SetupImGuiSapphireStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiSapphireStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -359,7 +362,7 @@ void SetupImGuiSapphireStyle()
 
 void SetupImGuiAmberYellowStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiAmberYellowStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -454,7 +457,7 @@ void SetupImGuiAmberYellowStyle()
 
 void SetupImGuiDraculaStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiDraculaStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -550,7 +553,7 @@ void SetupImGuiDraculaStyle()
 
 void SetupImGuiCatppuccinMochaStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiCatppuccinMochaStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -641,7 +644,7 @@ void SetupImGuiCatppuccinMochaStyle()
 
 void SetupImGuiGruvboxHardStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiGruvboxHardStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -730,7 +733,7 @@ void SetupImGuiGruvboxHardStyle()
 
 void SetupImGuiCrimsonVesuviusStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiCrimsonVesuviusStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -815,7 +818,7 @@ void SetupImGuiCrimsonVesuviusStyle()
 
 void SetupImGuiRoseQuartzStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiRoseQuartzStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -900,7 +903,7 @@ void SetupImGuiRoseQuartzStyle()
 
 void SetupImGuiCyberpunkStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiCyberpunkStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -987,7 +990,7 @@ void SetupImGuiCyberpunkStyle()
 
 void SetupImGuiPaperAndInkStyle()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::SetupImGuiPaperAndInkStyle()");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -1105,7 +1108,7 @@ enum class ETheme : std::uint8_t
 
 void RenderTheme()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::RenderTheme()");
     static auto currentTheme = ETheme::Dark;
 
     static std::size_t constexpr c_themes_count{12};

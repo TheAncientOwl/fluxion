@@ -5,15 +5,19 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
 #include "MainMenuLayer.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
+#include "Graphite/Logger.hpp"
 
 #include "IconsCodicons.h"
 #include "imgui.h"
+
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::MainMenuLayer);
+USE_LOG_SCOPE(Fluxion::Application::Layers::MainMenuLayer);
 
 namespace Fluxion::Application::Layers {
 
@@ -32,34 +36,34 @@ MainMenuLayer::MainMenuLayer(
     Graphite::Application::Layers::ZIndex const z_index)
     : TLayer{std::move(application), z_index}
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::MainMenuLayer()");
 }
 
 void MainMenuLayer::OnAdd()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnAdd()");
 }
 
 void MainMenuLayer::OnIterate()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnIterate()");
 }
 
 void MainMenuLayer::OnRender()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnRender()");
 
     RenderMenu();
 }
 
 void MainMenuLayer::OnRemove()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnRemove()");
 }
 
 void MainMenuLayer::RenderMenu()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::RenderMenu()");
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))

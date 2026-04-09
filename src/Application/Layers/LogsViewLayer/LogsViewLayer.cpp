@@ -5,15 +5,19 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.16
+/// @version 0.17
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
 #include "LogsViewLayer.hpp"
 #include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
+#include "Graphite/Logger.hpp"
 
 #include "IconsCodicons.h"
 #include "imgui.h"
+
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::LogsViewLayer);
+USE_LOG_SCOPE(Fluxion::Application::Layers::LogsViewLayer);
 
 namespace Fluxion::Application::Layers {
 
@@ -48,17 +52,17 @@ LogsViewLayer::LogsViewLayer(
     Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::LogsViewLayer()");
 }
 
 void LogsViewLayer::OnAdd()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnAdd()");
 }
 
 void LogsViewLayer::OnIterate()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnIterate()");
     auto& app_state{m_application->GetApplicationState()};
 
     app_state.logs.visible_chunk.SyncFrontBufferSwap();
@@ -67,7 +71,7 @@ void LogsViewLayer::OnIterate()
 
 void LogsViewLayer::OnRender()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnRender()");
 
     auto& app_state{m_application->GetApplicationState()};
 
@@ -95,7 +99,7 @@ inline std::string_view LogsViewLayer::GetDisplayName() const noexcept
 
 void LogsViewLayer::RenderLogsTable()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::RenderLogsTable()");
     auto& app_state{m_application->GetApplicationState()};
     auto const& headers{app_state.logs_plugin->GetTableHeader()};
 
@@ -155,7 +159,8 @@ void LogsViewLayer::RenderLogsTable()
             auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
 
             LOG_DEBUG(
-                "DisplayStart == {} | DisplayEnd == {} | Searched == {} | ScrollY == {}",
+                "::RenderLogsTable(): DisplayStart == {} | DisplayEnd == {} | Searched == {} | "
+                "ScrollY == {}",
                 clipper.DisplayStart,
                 clipper.DisplayEnd,
                 searched_log_state.index,
@@ -222,7 +227,7 @@ void LogsViewLayer::RenderLogsTable()
 
         for (auto const& range : ranges)
         {
-            LOG_DEBUG("Request => start {} | end {}", range.begin, range.end);
+            LOG_DEBUG("::RenderLogsTable(): Request => start {} | end {}", range.begin, range.end);
         }
 
         Dispatch(
@@ -238,7 +243,7 @@ void LogsViewLayer::RenderLogsTable()
 
 void LogsViewLayer::OnRemove()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnRemove()");
 }
 
 } // namespace Fluxion::Application::Layers

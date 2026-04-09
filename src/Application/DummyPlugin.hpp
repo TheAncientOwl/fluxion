@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -23,6 +23,8 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+
+DEFINE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
 
 namespace Fluxion::Application {
 
@@ -44,8 +46,9 @@ struct ActiveFilter
 
 inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
 {
+    USE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
     using namespace Fluxion::API::LogsPlugin::Data;
-    LOG_INFO("SIZE: {}", filters.size());
+    LOG_INFO("::DummyImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
     out.reserve(filters.size());
@@ -137,15 +140,16 @@ public:
         std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
         std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only) override
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
+        LOG_SCOPE("::ApplyFilters()");
         using namespace Fluxion::API::LogsPlugin::Data;
 
         m_filter_to_search_log_index.clear();
 
         auto const filters = DummyImpl::Convert(std::move(_filters));
         auto const highlight_only = DummyImpl::Convert(std::move(_highlight_only));
-        LOG_DEBUG("Active filters size: {}", filters.size());
-        LOG_DEBUG("HighlightOnly-Active filters size: {}", highlight_only.size());
+        LOG_DEBUG("::ApplyFilters(): Active filters size: {}", filters.size());
+        LOG_DEBUG("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
         m_filtered_logs.clear();
         std::vector<std::uint8_t> priorities{};
@@ -254,10 +258,19 @@ public:
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
         Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override
     {
+        USE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
+        LOG_SCOPE("::GetLogs()");
+
         for (auto const& range : ranges)
         {
+            LOG_TRACE("::GetLogs(): begin {} | end {}", range.begin, range.end);
+
             if (m_filtered_logs.empty() || range.begin >= m_filtered_logs.size())
             {
+                LOG_TRACE(
+                    "::GetLogs(): empty == {} | begin over size == {}",
+                    m_filtered_logs.empty(),
+                    range.begin >= m_filtered_logs.size());
                 continue;
             }
 
@@ -286,13 +299,13 @@ public:
 
     std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) override
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
+        LOG_SCOPE("::GetNextLog()");
         auto& index = m_filter_to_search_log_index[filter_id];
 
-        LOG_INFO("Step 0");
         if (m_filtered_logs.empty())
         {
-            LOG_INFO("No logs to filter");
+            LOG_INFO("::GetNextLog(): No logs to filter");
             index = std::nullopt;
             return std::nullopt;
         }
@@ -303,7 +316,6 @@ public:
             start = *index + 1;
         }
 
-        LOG_INFO("Step 1");
         for (std::size_t log_idx = start; log_idx < m_filtered_logs.size(); ++log_idx)
         {
             if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
@@ -314,7 +326,6 @@ public:
             }
         }
 
-        LOG_INFO("Step 2 wrap around");
         // wrap around
         for (std::size_t log_idx = 0; log_idx < start; ++log_idx)
         {
@@ -332,11 +343,13 @@ public:
 
     std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) override
     {
-        LOG_SCOPE("");
+        USE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
+        LOG_SCOPE("::GetPrevLog()");
         auto& index = m_filter_to_search_log_index[filter_id];
 
         if (m_filtered_logs.empty())
         {
+            LOG_INFO("::GetPrevLog(): No logs to filter");
             index = std::nullopt;
             return std::nullopt;
         }

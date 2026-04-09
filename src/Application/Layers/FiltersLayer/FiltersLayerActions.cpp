@@ -5,14 +5,18 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Main layer responsible for rendering logs table.
 ///
 
 #include <algorithm>
 
 #include "FiltersLayerActions.hpp"
+#include "Fluxion/Application/Data/Formatters.hpp"
 #include "Graphite/Logger.hpp"
+
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::Actions::FiltersLayer);
+USE_LOG_SCOPE(Fluxion::Application::Layers::Actions::FiltersLayer);
 
 namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 
@@ -31,6 +35,8 @@ void handle(AppState& application_state, TPayload const& payload) = delete;
 template <>
 void handle<EFilterActionType::AddTab>(AppState& application_state, Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<AddTab>()");
+
     GRAPHITE_ASSERT(payload.tab_id == std::nullopt, "tab should be nullopt for AddTab payload");
     GRAPHITE_ASSERT(
         payload.filter_id == std::nullopt, "filter should be nullopt for AddTab payload");
@@ -66,6 +72,8 @@ void handle<EFilterActionType::RemoveTab>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<RemoveTab>()");
+
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveTab payload");
     GRAPHITE_ASSERT(
@@ -81,7 +89,10 @@ void handle<EFilterActionType::RemoveTab>(
         }
         else
         {
-            LOG_WARN("Failed to RemoveTab with tab ID {} because it does not exist", *payload.tab_id);
+            LOG_WARN(
+                "::handle<RemoveTab>(): Failed to RemoveTab with tab ID {} because it does not "
+                "exist",
+                *payload.tab_id);
         }
         if (tabs_back.empty())
         {
@@ -116,6 +127,7 @@ void handle<EFilterActionType::DuplicateTab>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<DuplicateTab>()");
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateTab payload");
     GRAPHITE_ASSERT(
@@ -131,7 +143,10 @@ void handle<EFilterActionType::DuplicateTab>(
         if (tab_it == tabs_back.end())
         {
             LOG_WARN(
-                "Failed to DuplicateTab with tab ID {} because it does not exist", *payload.tab_id);
+                "::handle<DuplicateTab>(): Failed to DuplicateTab with tab ID {} because it does "
+                "not "
+                "exist",
+                *payload.tab_id);
             return;
         }
 
@@ -179,6 +194,7 @@ void handle<EFilterActionType::AddFilter>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<AddFilter>()");
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for AddFilter payload");
     GRAPHITE_ASSERT(
@@ -212,6 +228,7 @@ void handle<EFilterActionType::RemoveFilter>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<RemoveFilter>()");
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveFilter payload");
     GRAPHITE_ASSERT(
@@ -234,7 +251,8 @@ void handle<EFilterActionType::RemoveFilter>(
             else
             {
                 LOG_WARN(
-                    "Failed to RemoveFilter with filter ID {} because it does not exist",
+                    "::handle<RemoveFilter>(): Failed to RemoveFilter with filter ID {} because it "
+                    "does not exist",
                     *payload.filter_id);
             }
 
@@ -262,6 +280,7 @@ void handle<EFilterActionType::DuplicateFilter>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<DuplicateFilter>()");
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for DuplicateFilter payload");
     GRAPHITE_ASSERT(
@@ -283,7 +302,8 @@ void handle<EFilterActionType::DuplicateFilter>(
             if (filter_it == filters_back.end())
             {
                 LOG_WARN(
-                    "Failed to DuplicateFilter with filter ID {} because it does not exist",
+                    "::handle<DuplicateFilter>(): Failed to DuplicateFilter with filter ID {} "
+                    "because it does not exist",
                     *payload.filter_id);
                 return;
             }
@@ -320,6 +340,7 @@ void handle<EFilterActionType::AddCondition>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<AddCondition>()");
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for AddCondition payload");
     GRAPHITE_ASSERT(
@@ -353,6 +374,7 @@ void handle<EFilterActionType::RemoveCondition>(
     AppState& application_state,
     Payloads::FiltersDataModify const& payload)
 {
+    LOG_SCOPE("::handle<RemoveCondition>()");
     GRAPHITE_ASSERT(
         payload.tab_id != std::nullopt, "tab should NOT be nullopt for RemoveCondition payload");
     GRAPHITE_ASSERT(
@@ -382,7 +404,9 @@ void handle<EFilterActionType::RemoveCondition>(
                 else
                 {
                     LOG_WARN(
-                        "Failed to RemoveCondition with condition ID {} because it does not "
+                        "::handle<RemoveCondition>(): Failed to RemoveCondition with condition ID "
+                        "{} "
+                        "because it does not "
                         "exist",
                         *payload.condition_id);
                 }
@@ -402,7 +426,7 @@ void handle<EFilterActionType::RemoveCondition>(
 template <>
 void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int const& /* no-payload */)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::handle<ApplyFilters>()");
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters{};
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only{};
 
@@ -479,8 +503,9 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
         return a.priority > b.priority;
     });
 
-    LOG_DEBUG("Active filters size: {}", filters.size());
-    LOG_DEBUG("HighlightOnly-Active filters size: {}", highlight_only.size());
+    LOG_DEBUG("::handle<ApplyFilters>(): Active filters size: {}", filters.size());
+    LOG_DEBUG(
+        "::handle<ApplyFilters>(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
     application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
 
@@ -491,7 +516,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
 template <>
 void handle<EFilterActionType::DisableFilters>(AppState& application_state, int const& /* no-payload */)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::handle<DisableFilters>()");
     application_state.logs_plugin->DisableFilters();
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [](Data::Logs::SearchedLog& searched_log) { searched_log.index = std::nullopt; });
@@ -500,22 +525,22 @@ void handle<EFilterActionType::DisableFilters>(AppState& application_state, int 
 template <>
 void handle<EFilterActionType::NextLog>(AppState& application_state, Payloads::SearchLog const& payload)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::handle<NextLog>()");
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [&](Data::Logs::SearchedLog& searched_log) {
             searched_log.index = application_state.logs_plugin->GetNextLog(payload.filter_id);
-            LOG_INFO("NextSearched log index == {}", searched_log.index ? *searched_log.index : 0);
+            LOG_INFO("::handle<NextLog>(): log index == {}", searched_log.index);
         });
 }
 
 template <>
 void handle<EFilterActionType::PrevLog>(AppState& application_state, Payloads::SearchLog const& payload)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::handle<PrevLog>()");
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [&](Data::Logs::SearchedLog& searched_log) {
             searched_log.index = application_state.logs_plugin->GetPrevLog(payload.filter_id);
-            LOG_INFO("PrevSearched log index == {}", searched_log.index ? *searched_log.index : 0);
+            LOG_INFO("::handle<PrevLog>(): log index == {}", searched_log.index);
         });
 }
 
@@ -528,7 +553,7 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         return;
     }
 
-    LOG_TRACE("Handling payload type {}", static_cast<std::uint32_t>(payload.type));
+    LOG_TRACE("::HandleFiltersLayerAction(): type {}", static_cast<std::uint32_t>(payload.type));
 
     switch (payload.type)
     {
@@ -637,7 +662,9 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         break;
     }
     default: {
-        LOG_WARN("Unknown payload type {}", static_cast<std::uint32_t>(payload.type));
+        LOG_ERROR(
+            "::HandleFiltersLayerAction(): Unknown payload type {}",
+            static_cast<std::uint32_t>(payload.type));
         break;
     }
 

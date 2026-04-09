@@ -5,16 +5,20 @@
 ///
 /// @file DevLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Implementation of @see DevLayer.hpp.
 ///
 
 #include "DevLayer.hpp"
+#include "Graphite/Logger.hpp"
 #include "Modules/Logger.hpp"
 #include "Modules/Theme.hpp"
 
 #include "IconsCodicons.h"
 #include "imgui.h"
+
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::DevLayer);
+USE_LOG_SCOPE(Fluxion::Application::Layers::DevLayer);
 
 namespace Fluxion::Application::Layers {
 
@@ -33,22 +37,22 @@ DevLayer::DevLayer(
     Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::DevLayer::DevLayer()");
 }
 
 void DevLayer::OnAdd()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::DevLayer::OnAdd()");
 }
 
 void DevLayer::OnIterate()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::DevLayer::OnIterate()");
 }
 
 void DevLayer::OnRender()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::DevLayer::OnRender()");
 
     auto& app_state{m_application->GetApplicationState()};
 
@@ -76,7 +80,7 @@ void DevLayer::OnRender()
 
 void DevLayer::OnRemove()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::DevLayer::OnRemove()");
 }
 
 inline bool DevLayer::IsActive() const noexcept

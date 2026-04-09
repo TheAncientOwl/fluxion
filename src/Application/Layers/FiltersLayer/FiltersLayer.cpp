@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.31
+/// @version 0.32
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -18,6 +18,9 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 
 #include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
+
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer);
+USE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer);
 
 namespace Fluxion::Application::Layers {
 
@@ -170,16 +173,17 @@ FiltersLayer::FiltersLayer(
     Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::FiltersLayer()");
 }
 
 void FiltersLayer::OnAdd()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnAdd()");
 }
 
 void FiltersLayer::OnIterate()
 {
+    LOG_SCOPE("::OnIterate()");
     auto& app_state{m_application->GetApplicationState()};
 
     app_state.filters.id_to_metadata_updates.SyncFrontBufferSwap();
@@ -189,13 +193,11 @@ void FiltersLayer::OnIterate()
     }
 
     app_state.logs.searched_log.SyncFrontBufferCopy();
-
-    LOG_SCOPE("");
 }
 
 void FiltersLayer::OnRender()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnRender()");
 
     auto& app_state{m_application->GetApplicationState()};
 
@@ -221,7 +223,7 @@ void FiltersLayer::OnRender()
 
 void FiltersLayer::OnRemove()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::OnRemove()");
 }
 
 inline bool FiltersLayer::IsActive() const noexcept
@@ -293,10 +295,10 @@ void FiltersLayer::RenderToolbar()
 
 void FiltersLayer::RenderTabs()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::RenderTabs()");
     auto& app_state{m_application->GetApplicationState()};
     // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
-    LOG_DEBUG("Tabs: {}", app_state.filters.tabs.GetFront());
+    LOG_DEBUG("::RenderTabs(): Tabs: {}", app_state.filters.tabs.GetFront());
 
     if (ImGui::BeginTabBar("Tabs"))
     {
@@ -304,7 +306,7 @@ void FiltersLayer::RenderTabs()
         {
             if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
-                LOG_INFO("Rendering filter tab {}", tab->imgui_id.c_str());
+                LOG_INFO("::RenderTabs(): Rendering filter tab {}", tab->imgui_id.c_str());
                 RenderTab(tab);
                 ImGui::EndTabItem();
             }
@@ -321,7 +323,7 @@ void FiltersLayer::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
         "Received tab with default ID for rendering...");
 
     auto& tab{*tab_ptr};
-    LOG_SCOPE("ID: \"{}\" | \"{}\"", tab.id, tab.name);
+    LOG_SCOPE("::RenderTab(): ID: \"{}\" | \"{}\"", tab.id, tab.name);
 
     Graphite::Common::UI::IconButton(ICON_CI_PLUS, "Add Filter", [&] {
         Dispatch(
@@ -382,7 +384,7 @@ void FiltersLayer::RenderFilter(
         owning_tab_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_tab as default ID for rendering...");
 
-    LOG_SCOPE("ID: \"{}\" | \"{}\"", filter.id, filter.name);
+    LOG_SCOPE("::RenderFilter(): ID: \"{}\" | \"{}\"", filter.id, filter.name);
 
     char s_filter_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
     filter.id.Dump(s_filter_id);
@@ -525,7 +527,7 @@ void FiltersLayer::RenderCondition(
         owning_filter_id != Graphite::Common::Utility::UniqueID::Default(),
         "Received owning_filter_id as default ID for rendering...");
 
-    LOG_SCOPE("ID: \"{}\"", condition.id);
+    LOG_SCOPE("::RenderCondition(): ID: \"{}\"", condition.id);
 
     char s_condition_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
     condition.id.Dump(s_condition_id);

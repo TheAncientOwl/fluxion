@@ -5,7 +5,7 @@
 ///
 /// @file MetalRenderer.mm
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief Implementation of @see MetalRenderer.hpp.
 ///
 
@@ -13,6 +13,9 @@
 
 #include "Graphite/Application/WindowConfiguration.hpp"
 #include "Graphite/Logger.hpp"
+
+DEFINE_LOG_SCOPE(Graphite::Application::Renderer::Metal);
+USE_LOG_SCOPE(Graphite::Application::Renderer::Metal);
 
 #include "MetalRenderer.hpp"
 #include "MetalRendererState.mm"
@@ -39,18 +42,18 @@ namespace Graphite::Application::Renderer::Backends::Metal {
 
 MetalRenderer::MetalRenderer() : m_state{std::make_unique<State>()}, m_cleaned_up{false}
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::MetalRenderer()");
 }
 
 MetalRenderer::~MetalRenderer()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::~MetalRenderer()");
     Cleanup();
 }
 
 void MetalRenderer::Init(Graphite::Application::WindowConfiguration const& window_configuration)
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::Init()");
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -106,7 +109,7 @@ void MetalRenderer::Init(Graphite::Application::WindowConfiguration const& windo
 
 void MetalRenderer::Render(std::shared_ptr<IRenderable> user_interface)
 {
-    LOG_SCOPE("Main Render Loop");
+    LOG_SCOPE("::Render(): Main Render Loop");
 
     while (!glfwWindowShouldClose(m_state->window))
     {
@@ -158,7 +161,7 @@ void MetalRenderer::Render(std::shared_ptr<IRenderable> user_interface)
 
 void MetalRenderer::Cleanup()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::Cleanup()");
 
     if (!m_cleaned_up)
     {
