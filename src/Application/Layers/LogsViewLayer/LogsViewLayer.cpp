@@ -5,11 +5,12 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.15
+/// @version 0.16
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
 #include "LogsViewLayer.hpp"
+#include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
 
 #include "IconsCodicons.h"
 #include "imgui.h"
@@ -58,7 +59,10 @@ void LogsViewLayer::OnAdd()
 void LogsViewLayer::OnIterate()
 {
     LOG_SCOPE("");
-    m_application->GetApplicationState().logs.visible_chunk.SyncFrontBufferSwap();
+    auto& app_state{m_application->GetApplicationState()};
+
+    app_state.logs.visible_chunk.SyncFrontBufferSwap();
+    app_state.logs.searched_log.SyncFrontBufferCopy();
 }
 
 void LogsViewLayer::OnRender()
@@ -117,11 +121,24 @@ void LogsViewLayer::RenderLogsTable()
         ImGuiListClipper clipper{};
         clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()));
 
+        auto& searched_log_state = app_state.logs.searched_log.GetFront();
+        static std::optional<std::size_t> s_last_search_index{std::nullopt};
+        bool search_index_changed = s_last_search_index != searched_log_state.index;
+        if (search_index_changed)
+        {
+            s_last_search_index = searched_log_state.index;
+        }
+
+        if (static_cast<bool>(searched_log_state.index))
+        {
+            clipper.IncludeItemByIndex(static_cast<int>(*searched_log_state.index));
+        }
+
         std::vector<Fluxion::API::LogsPlugin::Data::Range> ranges{};
         while (clipper.Step())
         {
-            // if it's not first ImGui rendered row, we can request chunk with margin
-            if (clipper.DisplayStart != 0 && clipper.DisplayEnd != 1)
+            auto const is_first_render_row{clipper.DisplayStart == 0 && clipper.DisplayEnd == 1};
+            if (!is_first_render_row)
             {
                 static auto constexpr margin{25};
                 ranges.emplace_back(
@@ -137,7 +154,23 @@ void LogsViewLayer::RenderLogsTable()
 
             auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
 
-            LOG_DEBUG("Front render  => start {} | end {}", clipper.DisplayStart, clipper.DisplayEnd);
+            LOG_DEBUG(
+                "DisplayStart == {} | DisplayEnd == {} | Searched == {} | ScrollY == {}",
+                clipper.DisplayStart,
+                clipper.DisplayEnd,
+                searched_log_state.index,
+                ImGui::GetScrollY());
+
+            if (search_index_changed && !is_first_render_row &&
+                static_cast<bool>(searched_log_state.index) &&
+                (static_cast<int>(*searched_log_state.index) <= clipper.DisplayStart ||
+                 static_cast<int>(*searched_log_state.index) >= clipper.DisplayEnd - 2))
+            {
+                search_index_changed = false;
+                auto const searched_scroll = clipper.ItemsHeight * *searched_log_state.index;
+                ImGui::SetScrollY(searched_scroll);
+            }
+
             for (auto row_idx = clipper.DisplayStart; row_idx < clipper.DisplayEnd; ++row_idx)
             {
                 ImGui::TableNextRow();
@@ -146,10 +179,9 @@ void LogsViewLayer::RenderLogsTable()
                 if (it != front_buffer.logs.cend())
                 {
                     auto const& row{it->second};
-
                     auto const& highlight{app_state.filters.id_to_metadata[row.metadata.highlight_id]};
 
-                    if (row_idx == app_state.logs.searched_log.GetFront().index)
+                    if (row_idx == searched_log_state.index)
                     {
                         UIHelpers::PushFoundRowStyles();
                     }
@@ -190,7 +222,7 @@ void LogsViewLayer::RenderLogsTable()
 
         for (auto const& range : ranges)
         {
-            LOG_DEBUG("Front request => start {} | end {}", range.begin, range.end);
+            LOG_DEBUG("Request => start {} | end {}", range.begin, range.end);
         }
 
         Dispatch(

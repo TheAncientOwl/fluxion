@@ -5,7 +5,7 @@
 ///
 /// @file Formatters.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief IO related utilities.
 ///
 
@@ -13,6 +13,7 @@
 
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -54,6 +55,25 @@ struct formatter<std::shared_ptr<T>> : std::formatter<std::string_view>
         return std::formatter<std::string_view>::format(std::format("{}", *ptr), ctx);
     }
 };
+
+template <typename T>
+struct formatter<std::optional<T>> : std::formatter<std::string_view>
+{
+    auto format(const std::optional<T>& opt, format_context& ctx) const
+    {
+        std::string s = "";
+        if (static_cast<bool>(opt))
+        {
+            s = std::format("{}", *opt);
+        }
+        else
+        {
+            s = "---";
+        }
+        return std::formatter<std::string_view>::format(s, ctx);
+    }
+};
+
 } // namespace std
 
 // ==========================================================================

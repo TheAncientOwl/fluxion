@@ -119,7 +119,6 @@ struct SharedFilterMetadata
 struct SearchedLog
 {
     std::optional<std::size_t> index{std::nullopt};
-    bool scrolled_to{false};
 };
 
 }; // namespace Logs

@@ -504,7 +504,6 @@ void handle<EFilterActionType::NextLog>(AppState& application_state, Payloads::S
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [&](Data::Logs::SearchedLog& searched_log) {
             searched_log.index = application_state.logs_plugin->GetNextLog(payload.filter_id);
-            searched_log.scrolled_to = false;
             LOG_INFO("NextSearched log index == {}", searched_log.index ? *searched_log.index : 0);
         });
 }
@@ -516,7 +515,6 @@ void handle<EFilterActionType::PrevLog>(AppState& application_state, Payloads::S
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [&](Data::Logs::SearchedLog& searched_log) {
             searched_log.index = application_state.logs_plugin->GetPrevLog(payload.filter_id);
-            searched_log.scrolled_to = false;
             LOG_INFO("PrevSearched log index == {}", searched_log.index ? *searched_log.index : 0);
         });
 }
