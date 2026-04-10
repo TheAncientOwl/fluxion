@@ -1,0 +1,94 @@
+@startuml Graphite Renderer Workflow
+
+!theme crt-amber
+
+title Graphite Renderer - Code Flow and Actions
+
+participant "Application" as application
+participant "Renderer Factory" as factory
+participant "VulkanRenderer" as vulkan
+participant "MetalRenderer" as metal
+participant "Graphics API" as gfx
+participant "ImGui Backend" as imgui
+participant "Window" as window
+
+== Renderer Creation ==
+application -> factory: CreateRenderer()
+alt USE_VULKAN
+  factory -> vulkan: new VulkanRenderer()
+  vulkan --> factory: VulkanRenderer instance
+  factory --> application: unique_ptr<IRenderer>
+else USE_METAL
+  factory -> metal: new MetalRenderer()
+  metal --> factory: MetalRenderer instance
+  factory --> application: unique_ptr<IRenderer>
+end
+
+== Initialization ==
+application -> vulkan: Init(WindowConfiguration)
+vulkan -> gfx: vkCreateInstance()
+vulkan -> gfx: vkPickPhysicalDevice()
+vulkan -> gfx: vkCreateDevice()
+vulkan -> imgui: ImGui_ImplVulkan_Init()
+vulkan --> application: Initialization complete
+
+alt Metal Path
+  application -> metal: Init(WindowConfiguration)
+  metal -> gfx: MTLCreateSystemDefaultDevice()
+  metal -> gfx: device.newCommandQueue()
+  metal -> imgui: ImGui_ImplMetal_Init()
+  metal --> application: Initialization complete
+end
+
+== Render Loop ==
+application -> vulkan: Render(IRenderable)
+
+loop Frame
+  vulkan -> window: glfwPollEvents()
+  vulkan -> imgui: ImGui_ImplVulkan_NewFrame()
+  vulkan -> imgui: ImGui::NewFrame()
+  
+  vulkan -> application: renderable->Render()
+  application -> imgui: ImGui rendering
+  imgui --> application: Complete
+  
+  vulkan -> imgui: ImGui::Render()
+  vulkan -> gfx: vkQueueSubmit()
+  vulkan -> window: glfwSwapBuffers()
+end
+
+== Cleanup ==
+application -> vulkan: Cleanup()
+vulkan -> imgui: ImGui_ImplVulkan_Shutdown()
+vulkan -> gfx: vkDestroyDevice()
+vulkan -> gfx: vkDestroyInstance()
+vulkan --> application: Cleanup complete
+
+alt Metal Path
+  application -> metal: Cleanup()
+  metal -> imgui: ImGui_ImplMetal_Shutdown()
+  metal -> gfx: Release resources
+  metal --> application: Cleanup complete
+end
+
+== Frame Rendering (Vulkan) ==
+note over vulkan
+  Each frame:
+  1. Wait for in-flight frames
+  2. Acquire next swap chain image
+  3. Record command buffers
+  4. Submit to queue
+  5. Present to screen
+end note
+
+== Frame Rendering (Metal) ==
+note over metal
+  Each frame:
+  1. Create render pass descriptor
+  2. Create command buffer
+  3. Render with Metal shaders
+  4. Commit command buffer
+  5. Present drawable
+end note
+
+@enduml

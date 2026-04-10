@@ -1,0 +1,97 @@
+@startuml Application Layers State Diagram
+
+!theme crt-amber
+left to right direction
+
+title Application Layers - State and Structure
+
+package "Fluxion::Application::Layers" {
+
+package "Core Layers" {
+    struct BaseLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+    }
+    
+    struct MainMenuLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+    }
+}
+
+package "Dev Layer" {
+    struct DevLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+        + is_active : bool
+    }
+    DevLayer --|> "TSoftCloseableLayer<AppState, EFluxionAction>" : inherits
+}
+
+package "Filters Layer" {
+    enum EFilterActionType {
+        + None
+        + ApplyFilters
+        + DisableFilters
+        + NextLog
+        + PrevLog
+        + AddTab
+        + RemoveTab
+        + DuplicateTab
+        + AddFilter
+        + RemoveFilter
+        + DuplicateFilter
+        + AddCondition
+        + RemoveCondition
+    }
+    
+    struct FiltersDataModify {
+        + tab_id : optional<UniqueID>
+        + filter_id : optional<UniqueID>
+        + condition_id : optional<UniqueID>
+    }
+    
+    struct SearchLog {
+        + filter_id : UniqueID
+    }
+    
+    struct FiltersLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+        + is_active : bool
+    }
+    FiltersLayer --|> "TSoftCloseableLayer<AppState, EFluxionAction>" : inherits
+    FiltersLayer --|> "TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>" : implements
+}
+
+package "LogsView Layer" {
+    enum ELogsViewActionLayerType {
+        + None
+        + UpdateVisibleLogs
+    }
+    
+    struct LogsViewLayerActionPayload {
+        + type : ELogsViewActionLayerType
+        + visible_logs_indices : vector<Range>
+    }
+    
+    struct LogsViewLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+        + is_active : bool
+    }
+    LogsViewLayer --|> "TSoftCloseableLayer<AppState, EFluxionAction>" : inherits
+    LogsViewLayer --|> "TDispatcher<LogsViewLayer, LogsViewLayerAction, LogsViewLayerActionPayload>" : implements
+}
+
+}
+
+BaseLayer --|> "TLayer<AppState, EFluxionAction>" : inherits
+MainMenuLayer --|> "TLayer<AppState, EFluxionAction>" : inherits
+
+@enduml

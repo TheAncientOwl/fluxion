@@ -1,0 +1,63 @@
+@startuml Graphite Logger State Diagram
+
+!theme crt-amber
+
+title Graphite Logger - Data Structures and State
+
+package "Logger" {
+    enum ELogLevel {
+        + Scope
+        + Info
+        + Warn
+        + Error
+        + Critical
+        + Debug
+        + Trace
+    }
+    
+    struct LogMessage {
+        + level : ELogLevel
+        + scope : string
+        + message : string
+        + time : chrono::system_clock::time_point
+    }
+    LogMessage --> ELogLevel : has level
+    
+    struct LogScopeFlags {
+        + flags : uint8_t
+        + level_mask : ELogLevel
+    }
+    LogScopeFlags --|> "TWithFlags<LogScopeFlags, ELogLevel>" : inherits
+    LogScopeFlags --> ELogLevel : has flag
+    
+    struct GlobalLogLevel {
+        + value : ELogLevel
+        + icon : string
+        + label : string
+        + display : string
+        + color : ImVec4
+    }
+    
+    struct Logger {
+        + m_running : atomic<bool>
+        + m_queue : queue<LogMessage>
+        + m_scope_enabled : unordered_map<string, LogScopeFlags>
+        + m_global_level_mask : atomic<uint8_t>
+        + m_log_file : ofstream
+        + m_worker : thread
+        + m_cv : condition_variable
+        + m_log_levels : vector<GlobalLogLevel>
+    }
+    Logger --> LogMessage : queues
+    Logger --> LogScopeFlags : manages scopes
+    Logger --> GlobalLogLevel : configuration
+    
+    struct ScopeLogger {
+        + m_scope : string_view
+        + m_tag : string
+        + m_start : chrono::time_point
+    }
+    ScopeLogger --> Logger : records timing
+}
+
+@enduml

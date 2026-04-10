@@ -1,0 +1,16 @@
+@startuml BaseLayer State Diagram
+
+!theme crt-amber
+
+title BaseLayer - State and Structure
+
+package "Fluxion::Application::Layers" {
+    struct BaseLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+    }
+    BaseLayer --|> "TLayer<AppState, EFluxionAction>" : inherits
+}
+
+@enduml

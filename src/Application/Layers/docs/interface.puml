@@ -1,0 +1,98 @@
+@startuml Application Layers Interface
+
+!theme crt-amber
+left to right direction
+
+title Application Layers - Interfaces and Methods
+
+package "Fluxion::Application::Layers" {
+
+package "Core Layers" {
+    class BaseLayer {
+        + <static> GetLayerName(): string_view
+        + GetName(): string_view override
+        + BaseLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+    }
+    
+    class MainMenuLayer {
+        + <static> GetLayerName(): string_view
+        + GetName(): string_view override
+        + MainMenuLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderMenu(): void
+    }
+}
+
+package "Dev Layer" {
+    class DevLayer {
+        + <static> GetLayerName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + DevLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderLogger(): void
+    }
+}
+
+package "Filters Layer" {
+    class FiltersLayer {
+        + <static> GetLayerName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + FiltersLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - MarkFiltersMetadataDirty(): void
+        - RenderToolbar(): void
+        - RenderTabs(): void
+        - RenderTab(tab_ptr): void
+        - RenderFilter(owning_tab_id, filter): void
+        - RenderCondition(owning_tab_id, owning_filter_id, condition): void
+    }
+}
+
+package "LogsView Layer" {
+    class LogsViewLayer {
+        + <static> GetLayerName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + LogsViewLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderLogsTable(): void
+    }
+}
+
+package "Action Handlers" {
+    class "Actions::FiltersLayer" {
+        {static} HandleFiltersLayerAction(state, action): void
+    }
+    
+    class "Actions::LogsViewLayer" {
+        {static} HandleLogsViewLayersLayerAction(state, action): void
+    }
+}
+
+}
+
+@enduml

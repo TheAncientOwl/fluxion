@@ -1,0 +1,35 @@
+@startuml LogsViewLayer State Diagram
+
+!theme crt-amber
+left to right direction
+
+title LogsViewLayer - State and Structure
+
+package "Fluxion::Application::Layers" {
+
+package "Actions" {
+    enum ELogsViewActionLayerType {
+        + None
+        + UpdateVisibleLogs
+    }
+    
+    struct LogsViewLayerActionPayload {
+        + type : ELogsViewActionLayerType
+        + visible_logs_indices : vector<Range>
+    }
+}
+
+package "Layer" {
+    struct LogsViewLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+        + is_active : bool
+    }
+    LogsViewLayer --|> "TSoftCloseableLayer<AppState, EFluxionAction>" : inherits
+    LogsViewLayer --|> "TDispatcher<LogsViewLayer, LogsViewLayerAction, LogsViewLayerActionPayload>" : implements
+}
+
+}
+
+@enduml

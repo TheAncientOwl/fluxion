@@ -1,0 +1,83 @@
+@startuml API Data State Diagram
+
+!theme crt-amber
+
+title API Data Structures and State
+
+package "Fluxion::API" {
+
+package "Data::Common" {
+    struct Highlight {
+        + foreground : ImVec4
+        + background : ImVec4
+    }
+}
+
+package "LogsPlugin::Data" {
+    struct OnEnableData {
+    }
+    
+    struct OnDisableData {
+    }
+
+    enum EConditionFlag {
+        + None
+        + IsRegex
+        + IsEquals
+        + IsCaseSensitive
+    }
+
+    struct Condition {
+        + column_index : size_t
+        + data : string
+    }
+    Condition --|> "TWithFlags<Condition, EConditionFlag>" : inherits
+    Condition --> EConditionFlag : uses
+
+    struct Filter {
+        + id : Graphite::UniqueID
+        + conditions : vector<Condition>
+        + colors : Highlight
+        + priority : uint8_t
+        + highlight_only : bool
+    }
+    Filter --> Highlight : uses
+    Filter --> Condition : contains
+    
+    struct ColumnDetails {
+        + id : Graphite::UniqueID
+        + display_name : string
+    }
+
+    struct Range {
+        + begin : size_t
+        + end : size_t
+    }
+
+    struct LogRowMetadata {
+        + filter_id : Graphite::UniqueID
+        + highlight_id : Graphite::UniqueID
+    }
+    
+    struct LogRow {
+        + data : vector<string>
+        + metadata : LogRowMetadata
+    }
+    LogRow --> LogRowMetadata : contains
+
+    struct IndexToLogRowMap {
+        + data : map<size_t, LogRow>
+    }
+    IndexToLogRowMap --> LogRow : contains
+
+    class IndexToLogRowMapWriter {
+        + IndexToLogRowMapWriter(IndexToLogRowMap& map)
+        + operator[](size_t index) : LogRow&
+        - m_map : IndexToLogRowMap
+    }
+    IndexToLogRowMapWriter --> IndexToLogRowMap : uses
+}
+
+}
+
+@enduml

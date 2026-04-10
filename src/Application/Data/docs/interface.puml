@@ -1,0 +1,89 @@
+@startuml Application Data Interface
+
+!theme crt-amber
+left to right direction
+
+title Application Data - Interfaces and Methods
+
+package "Fluxion" {
+
+package "Filters" {
+    struct Condition {
+        + id : UniqueID
+        + over_column_id : UniqueID
+        + data : string
+    }
+    Condition --|> "TWithFlags<Condition, EConditionFlag>" : inherits
+    
+    struct Filter {
+        + id : UniqueID
+        + name : string
+        + conditions : TCopyDoubleBuffer<vector<Condition::Ptr>>
+        + colors : Highlight
+        + priority : uint8_t
+    }
+    Filter --|> "TWithFlags<Filter, EFilterFlag>" : inherits
+    
+    struct Tab {
+        + id : UniqueID
+        + name : string
+        + filters : TCopyDoubleBuffer<vector<Filter::Ptr>>
+        + imgui_id : string
+        + UpdateImGuiID(): void
+    }
+    Tab --|> "TWithFlags<Tab, ETabFlag>" : inherits
+    
+    struct FiltersGeneralMetadata {
+    }
+    FiltersGeneralMetadata --|> "TWithFlags<FiltersGeneralMetadata, EFiltersMetadataFlag>" : inherits
+}
+
+package "Logs" {
+    struct VisibleLogsChunk {
+        + logs : IndexToLogRowMap
+    }
+    
+    struct SharedFilterMetadata {
+        + colors : Highlight
+    }
+    
+    struct SearchedLog {
+        + index : optional<size_t>
+    }
+}
+
+package "Application" {
+    struct AppState {
+        + logs_plugin : unique_ptr<IFluxionLogsPlugin>
+        + filters_tabs : Filters::Tab::Ptr[]
+        + filters_metadata : FiltersGeneralMetadata
+        + id_to_metadata : vector<Logs::SharedFilterMetadata>
+        + visible_chunk : VisibleLogsChunk
+        + searched_log : SearchedLog
+        + layers_active : LayersActive
+    }
+    
+    struct LayersActive {
+        + logs_view : bool
+        + debug : bool
+        + filters : bool
+    }
+    
+    note right of AppState
+      Thread-safe operations via:
+      - TCopyDoubleBuffer
+      - TCopyLockingDoubleBuffer
+      - TSwapDoubleBuffer
+    end note
+}
+
+package "DefaultState" {
+    class DefaultState {
+        + <static> Make(): AppState
+        + <static> MakeDefaultTabs(): vector<Tab::Ptr>
+    }
+}
+
+}
+
+@enduml

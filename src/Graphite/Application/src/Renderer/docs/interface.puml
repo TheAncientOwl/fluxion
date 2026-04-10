@@ -1,0 +1,64 @@
+@startuml Graphite Renderer Interface
+
+!theme crt-amber
+left to right direction
+
+title Graphite Renderer - Interfaces and Methods
+
+package "Renderer::Factory" {
+    class RendererFactory {
+        + <static>CreateRenderer(): unique_ptr<IRenderer>
+    }
+
+    note right of RendererFactory::CreateRenderer
+      Platform-specific factory:
+      - Creates VulkanRenderer on Vulkan platforms
+      - Creates MetalRenderer on macOS
+    end note
+}
+
+package "Renderer Interface" {
+    interface IRenderer {
+        + <static>CreateRenderer(): unique_ptr<IRenderer>
+        +Init(config): void
+        +Render(renderable): void
+        +Cleanup(): void
+    }
+    
+    interface IRenderable {
+        +Render(): void
+    }
+}
+
+package "Vulkan Backend" {
+    class VulkanRenderer {
+        +VulkanRenderer()
+        +~VulkanRenderer()
+        +Init(config): void override
+        +Render(renderable): void override
+        +Cleanup(): void override
+        - SetupVulkan(): void
+        - FrameRender(): void
+        - WaitForLastSubmittedFrame(): void
+        - ImguiVulkanInit(): void
+    }
+}
+
+package "Metal Backend" {
+    class MetalRenderer {
+        +MetalRenderer()
+        +~MetalRenderer()
+        +Init(config): void override
+        +Render(renderable): void override
+        +Cleanup(): void override
+        - SetupMetal(): void
+        - FrameRender(): void
+        - ImguiMetalInit(): void
+    }
+}
+
+IRenderer <|-- VulkanRenderer: implements
+IRenderer <|-- MetalRenderer: implements
+RendererFactory::CreateRenderer --> IRenderer: returns
+
+@enduml

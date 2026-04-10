@@ -1,0 +1,147 @@
+@startuml Application Layers Workflow
+
+!theme crt-amber
+
+title Application Layers - Code Flow and Actions
+
+participant "Application" as app
+participant "BaseLayer" as base
+participant "DevLayer" as dev
+participant "FiltersLayer" as filters
+participant "LogsViewLayer" as logs
+participant "AppState" as state
+
+== Layer Initialization ==
+app -> base: AddLayer<BaseLayer>(app, z_index)
+base -> base: OnAdd()
+base --> app: Layer added
+
+app -> dev: AddLayer<DevLayer>(app, z_index)
+dev -> dev: OnAdd()
+dev --> app: Layer added
+
+app -> filters: AddLayer<FiltersLayer>(app, z_index)
+filters -> filters: OnAdd()
+filters --> app: Layer added
+
+app -> logs: AddLayer<LogsViewLayer>(app, z_index)
+logs -> logs: OnAdd()
+logs --> app: Layer added
+
+== Render Loop ==
+app -> base: OnIterate()
+base --> app: Iteration done
+
+app -> dev: OnIterate()
+note right of dev
+  Updates debug state
+  if is_active
+end note
+dev --> app: Iteration done
+
+app -> filters: OnIterate()
+note right of filters
+  Processes pending actions
+  from TDispatcher queue
+end note
+filters --> app: Iteration done
+
+app -> logs: OnIterate()
+note right of logs
+  Processes pending actions
+  from TDispatcher queue
+end note
+logs --> app: Iteration done
+
+== Rendering ==
+app -> base: OnRender()
+base --> app: Menu rendered
+
+app -> dev: OnRender()
+alt is_active
+  dev -> dev: RenderLogger()
+  dev --> app: Debug UI rendered
+end
+
+app -> filters: OnRender()
+alt is_active
+  filters -> filters: RenderToolbar()
+  filters -> filters: RenderTabs()
+  filters -> state: Get filters state
+  state --> filters: Filters data
+  filters -> filters: RenderFilter(s)
+  filters -> filters: RenderCondition(s)
+  filters --> app: Filters UI rendered
+end
+
+app -> logs: OnRender()
+alt is_active
+  logs -> logs: RenderLogsTable()
+  logs -> state: Get visible logs
+  state --> logs: LogRow data
+  logs --> app: Logs table rendered
+end
+
+== Filter Actions ==
+note right of filters
+  User action in FiltersLayer
+end note
+filters -> filters: Action pushed to dispatcher
+filters -> filters: OnIterate() processes action
+
+alt ApplyFilters
+  filters -> state: Update filter state
+  state --> filters: Filters applied
+else DisableFilters
+  filters -> state: Clear filter state
+  state --> filters: Filters cleared
+else AddTab
+  filters -> state: Add new Tab
+  state --> filters: Tab created
+else RemoveTab
+  filters -> state: Remove Tab
+  state --> filters: Tab removed
+else AddFilter
+  filters -> state: Add Filter to Tab
+  state --> filters: Filter created
+else AddCondition
+  filters -> state: Add Condition to Filter
+  state --> filters: Condition created
+else NextLog/PrevLog
+  filters -> state: Search next/prev log
+  state --> filters: Log index found
+end
+
+== LogsView Actions ==
+note right of logs
+  Action: UpdateVisibleLogs
+  Contains Range indices
+end note
+logs -> logs: Action pushed to dispatcher
+logs -> logs: OnIterate() processes action
+logs -> state: Update visible logs chunk
+state --> logs: Logs chunk updated
+
+== Toggle Soft-Closeable Layers ==
+app -> dev: SetIsActive(false)
+dev -> state: Mark dev layer inactive
+state --> dev: State updated
+
+app -> filters: SetIsActive(true)
+filters -> state: Mark filters layer active
+state --> filters: State updated
+
+== Cleanup ==
+app -> logs: OnRemove()
+logs --> app: Cleanup done
+
+app -> filters: OnRemove()
+filters --> app: Cleanup done
+
+app -> dev: OnRemove()
+dev --> app: Cleanup done
+
+app -> base: OnRemove()
+base --> app: Cleanup done
+
+@enduml

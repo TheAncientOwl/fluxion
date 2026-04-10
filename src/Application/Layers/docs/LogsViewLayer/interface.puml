@@ -1,0 +1,33 @@
+@startuml LogsViewLayer Interface
+
+!theme crt-amber
+
+title LogsViewLayer - Interface and Methods
+
+package "Fluxion::Application::Layers" {
+
+package "LogsViewLayer" {
+    class LogsViewLayer {
+        + <static>GetLayerName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + LogsViewLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderLogsTable(): void
+    }
+}
+
+package "Action Handler" {
+    class "Actions::LogsViewLayer" {
+        {static} HandleLogsViewLayersLayerAction(state, action): void
+    }
+}
+
+}
+
+@enduml

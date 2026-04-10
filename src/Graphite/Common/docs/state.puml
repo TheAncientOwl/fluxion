@@ -1,0 +1,71 @@
+@startuml Graphite Common State Diagram
+
+!theme crt-amber
+left to right direction
+
+title Graphite Common - Data Structures and State
+
+package "Graphite" {
+
+package "DataStructures" {
+    enum EDoubleBufferSyncPolicy {
+        + Swap
+        + Copy
+        + SwapLocking
+        + CopyLocking
+    }
+    
+    struct TDoubleBuffer<T, Policy> {
+        + m_front : T
+        + m_back : T
+        + m_has_changes : atomic<bool>
+        + sync_policy : EDoubleBufferSyncPolicy
+    }
+    TDoubleBuffer --> EDoubleBufferSyncPolicy : uses
+    
+    struct TThreadSafeQueue<T> {
+        + m_queue : queue<T>
+        + m_mutex : mutex
+        + m_cv : condition_variable
+    }
+    
+    struct DynArray<T> {
+        + data : T*
+        + capacity : size_t
+        + size : size_t
+    }
+}
+
+package "Utility" {
+    struct UniqueID {
+        + data : array<uint8_t, 16>
+    }
+    
+    struct TWithFlags<Derived, Enum> {
+        + flags : underlying_type_t<Enum>
+    }
+    
+    struct TAppAction<ActionEnum> {
+        + type : ActionEnum
+        + payload : any
+    }
+    
+    struct RefCounted {
+        + m_ref_count : atomic<uint32_t>
+    }
+    
+    struct Ref<T> {
+        + m_ptr : T*
+    }
+    Ref --> RefCounted : manages
+}
+
+package "Plugin" {
+    struct DynamicLibrary {
+        + handle : LibHandle
+    }
+}
+
+}
+
+@enduml

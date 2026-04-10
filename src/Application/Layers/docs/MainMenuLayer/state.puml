@@ -1,0 +1,16 @@
+@startuml MainMenuLayer State Diagram
+
+!theme crt-amber
+
+title MainMenuLayer - State and Structure
+
+package "Fluxion::Application::Layers" {
+    struct MainMenuLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+    }
+    MainMenuLayer --|> "TLayer<AppState, EFluxionAction>" : inherits
+}
+
+@enduml

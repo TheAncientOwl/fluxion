@@ -1,0 +1,40 @@
+@startuml FiltersLayer Interface
+
+!theme crt-amber
+
+title FiltersLayer - Interface and Methods
+
+package "Fluxion::Application::Layers" {
+
+package "FiltersLayer" {
+    class FiltersLayer {
+        + <static>GetLayerName(): string_view
+
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + FiltersLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+
+        - MarkFiltersMetadataDirty(): void
+        - RenderToolbar(): void
+        - RenderTabs(): void
+        - RenderTab(tab_ptr): void
+        - RenderFilter(owning_tab_id, filter): void
+        - RenderCondition(owning_tab_id, owning_filter_id, condition): void
+    }
+}
+
+package "Action Handler" {
+    class "Actions::FiltersLayer" {
+        {static} HandleFiltersLayerAction(state, action): void
+    }
+}
+
+}
+
+@enduml

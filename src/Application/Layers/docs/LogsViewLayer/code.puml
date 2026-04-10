@@ -1,0 +1,79 @@
+@startuml LogsViewLayer Workflow
+
+!theme crt-amber
+
+title LogsViewLayer - Code Flow and Actions
+
+participant "Application" as app
+participant "LogsViewLayer" as logs
+participant "TDispatcher" as dispatch
+participant "AppState" as state
+participant "IFluxionLogsPlugin" as plugin
+
+== Initialization ==
+app -> logs: AddLayer<LogsViewLayer>(app, z_index)
+logs -> logs: OnAdd()
+logs -> state: Get application state
+state --> logs: Current state
+logs --> app: Layer added
+
+== Render Loop ==
+app -> logs: OnIterate()
+logs -> dispatch: Process action queue
+alt UpdateVisibleLogs action
+  dispatch -> logs: Call action handler
+  logs -> state: Update visible logs chunk
+  note right of logs
+    Contains Range indices
+    for visible log rows
+  end note
+  state --> logs: State updated
+end
+logs --> app: Iteration done
+
+app -> logs: OnRender()
+alt is_active == true
+  logs -> logs: RenderLogsTable()
+  
+  logs -> state: Get visible logs chunk
+  state --> logs: VisibleLogsChunk {logs}
+  
+  logs -> state: Get table header
+  state --> logs: Column definitions
+  
+  loop For each visible LogRow
+    logs -> logs: Render row with columns
+    note right of logs
+      Display filter colors
+      Highlight colors
+      Log data
+    end note
+  end
+  
+  logs --> app: Logs table rendered
+else is_active == false
+  logs --> app: Layer hidden
+end
+
+== Scrolling & Range Updates ==
+note right of logs
+  User scrolls table
+  Visible range changes
+  Dispatcher pushes action
+end note
+
+logs -> dispatch: Push UpdateVisibleLogs action
+dispatch -> plugin: RequestLogsForRanges()
+plugin --> dispatch: LogRow data returned
+dispatch -> state: VisibleLogsChunk updated
+
+== Toggle Visibility ==
+app -> logs: SetIsActive(true/false)
+logs -> state: Mark layer active/inactive
+state --> logs: State updated
+
+== Cleanup ==
+app -> logs: OnRemove()
+logs --> app: Cleanup complete
+
+@enduml

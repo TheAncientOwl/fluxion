@@ -1,0 +1,62 @@
+@startuml Application Data Workflow
+
+!theme crt-amber
+
+title Application Data - Code Flow and Actions
+
+participant "Application" as app
+participant "AppState" as state
+participant "Filters" as filters
+participant "Logs" as logs
+participant "DoubleBuffer" as buffer
+
+== Initialization ==
+app -> state: Create AppState
+app -> state: DefaultState::Make()
+state -> filters: Create default tabs
+filters --> state: Tab list ready
+
+== Filter Management ==
+app -> state: Add new Filter to Tab
+state -> buffer: Get write buffer
+buffer --> state: Buffer ready
+state -> filters: Create Filter
+filters --> state: Filter created
+state -> buffer: Write filter to buffer
+buffer --> state: Swap buffers
+
+== Condition Management ==
+app -> state: Add Condition to Filter
+state -> filters: Condition data
+filters --> state: Condition created
+
+== Active Flags ==
+app -> state: SetFlag(IsActive) on Filter
+state -> filters: Update filter status
+filters --> state: Status updated
+
+== Layer Visibility ==
+app -> state: SetLayerActive(logs_view, true)
+state --> app: Layer state updated
+
+== Search Operation ==
+app -> state: Search for log index
+state -> logs: Update SearchedLog
+logs --> state: Index found/not found
+
+== Get Visible Logs ==
+app -> state: GetVisibleChunk()
+state -> buffer: Get read buffer
+buffer --> state: Current chunk
+state --> app: Return VisibleLogsChunk
+
+== Plugin Integration ==
+app -> state: GetIFluxionLogsPlugin()
+state --> app: IFluxionLogsPlugin*
+app -> state: Apply filters via plugin
+state -> filters: Get active filters
+filters --> state: Filter vector
+app -> state: Update visible chunk
+state -> logs: VisibleLogsChunk updated
+
+@enduml

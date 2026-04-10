@@ -1,0 +1,87 @@
+@startuml Graphite Application Workflow
+
+!theme crt-amber
+
+title Graphite Application - Code Flow and Actions
+
+participant "Main" as main
+participant "Application" as app
+participant "Worker Thread" as worker
+participant "Layers" as layers
+participant "Renderer" as renderer
+participant "Action Queue" as queue
+
+== Application Initialization ==
+main -> app: CreateApplication(config, state)
+app --> main: shared_ptr<App>
+
+main -> app: Run()
+app -> app: Init()
+app -> renderer: CreateRenderer()
+renderer --> app: IRenderer instance
+app -> renderer: Init(WindowConfiguration)
+app -> app: Create worker thread
+app -> app: AppInit() virtual
+app --> main: Init complete
+
+== Render Loop ==
+renderer -> app: Render() (every frame)
+
+note right of app
+  Renderer calls Render()
+  which triggers OnIterate() + OnRender()
+end note
+
+== Layer Iteration ==
+app -> app: IterateLayers()
+app -> layers: OnIterate() [depth order]
+layers --> app: Iteration complete
+
+== Action Processing ==
+worker -> queue: WaitAndPop(action)
+queue --> worker: Next action or empty
+worker -> app: ProcessAction(action)
+app -> layers: OnAction(action)
+layers --> app: Action handled
+
+== Layer Rendering ==
+app -> app: RenderLayers()
+app -> layers: OnRender() [depth order]
+layers --> renderer: ImGui rendering
+renderer --> app: Frame rendered
+
+== Layer Management ==
+main -> app: AddLayer<LayerImpl>(args)
+app -> layers: Create LayerImpl
+app -> layers: OnAdd()
+app -> app: Sort layers by ZIndex
+app --> main: Return UniqueID
+
+== Soft Close Layer ==
+main -> app: ForEachLayer<TSoftCloseableLayer>(callback)
+app -> layers: dynamic_cast<TSoftCloseableLayer*>
+app -> layers: callback(layer, is_last)
+layers -> layers: SetIsActive(false)
+app --> main: Iteration complete
+
+== Worker Loop ==
+activate worker
+loop Running
+  worker -> app: GetApplicationState()
+  app --> worker: State reference
+  worker -> queue: Process actions
+  queue --> worker: Next action
+  worker -> app: PushAction(type, payload)
+  app -> queue: Enqueue action
+  queue --> app: Queued
+end
+deactivate worker
+
+== Shutdown ==
+app -> app: Shutdown()
+app -> app: Worker loop stops
+app -> layers: OnRemove() [reverse depth]
+app -> renderer: Cleanup()
+app --> main: Shutdown complete
+
+@enduml

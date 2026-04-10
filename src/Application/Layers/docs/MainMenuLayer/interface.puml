@@ -1,0 +1,20 @@
+@startuml MainMenuLayer Interface
+
+!theme crt-amber
+
+title MainMenuLayer - Interface and Methods
+
+package "Fluxion::Application::Layers" {
+    class MainMenuLayer {
+        + <static>GetLayerName(): string_view
+        +GetName(): string_view override
+        +MainMenuLayer(application, z_index)
+        +OnAdd(): void override
+        +OnIterate(): void override
+        +OnRender(): void override
+        +OnRemove(): void override
+        - RenderMenu(): void
+    }
+}
+
+@enduml

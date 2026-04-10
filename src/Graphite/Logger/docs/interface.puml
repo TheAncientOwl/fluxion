@@ -1,0 +1,49 @@
+@startuml Graphite Logger Interface
+
+!theme crt-amber
+left to right direction
+
+title Graphite Logger - Methods and Interface
+
+package "Logger" {
+    class Logger {
+        + <static> Instance(): Logger&
+
+        + DefineLogScope(scope): string_view
+        + Log<Args>(level, scope, fmt, args): void
+        + SaveConfig(): void
+        + LoadConfig(): void
+        + GetScopes(): ScopeEnabledMap&
+
+        + <static> GetLevels(): LogLevels&
+
+        + SetScopeEnabled(scope, enabled): void
+        + SetScopeLevelEnabled(scope, level, enabled): void
+        + SetLevelState(level, enabled): void
+        + IsLevelEnabled(level): bool
+        
+        - Enqueue(msg): void
+        - ProcessQueue(): void
+        - PrintMessage(msg): void
+        - GetDefaultScopeFlags(): LogScopeFlags
+        - GetConfigFilePath(): path
+        - GetLogFilePath(): path
+    }
+    
+    class ScopeLogger {
+        + ScopeLogger(tag, scope)
+        + ~ScopeLogger()
+    }
+    
+    note right of Logger
+      Singleton pattern
+      Thread-safe logging
+      Worker thread for async operations
+      File and console output
+      Per-scope and per-level filtering
+    end note
+}
+
+Logger --> ScopeLogger: creates
+
+@enduml

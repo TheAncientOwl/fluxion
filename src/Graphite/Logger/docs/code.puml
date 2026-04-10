@@ -1,0 +1,69 @@
+@startuml Graphite Logger Workflow
+
+!theme crt-amber
+
+title Graphite Logger - Code Flow and Actions
+
+participant "User Code" as code
+participant "Logger Singleton" as logger
+participant "Scope Checker" as checker
+participant "Worker Thread" as worker
+participant "Log File" as file
+
+== Initialization ==
+note left of logger
+  Logger::Instance() - Lazy singleton
+  Initialize worker thread
+  Load configuration
+end note
+
+== Scope Definition ==
+code -> logger: DefineLogScope("scope_name")
+logger --> code: scope reference
+
+== Log Message ==
+code -> logger: Log(level, scope, format, args)
+logger -> checker: IsLevelEnabled(level)?
+checker --> logger: yes/no
+alt level enabled
+  logger -> checker: IsScope enabled?
+  checker --> logger: yes/no
+  alt scope enabled
+    logger -> logger: Format message
+    logger -> logger: Enqueue(LogMessage)
+  end
+end
+
+== Worker Thread ==
+activate worker
+loop Process Queue
+  worker <- logger: Get message from queue
+  worker -> logger: PrintMessage(msg)
+  logger -> file: Write to log file
+  logger -> code: Write to console
+end
+deactivate worker
+
+== Configuration ==
+code -> logger: SetScopeEnabled(scope, enabled)
+logger -> logger: Update m_scope_enabled
+logger -> logger: Save configuration
+
+code -> logger: SetLevelState(level, enabled)
+logger -> logger: Update m_global_level_mask
+
+== Scope Timing ==
+code -> code: ScopeLogger scope("tag", __PRETTY_FUNCTION__)
+note right of code
+  Automatically logs:
+  - Function entry (tag at Scope level)
+  - Function exit with duration
+end note
+
+== Cleanup ==
+code -> logger: Destructor called
+logger -> worker: Stop worker thread
+worker -> file: Close file
+logger --> code: Cleanup complete
+
+@enduml

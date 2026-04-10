@@ -1,0 +1,34 @@
+@startuml MainMenuLayer Workflow
+
+!theme crt-amber
+
+title MainMenuLayer - Code Flow and Actions
+
+participant "Application" as app
+participant "MainMenuLayer" as menu
+participant "AppState" as state
+
+== Initialization ==
+app -> menu: AddLayer<MainMenuLayer>(app, z_index)
+menu -> menu: OnAdd()
+menu --> app: Layer added
+
+== Render Loop ==
+app -> menu: OnIterate()
+menu -> state: Get application state
+state --> menu: State reference
+menu --> app: Iteration done
+
+app -> menu: OnRender()
+menu -> menu: RenderMenu()
+note right of menu
+  Renders main menu bar
+  File, Edit, View, etc.
+end note
+menu --> app: Menu rendered
+
+== Cleanup ==
+app -> menu: OnRemove()
+menu --> app: Cleanup complete
+
+@enduml

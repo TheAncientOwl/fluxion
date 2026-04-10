@@ -1,0 +1,92 @@
+@startuml Graphite Common Workflow
+
+!theme crt-amber
+
+title Graphite Common - Code Flow and Actions
+
+participant "Producer Thread" as prod
+participant "Consumer Thread" as cons
+participant "TThreadSafeQueue" as queue
+participant "TDoubleBuffer" as buffer
+participant "Main Thread" as main
+
+== Thread-Safe Queue Operations ==
+prod -> queue: Push(item)
+queue -> queue: Lock mutex
+queue -> queue: Add to std::queue
+queue -> queue: Notify condition_variable
+queue --> prod: Return
+
+cons -> queue: WaitAndPop(out_item)
+queue -> queue: Acquire lock
+queue -> queue: Wait for condition_variable
+queue -> queue: Check if empty or shutdown
+alt Not empty
+  queue -> queue: Get front item
+  queue -> queue: Pop from queue
+  queue --> cons: Return true & item
+else Empty and shutdown
+  queue --> cons: Return false
+end
+
+== Double Buffer Read/Write ==
+prod -> buffer: GetBack()
+buffer --> prod: Back buffer reference
+
+note right of buffer
+  Producer writes to back buffer
+  Consumer reads from front buffer
+  No locks during read/write
+end note
+
+prod -> buffer: IsDirty()
+buffer --> prod: bool (has changes)
+
+== Buffer Synchronization ==
+prod -> buffer: SwapFrontBack() [locked]
+buffer -> buffer: Acquire writer lock
+buffer -> buffer: std::swap(m_front, m_back)
+buffer -> buffer: Release lock
+buffer --> prod: Complete
+
+== Apply with Lock ==
+prod -> buffer: ApplyBackWithLock(callable)
+buffer -> buffer: Acquire lock
+buffer -> callable: callable(m_back)
+buffer -> buffer: Release lock
+buffer --> prod: Complete
+
+== Reference Counting ==
+main -> buffer: Create Ref<Item>
+buffer -> buffer: IncrementRefCount()
+buffer --> main: Ref<Item>
+
+main -> buffer: Copy Ref<Item>
+buffer -> buffer: IncrementRefCount()
+buffer --> main: Ref<Item> (copy)
+
+main -> buffer: Delete Ref<Item>
+buffer -> buffer: DecrementRefCount()
+alt count == 0
+  buffer -> buffer: Destroy object
+end
+
+== Dynamic Library Loading ==
+main -> queue: DynamicLibrary(plugin_path)
+queue -> queue: dlopen/LoadLibrary
+queue --> main: DynamicLibrary handle
+
+main -> queue: getSymbol("CreateFunction")
+queue -> queue: dlsym/GetProcAddress
+queue --> main: void*
+
+== Unique ID Management ==
+main -> main: UniqueID::Generate()
+main -> main: Create UUID (16 bytes)
+main --> main: Return UniqueID
+
+main -> main: id.ToString()
+main -> main: Format as UUID string
+main --> main: Return "8f674453-a065-4138-969d-10b6b83b94cc"
+
+@enduml

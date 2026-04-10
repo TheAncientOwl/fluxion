@@ -1,0 +1,37 @@
+@startuml API Logs Plugin Interface
+
+!theme crt-amber
+left to right direction
+
+title IFluxionLogsPlugin Interface and Methods
+
+package "Fluxion::API::LogsPlugin" {
+    interface IFluxionLogsPlugin {
+        + GetDisplayName(): string_view
+        + OnEnable(OnEnableData): void
+        + OnDisable(OnDisableData): void
+        + RenderMenuLayer(): void
+
+        + ImportLogs(path): void
+        + GetTableHeader(): vector<ColumnDetails>
+        + GetTotalLogs(): size_t
+    
+        + ApplyFilters(filters, highlight_only): void
+        + DisableFilters(): void
+        + GetLogs(ranges, out_logs): void
+
+        + GetNextLog(filter_id): optional<size_t>
+        + GetPrevLog(filter_id): optional<size_t>
+    }
+}
+
+note right of IFluxionLogsPlugin
+  Factory function: CreateFluxionLogsPlugin()
+  Responsible for:
+  - Log I/O operations
+  - Filtering and searching
+  - Column-based rendering
+  - Navigation through filtered logs
+end note
+
+@enduml

@@ -1,0 +1,118 @@
+@startuml Application Data State Diagram
+
+!theme crt-amber
+
+title Application Data Structures - State
+
+package "Fluxion" {
+
+package "Filters" {
+    enum EConditionFlag {
+        + None
+        + IsRegex
+        + IsEquals
+        + IsCaseSensitive
+    }
+    
+    struct Condition {
+        + id : UniqueID
+        + over_column_id : UniqueID
+        + data : string
+        + flags : EConditionFlag
+    }
+    Condition --|> "TWithFlags<Condition, EConditionFlag>" : inherits
+    Condition --> EConditionFlag : uses
+    
+    enum EFilterFlag {
+        + None
+        + IsActive
+        + IsHighlightOnly
+        + IsCollapsed
+    }
+    
+    struct Filter {
+        + id : UniqueID
+        + name : string
+        + conditions : TCopyDoubleBuffer<vector<Condition>>
+        + colors : Highlight
+        + priority : uint8_t
+        + flags : EFilterFlag
+    }
+    Filter --|> "TWithFlags<Filter, EFilterFlag>" : inherits
+    Filter --> EFilterFlag : uses
+    Filter --> Condition : contains
+    Filter --> Highlight : uses
+    
+    enum ETabFlag {
+        + None
+        + IsActive
+    }
+    
+    struct Tab {
+        + id : UniqueID
+        + name : string
+        + filters : TCopyDoubleBuffer<vector<Filter>>
+        + imgui_id : string
+        + flags : ETabFlag
+    }
+    Tab --|> "TWithFlags<Tab, ETabFlag>" : inherits
+    Tab --> ETabFlag : uses
+    Tab --> Filter : contains
+    
+    enum EFiltersMetadataFlag {
+        + None
+        + Applied
+        + SavedToDisk
+    }
+    
+    struct FiltersGeneralMetadata {
+        + flags : EFiltersMetadataFlag
+    }
+    FiltersGeneralMetadata --|> "TWithFlags<FiltersGeneralMetadata, EFiltersMetadataFlag>" : inherits
+    FiltersGeneralMetadata --> EFiltersMetadataFlag : uses
+}
+
+package "Logs" {
+    struct SearchedLog {
+        + index : optional<size_t>
+    }
+    
+    struct VisibleLogsChunk {
+        + logs : IndexToLogRowMap
+    }
+    
+    struct SharedFilterMetadata {
+        + colors : Highlight
+    }
+}
+
+package "Application" {
+    struct AppState {
+        + logs_plugin : unique_ptr<IFluxionLogsPlugin>
+        + filters_tabs : Filters::Tab::Ptr[]
+        + filters_metadata : FiltersGeneralMetadata
+        + id_to_metadata : vector<Logs::SharedFilterMetadata>
+        + visible_chunk : VisibleLogsChunk
+        + searched_log : SearchedLog
+        + layers_active : LayersActive
+    }
+    AppState --> Tab : manages filters
+    AppState --> VisibleLogsChunk : displays logs
+    AppState --> SearchedLog : tracks search
+    
+    struct LayersActive {
+        + logs_view : bool
+        + debug : bool
+        + filters : bool
+    }
+    
+    enum EFluxionAction {
+        + None
+        + FilterAction
+        + LogsViewLayerAction
+    }
+}
+
+}
+
+@enduml

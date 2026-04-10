@@ -1,0 +1,62 @@
+@startuml Graphite Renderer State Diagram
+
+!theme crt-amber
+left to right direction
+
+title Graphite Renderer - Data Structures and State
+
+package "Renderer" {
+    interface IRenderable {
+        +Render(): void
+    }
+    
+    interface IRenderer {
+        +Init(config): void
+        +Render(renderable): void
+        +Cleanup(): void
+    }
+}
+
+package "Vulkan Backend" {
+    struct "VulkanRenderer::State" as VulkanState {
+        + instance : VkInstance
+        + physicalDevice : VkPhysicalDevice
+        + device : VkDevice
+        + queueFamily : uint32_t
+        + queue : VkQueue
+        + pipelineCache : VkPipelineCache
+        + descriptorPool : VkDescriptorPool
+        + mainWindowData : ImGui_ImplVulkanH_Window
+        + minImageCount : uint32_t
+        + swapChainRebuild : bool
+        + window : GLFWwindow*
+        + debugReport : VkDebugReportCallbackEXT
+    }
+    
+    class VulkanRenderer {
+        + m_state : State
+        + m_cleaned_up : bool
+    }
+    VulkanRenderer --|> IRenderer : implements
+    VulkanRenderer --> VulkanState : manages
+}
+
+package "Metal Backend" {
+    struct "MetalRenderer::State" as MetalState {
+        + device : MTLDevice*
+        + commandQueue : MTLCommandQueue*
+        + glfw_data : ImGui_ImplGlfw_Data*
+        + metal_data : ImGui_ImplMetal_Data*
+    }
+    
+    class MetalRenderer {
+        + m_state : unique_ptr<State>
+        + m_cleaned_up : bool
+    }
+    MetalRenderer --|> IRenderer : implements
+    MetalRenderer --> MetalState : manages
+}
+
+IRenderer --> IRenderable : renders
+
+@enduml

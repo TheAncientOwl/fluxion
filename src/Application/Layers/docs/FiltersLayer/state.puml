@@ -1,0 +1,50 @@
+@startuml FiltersLayer State Diagram
+
+!theme crt-amber
+
+title FiltersLayer - State and Structure
+
+package "Fluxion::Application::Layers" {
+
+package "Actions" {
+    enum EFilterActionType {
+        + None
+        + ApplyFilters
+        + DisableFilters
+        + NextLog
+        + PrevLog
+        + AddTab
+        + RemoveTab
+        + DuplicateTab
+        + AddFilter
+        + RemoveFilter
+        + DuplicateFilter
+        + AddCondition
+        + RemoveCondition
+    }
+    
+    struct FiltersDataModify {
+        + tab_id : optional<UniqueID>
+        + filter_id : optional<UniqueID>
+        + condition_id : optional<UniqueID>
+    }
+    
+    struct SearchLog {
+        + filter_id : UniqueID
+    }
+}
+
+package "Layer" {
+    struct FiltersLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+        + is_active : bool
+    }
+    FiltersLayer --|> "TSoftCloseableLayer<AppState, EFluxionAction>" : inherits
+    FiltersLayer --|> "TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>" : implements
+}
+
+}
+
+@enduml

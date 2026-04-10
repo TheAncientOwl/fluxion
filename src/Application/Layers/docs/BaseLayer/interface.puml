@@ -1,0 +1,19 @@
+@startuml BaseLayer Interface
+
+!theme crt-amber
+
+title BaseLayer - Interface and Methods
+
+package "Fluxion::Application::Layers" {
+    class BaseLayer {
+        + <static>GetLayerName(): string_view
+        +GetName(): string_view override
+        +BaseLayer(application, z_index)
+        +OnAdd(): void override
+        +OnIterate(): void override
+        +OnRender(): void override
+        +OnRemove(): void override
+    }
+}
+
+@enduml

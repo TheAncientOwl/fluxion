@@ -1,0 +1,17 @@
+@startuml DevLayer State Diagram
+
+!theme crt-amber
+
+title DevLayer - State and Structure
+
+package "Fluxion::Application::Layers" {
+    struct DevLayer {
+        + application : Ptr
+        + z_index : ZIndex
+        + layer_id : UniqueID
+        + is_active : bool
+    }
+    DevLayer --|> "TSoftCloseableLayer<AppState, EFluxionAction>" : inherits
+}
+
+@enduml

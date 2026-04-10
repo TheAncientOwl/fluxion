@@ -1,0 +1,47 @@
+@startuml Graphite Application State Diagram
+
+!theme crt-amber
+left to right direction
+
+title Graphite Application - Data Structures and State
+
+package "Graphite" {
+
+package "Application" {
+    struct WindowConfiguration {
+        + width : uint32_t
+        + height : uint32_t
+        + title : string
+    }
+    
+    struct TGraphiteApplication<AppState, ActionEnum> {
+        + m_renderer : Renderer::Ptr
+        + m_app_state : AppState
+        + m_layers : vector<Layer::Ptr>
+        + m_action_queue : TThreadSafeQueue<TAppAction<ActionEnum>>
+        + m_worker_thread : thread
+        + m_window_configuration : WindowConfiguration
+    }
+    TGraphiteApplication --> WindowConfiguration : configures window
+    TGraphiteApplication --> TLayer : manages layers
+    TGraphiteApplication --> IRenderer : uses renderer
+    TGraphiteApplication --|> IRenderable : implements
+}
+
+package "Renderer" {
+    interface IRenderable {
+        +Render(): void
+    }
+    
+    interface IRenderer {
+        +Init(config): void
+        +Render(renderable): void
+        +Cleanup(): void
+    }
+}
+
+TLayer --> TGraphiteApplication : references application
+
+}
+
+@enduml

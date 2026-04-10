@@ -1,0 +1,79 @@
+@startuml Graphite Application Interface
+
+!theme crt-amber
+left to right direction
+
+title Graphite Application - Interfaces and Methods
+
+package "Graphite" {
+
+package "Application" {
+    class "TGraphiteApplication<AppState, ActionEnum>" as TGA {
+        + <static> CreateApplication(): shared_ptr<AppImpl>
+
+        + Run(): void
+        + GetApplicationState(): AppState&
+        + PushAction(type, payload): void
+        + AddLayer<LayerImpl>(args...): UniqueID const&
+        + ForEachLayer<LayerType>(func): void
+
+        - <protected> TGraphiteApplication(config, state)
+
+        - AppInit(): void
+        - Init(): void
+        - Render(): void
+        - WorkerLoop(): void
+        - IterateLayers(): void
+        - RenderLayers(): void
+    }
+}
+
+package "Layers" {
+    class "TLayer<AppState, ActionEnum>" as TL {
+        + IsActive(): bool
+        + SetIsActive(bool): void
+        + GetID(): UniqueID
+        + GetZIndex(): ZIndex
+        + GetApplication(): ApplicationPtr
+
+        #GetName(): string_view
+        #OnAdd(): void
+        #OnIterate(): void
+        #OnRender(): void
+        #OnRemove(): void
+        #OnAction(action): void
+    }
+    
+    class "TSoftCloseableLayer<AppState, ActionEnum>" as TSL {
+        + GetDisplayName(): string_view
+        + IsActive(): bool
+        + SetIsActive(bool): void
+    }
+}
+
+package "Renderer" {
+    interface IRenderable {
+        + Render(): void
+    }
+    
+    interface IRenderer {
+        + Init(config): void
+        + Render(renderable): void
+        + Cleanup(): void
+    }
+    
+    note right of IRenderer
+      Platform-specific implementations:
+      - Metal (macOS)
+      - Vulkan (cross-platform)
+    end note
+}
+
+TGA --> TL: manages
+TGA --|> IRenderable: implements
+TSL --|> TL: extends
+IRenderer --> IRenderable: renders
+
+}
+
+@enduml

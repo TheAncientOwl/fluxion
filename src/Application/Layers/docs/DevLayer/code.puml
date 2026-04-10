@@ -1,0 +1,48 @@
+@startuml DevLayer Workflow
+
+!theme crt-amber
+
+title DevLayer - Code Flow and Actions
+
+participant "Application" as app
+participant "DevLayer" as dev
+participant "AppState" as state
+
+== Initialization ==
+app -> dev: AddLayer<DevLayer>(app, z_index)
+dev -> dev: OnAdd()
+dev -> state: SetIsActive(dev_layer, true)
+dev --> app: Layer added
+
+== Render Loop ==
+app -> dev: OnIterate()
+dev -> state: Get application state
+state --> dev: State reference
+dev --> app: Iteration done
+
+app -> dev: OnRender()
+alt is_active == true
+  dev -> dev: RenderLogger()
+  note right of dev
+    Renders logger configuration
+    Scope and level controls
+    Log output viewer
+  end note
+  dev --> app: Debug UI rendered
+else is_active == false
+  dev --> app: Layer hidden
+end
+
+== Toggle Visibility ==
+app -> dev: SetIsActive(false)
+dev -> state: Mark dev layer inactive
+state --> dev: State updated
+
+app -> dev: IsActive()
+dev --> app: Return current state
+
+== Cleanup ==
+app -> dev: OnRemove()
+dev --> app: Cleanup complete
+
+@enduml

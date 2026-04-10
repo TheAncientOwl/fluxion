@@ -1,0 +1,82 @@
+@startuml Fluxion Component Architecture
+
+!theme crt-amber
+left to right direction
+
+title Fluxion - Component Dependency Diagram
+
+package "Graphite Framework" {
+    component [Logger] as GLogger
+    component [Common\n(TDoubleBuffer, TThreadSafeQueue,\nTWithFlags, UniqueID, Ref)] as GCommon
+    component [Application\n(TGraphiteApplication, TLayer,\nTDispatcher, TSoftCloseableLayer)] as GApp
+    component [Renderer\n(VulkanRenderer, MetalRenderer)] as GRenderer
+}
+
+package "API" {
+    component [Data\n(Highlight, Condition, Filter,\nLogRow, ColumnDetails)] as APIData
+    component [LogsPlugin\n(IFluxionLogsPlugin,\nPluginBridge)] as APIPlugin
+}
+
+package "Application" {
+    component [Fluxion\n(Main Orchestrator)] as AppFluxion
+    component [Data\n(AppState, Tab,\nFiltersGeneralMetadata)] as AppData
+    
+    package "Layers" {
+        component [BaseLayer] as LayerBase
+        component [MainMenuLayer] as LayerMenu
+        component [DevLayer] as LayerDev
+        component [FiltersLayer] as LayerFilters
+        component [LogsViewLayer] as LayerLogs
+    }
+}
+
+GCommon --> GLogger
+GApp --> GLogger
+GApp --> GCommon
+GApp --> GRenderer
+GRenderer --> GLogger
+GRenderer --> GCommon
+
+APIData --> GCommon
+APIPlugin --> APIData
+
+AppFluxion --> GApp
+AppFluxion --> APIPlugin
+AppFluxion --> AppData
+AppFluxion --> LayerBase
+AppFluxion --> LayerMenu
+AppFluxion --> LayerDev
+AppFluxion --> LayerFilters
+AppFluxion --> LayerLogs
+
+AppData --> GCommon
+AppData --> GLogger
+AppData --> APIData
+AppData --> APIPlugin
+
+LayerBase --> GApp
+LayerBase --> AppData
+LayerBase --> GLogger
+
+LayerMenu --> GApp
+LayerMenu --> AppData
+LayerMenu --> GLogger
+
+LayerDev --> GApp
+LayerDev --> AppData
+LayerDev --> GLogger
+
+LayerFilters --> GApp
+LayerFilters --> AppData
+LayerFilters --> APIData
+LayerFilters --> GCommon
+LayerFilters --> GLogger
+
+LayerLogs --> GApp
+LayerLogs --> AppData
+LayerLogs --> APIData
+LayerLogs --> APIPlugin
+LayerLogs --> GCommon
+LayerLogs --> GLogger
+
+@enduml

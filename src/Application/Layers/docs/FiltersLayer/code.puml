@@ -1,0 +1,89 @@
+@startuml FiltersLayer Workflow
+
+!theme crt-amber
+
+title FiltersLayer - Code Flow and Actions
+
+participant "Application" as app
+participant "FiltersLayer" as filters
+participant "TDispatcher" as dispatch
+participant "AppState" as state
+
+== Initialization ==
+app -> filters: AddLayer<FiltersLayer>(app, z_index)
+filters -> filters: OnAdd()
+filters -> state: Get filters state
+state --> filters: Tab and Filter data
+filters --> app: Layer added
+
+== Render Loop ==
+app -> filters: OnIterate()
+filters -> dispatch: Process action queue
+alt Action received
+  dispatch -> filters: Call action handler
+  filters -> state: Modify filters/tabs/conditions
+  state --> filters: State updated
+  filters -> filters: MarkFiltersMetadataDirty()
+end
+filters --> app: Iteration done
+
+app -> filters: OnRender()
+alt is_active == true
+  filters -> filters: RenderToolbar()
+  note right of filters
+    Add/Remove tab buttons
+    Apply filters button
+  end note
+  
+  filters -> filters: RenderTabs()
+  loop For each Tab
+    filters -> filters: RenderTab(tab_ptr)
+    loop For each Filter
+      filters -> filters: RenderFilter(tab_id, filter)
+      loop For each Condition
+        filters -> filters: RenderCondition(tab_id, filter_id, condition)
+      end
+    end
+  end
+  
+  filters --> app: Filters UI rendered
+else is_active == false
+  filters --> app: Layer hidden
+end
+
+== User Actions ==
+note right of filters
+  User interaction in Filters UI
+  triggers actions in dispatcher
+end note
+
+alt ApplyFilters
+  filters -> dispatch: Push action
+  dispatch --> filters: Queued
+else DisableFilters
+  filters -> dispatch: Push action
+  dispatch --> filters: Queued
+else AddTab
+  filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else AddFilter
+  filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else AddCondition
+  filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else NextLog/PrevLog
+  filters -> dispatch: Push action with SearchLog
+  dispatch --> filters: Queued
+end
+
+== Toggle Visibility ==
+app -> filters: SetIsActive(true/false)
+filters -> state: Mark layer active/inactive
+state --> filters: State updated
+
+== Cleanup ==
+app -> filters: OnRemove()
+filters --> app: Cleanup complete
+
+@enduml

@@ -1,0 +1,30 @@
+@startuml BaseLayer Workflow
+
+!theme crt-amber
+
+title BaseLayer - Code Flow and Actions
+
+participant "Application" as app
+participant "BaseLayer" as base
+participant "AppState" as state
+
+== Initialization ==
+app -> base: AddLayer<BaseLayer>(app, z_index)
+base -> base: OnAdd()
+base --> app: Layer added
+
+== Render Loop ==
+app -> base: OnIterate()
+base -> state: Get application state
+state --> base: State reference
+base --> app: Iteration done
+
+app -> base: OnRender()
+base -> base: Render base UI elements
+base --> app: Rendering done
+
+== Cleanup ==
+app -> base: OnRemove()
+base --> app: Cleanup complete
+
+@enduml

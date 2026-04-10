@@ -1,0 +1,49 @@
+@startuml API Logs Plugin Workflow
+
+!theme crt-amber
+left to right direction
+
+title Fluxion Logs Plugin - Code Flow and Actions
+
+participant "Application" as app
+participant "IFluxionLogsPlugin" as plugin
+participant "LogStorage" as storage
+
+== Plugin Initialization ==
+app -> plugin: OnEnable(OnEnableData)
+plugin -> storage: Initialize log storage
+storage --> plugin: Ready
+
+== Log Import ==
+app -> plugin: ImportLogs(filesystem::path)
+plugin -> storage: Parse and store logs
+storage --> plugin: Import complete
+
+== Filter Application ==
+app -> plugin: ApplyFilters(filters, highlight_only)
+plugin -> storage: Apply filter conditions
+storage --> plugin: Filtering complete
+
+== Navigation ==
+app -> plugin: GetNextLog(filter_id)
+plugin -> storage: Find next matching log
+storage --> plugin: Return log index
+
+== Rendering ==
+app -> plugin: GetTableHeader()
+plugin --> app: Return column structure
+
+app -> plugin: GetLogs(ranges, out_logs_map)
+plugin -> storage: Fetch log rows for ranges
+storage --> plugin: Return log data
+plugin --> app: Update out_logs_map
+
+== Cleanup ==
+app -> plugin: DisableFilters()
+plugin -> storage: Clear filter state
+storage --> plugin: Done
+
+app -> plugin: OnDisable(OnDisableData)
+plugin --> app: Cleanup complete
+
+@enduml

@@ -1,0 +1,90 @@
+@startuml Graphite Common Interface
+
+!theme crt-amber
+left to right direction
+
+title Graphite Common - Interfaces and Methods
+
+package "Graphite" {
+
+package "DataStructures" {
+    class "TDoubleBuffer<T, Policy>" as TDB {
+        +Init(front, back): void
+        +GetFront(): T const&
+        +GetBack(): T const&
+        +SwapFrontBack(): void
+        +IsDirty(): bool
+        +MarkDirty(): void
+        +ApplyBackWithLock(callable): void
+        +TrySwapIfDirty(): bool
+    }
+    
+    class "TThreadSafeQueue<T>" as TTSQ {
+        +Push(item): void
+        +WaitAndPop(out_item, is_running): bool
+        +Empty(): bool
+        - m_queue : queue<T>
+        - m_mutex : mutex
+        - m_cv : condition_variable
+    }
+    
+    class "DynArray<T>" as DA {
+        +Reserve(capacity): void
+        +PushBack(value): void
+        +PopBack(): void
+        +Size(): size_t
+        +Capacity(): size_t
+        +operator[](index): T&
+    }
+}
+
+package "Utility" {
+    class UniqueID {
+        + <static>Generate(): UniqueID
+        + <static>Default(): UniqueID
+        +ToString(): string
+        +Dump(array): void
+        +initialized(): bool
+        +operator==(): bool
+        +operator<(): bool
+    }
+    
+    class "TWithFlags<Derived, Enum>" as TWF {
+        +operator[](flag): FlagProxy
+        +operator[](flag): bool (const)
+        +ClearFlags(): void
+    }
+    
+    class "TAppAction<ActionEnum>" as TAA {
+        + type : ActionEnum
+        + payload : any
+    }
+    
+    class RefCounted {
+        +IncrementRefCount(): void
+        +DecrementRefCount(): void
+        +GetRefCount(): uint32_t
+    }
+    
+    class "Ref<T>" as RefT {
+        +Ref(ptr): void
+        +Get(): T*
+        +operator*(): T&
+        +operator->(): T*
+    }
+}
+
+package "Plugin" {
+    class DynamicLibrary {
+        +DynamicLibrary(path): void
+        +getSymbol(name): void*
+        +isLoaded(): bool
+        +~DynamicLibrary(): void
+    }
+}
+
+RefT ..> RefCounted: manages
+
+}
+
+@enduml

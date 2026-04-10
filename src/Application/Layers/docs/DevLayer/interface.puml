@@ -1,0 +1,25 @@
+@startuml DevLayer Interface
+
+!theme crt-amber
+
+title DevLayer - Interface and Methods
+
+package "Fluxion::Application::Layers" {
+    class DevLayer {
+        + <static>GetLayerName(): string_view
+
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + DevLayer(application, z_index)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+
+        - RenderLogger(): void
+    }
+}
+
+@enduml
