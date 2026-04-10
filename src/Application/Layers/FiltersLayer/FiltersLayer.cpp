@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.33
+/// @version 0.34
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -130,11 +130,31 @@ void PopButtonGrayIfOff(bool const state)
     }
 };
 
+enum class ERedButtonType : std::uint8_t
+{
+    Button = 0,
+    TabItemButton = 1
+};
+
+template <ERedButtonType TRedButtonType = ERedButtonType::Button>
 void PushRedButton()
 {
-    ImGui::PushStyleColor(ImGuiCol_Button, {0.75f, 0.0f, 0.0f, 0.6f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.75f, 0.0f, 0.0f, 0.9f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.75f, 0.0f, 0.0f, 0.3f});
+    if constexpr (TRedButtonType == ERedButtonType::Button)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, {0.75f, 0.0f, 0.0f, 0.6f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.75f, 0.0f, 0.0f, 0.9f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, {0.75f, 0.0f, 0.0f, 0.3f});
+    }
+    else if constexpr (TRedButtonType == ERedButtonType::TabItemButton)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Tab, {0.75f, 0.0f, 0.0f, 0.6f});
+        ImGui::PushStyleColor(ImGuiCol_TabHovered, {0.75f, 0.0f, 0.0f, 0.9f});
+        ImGui::PushStyleColor(ImGuiCol_TabActive, {0.75f, 0.0f, 0.0f, 0.3f});
+    }
+    else
+    {
+        static_assert(false, "Not supported ERedButtonType");
+    }
 };
 
 void PopRedButton()
@@ -213,9 +233,11 @@ void FiltersLayer::OnRender()
         }
     }
 
-    ImGui::Begin(ICON_CI_WAND " Filters", &app_state.layers_active.filters);
+    ImGui::Begin(
+        ICON_CI_WAND " Filters",
+        &app_state.layers_active.filters,
+        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-    RenderToolbar();
     RenderTabs();
 
     ImGui::End();
@@ -252,9 +274,7 @@ void FiltersLayer::MarkFiltersMetadataDirty()
 
 void FiltersLayer::RenderToolbar()
 {
-    ImGui::BeginChild("##filters-toolbar", ImVec2(0, ImGui::GetFrameHeightWithSpacing()));
-
-    Graphite::Common::UI::IconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
+    Graphite::Common::UI::TabItemIconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddTab,
              Actions::FiltersLayer::Payloads::FiltersDataModify{
@@ -264,9 +284,8 @@ void FiltersLayer::RenderToolbar()
 
     auto& app_state{m_application->GetApplicationState()};
 
-    ImGui::SameLine();
     ImGui::BeginDisabled(app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::Applied]);
-    Graphite::Common::UI::IconButton(ICON_CI_WAND, "Apply Filters", [&]() {
+    Graphite::Common::UI::TabItemIconButton(ICON_CI_WAND, "Apply Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::ApplyFilters,
              Actions::FiltersLayer::Payloads::FiltersDataModify{
@@ -277,9 +296,8 @@ void FiltersLayer::RenderToolbar()
     });
     ImGui::EndDisabled();
 
-    ImGui::SameLine();
-    UIHelpers::Styles::PushRedButton();
-    Graphite::Common::UI::IconButton(ICON_CI_MUTE, "Disable Filters", [&]() {
+    UIHelpers::Styles::PushRedButton<UIHelpers::Styles::ERedButtonType::TabItemButton>();
+    Graphite::Common::UI::TabItemIconButton(ICON_CI_MUTE, "Disable Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::DisableFilters,
              Actions::FiltersLayer::Payloads::FiltersDataModify{
@@ -289,8 +307,6 @@ void FiltersLayer::RenderToolbar()
              }});
     });
     UIHelpers::Styles::PopRedButton();
-
-    ImGui::EndChild();
 }
 
 void FiltersLayer::RenderTabs()
@@ -298,16 +314,21 @@ void FiltersLayer::RenderTabs()
     LOG_SCOPE("::RenderTabs()");
     auto& app_state{m_application->GetApplicationState()};
     // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
-    LOG_TRACE("::RenderTabs(): Tabs: {}", app_state.filters.tabs.GetFront());
+    // LOG_TRACE("::RenderTabs(): Tabs: {}", app_state.filters.tabs.GetFront());
 
     if (ImGui::BeginTabBar("Tabs"))
     {
+        RenderToolbar();
+
         for (auto& tab : app_state.filters.tabs.GetFront())
         {
             if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
                 LOG_TRACE("::RenderTabs(): Rendering filter tab {}", tab->imgui_id.c_str());
+                ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
                 RenderTab(tab);
+
                 ImGui::EndTabItem();
             }
         }
@@ -365,12 +386,17 @@ void FiltersLayer::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
         MarkFiltersMetadataDirty();
     }
 
+    ImGui::Dummy(ImVec2(0.0f, 2.0f));
+    ImGui::Separator();
+    ImGui::Dummy(ImVec2(0.0f, 2.0f));
+    ImGui::BeginChild("##tab_filters_content", ImVec2(0, 0));
     for (auto& filter : tab.filters.GetFront())
     {
         RenderFilter(tab_ptr->id, *filter);
 
         ImGui::Separator();
     }
+    ImGui::EndChild();
 }
 
 void FiltersLayer::RenderFilter(
@@ -389,7 +415,6 @@ void FiltersLayer::RenderFilter(
     char s_filter_id[Graphite::Common::Utility::UniqueID::GetMinDumpSize()];
     filter.id.Dump(s_filter_id);
     ImGui::BeginChild(s_filter_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
-    ImGui::Separator();
 
     using EFilterFlag = Filters::EFilterFlag;
 

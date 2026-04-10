@@ -5,7 +5,7 @@
 ///
 /// @file ImGuiHelpers.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Wrappers for ImGui UI elements.
 ///
 
@@ -35,6 +35,19 @@ inline bool IconButton(const char* icon, const char* tooltip, TAction&& action)
 {
     bool clicked{false};
     if (ImGui::Button(icon))
+    {
+        clicked = true;
+        action();
+    }
+    ItemHoverTooltip(tooltip);
+    return clicked;
+}
+
+template <typename TAction>
+inline bool TabItemIconButton(const char* icon, const char* tooltip, TAction&& action)
+{
+    bool clicked{false};
+    if (ImGui::TabItemButton(icon))
     {
         clicked = true;
         action();
