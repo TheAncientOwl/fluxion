@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -476,6 +476,28 @@ void RenderLogger()
                 ImGui::TableNextRow();
 
                 ImGui::TableSetColumnIndex(0);
+
+                // --- Per-scope enable/disable checkbox ---
+                bool scope_enabled = true;
+                for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
+                {
+                    if (!flags[levels[level_idx].value])
+                    {
+                        scope_enabled = false;
+                        break;
+                    }
+                }
+
+                ImGui::PushID("scope_enabled");
+                if (ImGui::Checkbox("##scope_enabled", &scope_enabled))
+                {
+                    Logger.SetScopeEnabled(std::string{scope}, scope_enabled);
+                }
+                ImGui::PopID();
+
+                ImGui::SameLine();
+                // --- End per-scope enable/disable checkbox ---
+
                 for (std::size_t level_idx = 0; level_idx < levels.size(); ++level_idx)
                 {
                     auto const& log_level = levels[level_idx];
