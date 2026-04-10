@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -320,7 +320,7 @@ namespace Fluxion::Application::Layers::Modules::DevLayer {
 
 void RenderLogger()
 {
-    LOG_SCOPE("");
+    LOG_SCOPE("::RenderLogger");
     auto& Logger = Graphite::Logger::Logger::Instance();
 
     ImGui::AlignTextToFramePadding();
@@ -380,7 +380,7 @@ void RenderLogger()
     ImGui::InputTextWithHint("##Search", "Type to filter scopes...", filter, sizeof(filter));
 
     static std::size_t s_last_scopes_count{0};
-    auto scopes = Logger.GetScopes();
+    auto const scopes = Logger.GetScopes();
     static std::vector<std::pair<std::string_view, Graphite::Logger::LogScopeFlags>> s_sorted_scopes{};
     {
         s_sorted_scopes.resize(scopes.size());
@@ -398,8 +398,8 @@ void RenderLogger()
     std::string filter_str(filter);
     if (filter_str != s_last_filter || s_last_scopes_count != scopes.size())
     {
-        LOG_INFO(
-            "Computing filtered indices | filter_str != s_last_filter == {} | "
+        LOG_TRACE(
+            "::RenderLogger(): Computing filtered indices | filter_str != s_last_filter == {} | "
             "s_last_scopes_count != scopes.size() == {}",
             filter_str != s_last_filter,
             s_last_scopes_count != scopes.size());

@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.32
+/// @version 0.33
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -298,7 +298,7 @@ void FiltersLayer::RenderTabs()
     LOG_SCOPE("::RenderTabs()");
     auto& app_state{m_application->GetApplicationState()};
     // [!] Use this cautiously, because logging all tabs might drop performance in debug mode
-    LOG_DEBUG("::RenderTabs(): Tabs: {}", app_state.filters.tabs.GetFront());
+    LOG_TRACE("::RenderTabs(): Tabs: {}", app_state.filters.tabs.GetFront());
 
     if (ImGui::BeginTabBar("Tabs"))
     {
@@ -306,7 +306,7 @@ void FiltersLayer::RenderTabs()
         {
             if (ImGui::BeginTabItem(tab->imgui_id.c_str()))
             {
-                LOG_INFO("::RenderTabs(): Rendering filter tab {}", tab->imgui_id.c_str());
+                LOG_TRACE("::RenderTabs(): Rendering filter tab {}", tab->imgui_id.c_str());
                 RenderTab(tab);
                 ImGui::EndTabItem();
             }

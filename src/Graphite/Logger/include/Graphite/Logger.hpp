@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.12
+/// @version 1.13
 /// @brief Logging utilities
 ///
 
@@ -173,6 +173,8 @@ private:
     std::mutex m_scope_mutex;
     ScopeEnabledMap m_scope_enabled;
     std::atomic<uint8_t> m_global_level_mask;
+
+    std::vector<std::string> m_queued_defined_scopes{};
 };
 
 class ScopeLogger

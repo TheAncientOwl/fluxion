@@ -5,18 +5,18 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Main layer responsible for rendering logs table.
 ///
 
 #include <algorithm>
 
 #include "FiltersLayerActions.hpp"
-#include "Fluxion/Application/Data/Formatters.hpp"
+#include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Application::Layers::Actions::FiltersLayer);
-USE_LOG_SCOPE(Fluxion::Application::Layers::Actions::FiltersLayer);
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer::Actions);
+USE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer::Actions);
 
 namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 
@@ -503,9 +503,8 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
         return a.priority > b.priority;
     });
 
-    LOG_DEBUG("::handle<ApplyFilters>(): Active filters size: {}", filters.size());
-    LOG_DEBUG(
-        "::handle<ApplyFilters>(): HighlightOnly-Active filters size: {}", highlight_only.size());
+    LOG_INFO("::handle<ApplyFilters>(): Active filters size: {}", filters.size());
+    LOG_INFO("::handle<ApplyFilters>(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
     application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
 

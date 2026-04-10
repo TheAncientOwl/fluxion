@@ -5,7 +5,7 @@
 ///
 /// @file DevLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Implementation of @see DevLayer.hpp.
 ///
 
@@ -37,22 +37,22 @@ DevLayer::DevLayer(
     Graphite::Application::Layers::ZIndex const z_index)
     : TSoftMenuCloseableLayer{std::move(application), z_index}
 {
-    LOG_SCOPE("::DevLayer::DevLayer()");
+    LOG_SCOPE("::DevLayer()");
 }
 
 void DevLayer::OnAdd()
 {
-    LOG_SCOPE("::DevLayer::OnAdd()");
+    LOG_SCOPE("::OnAdd()");
 }
 
 void DevLayer::OnIterate()
 {
-    LOG_SCOPE("::DevLayer::OnIterate()");
+    LOG_SCOPE("::OnIterate()");
 }
 
 void DevLayer::OnRender()
 {
-    LOG_SCOPE("::DevLayer::OnRender()");
+    LOG_SCOPE("::OnRender()");
 
     auto& app_state{m_application->GetApplicationState()};
 
@@ -80,7 +80,7 @@ void DevLayer::OnRender()
 
 void DevLayer::OnRemove()
 {
-    LOG_SCOPE("::DevLayer::OnRemove()");
+    LOG_SCOPE("::OnRemove()");
 }
 
 inline bool DevLayer::IsActive() const noexcept

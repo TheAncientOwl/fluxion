@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.12
+/// @version 1.13
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -81,6 +81,12 @@ void Logger::LoadConfig()
     std::string name{};
 
     std::lock_guard lock{m_scope_mutex};
+    for (auto& scope : m_queued_defined_scopes)
+    {
+        m_scope_enabled[std::move(scope)] = GetDefaultScopeFlags();
+    }
+    m_queued_defined_scopes = {};
+
     while (std::getline(ifs, line))
     {
         std::istringstream iss(line);
@@ -113,11 +119,13 @@ void Logger::LoadConfig()
         }
 
         flags.SetStorage(static_cast<LogScopeFlags::Storage>(storage));
-        m_scope_enabled[std::move(name)] = flags;
-
         if (name == GetGlobalScopeKey())
         {
             m_global_level_mask.store(flags.GetStorage(), std::memory_order_relaxed);
+        }
+        else
+        {
+            m_scope_enabled[std::move(name)] = flags;
         }
     }
 }
@@ -146,7 +154,7 @@ std::filesystem::path Logger::GetConfigFilePath()
 
 std::string_view Logger::DefineLogScope(std::string_view scope)
 {
-    SetScopeEnabled(scope, true);
+    m_queued_defined_scopes.emplace_back(scope);
     return scope;
 }
 

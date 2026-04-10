@@ -148,8 +148,8 @@ public:
 
         auto const filters = DummyImpl::Convert(std::move(_filters));
         auto const highlight_only = DummyImpl::Convert(std::move(_highlight_only));
-        LOG_DEBUG("::ApplyFilters(): Active filters size: {}", filters.size());
-        LOG_DEBUG("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+        LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
+        LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
         m_filtered_logs.clear();
         std::vector<std::uint8_t> priorities{};

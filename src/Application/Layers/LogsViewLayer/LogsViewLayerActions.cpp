@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -13,8 +13,8 @@
 #include "Fluxion/Application/Data/AppState.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Application::Layers::Actions::LogsViewLayer);
-USE_LOG_SCOPE(Fluxion::Application::Layers::Actions::LogsViewLayer);
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::LogsViewLayer::Actions);
+USE_LOG_SCOPE(Fluxion::Application::Layers::LogsViewLayer::Actions);
 
 namespace Fluxion::Application::Layers::Actions::LogsViewLayer {
 
@@ -42,7 +42,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
                 return;
             }
 
-            LOG_DEBUG(
+            LOG_INFO(
                 "::handle<UpdateVisibleLogs>(): buffer_preparer > Begin culling. Map size: {}",
                 visible_logs_chunk.logs.size());
 
@@ -60,7 +60,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
                     return true; // Cull it
                 });
 
-            LOG_DEBUG(
+            LOG_INFO(
                 "::handle<UpdateVisibleLogs>(): buffer_preparer > Culling complete. Map size: {}",
                 visible_logs_chunk.logs.size());
         },

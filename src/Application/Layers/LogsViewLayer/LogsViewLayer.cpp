@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.17
+/// @version 0.18
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -158,7 +158,7 @@ void LogsViewLayer::RenderLogsTable()
 
             auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
 
-            LOG_DEBUG(
+            LOG_TRACE(
                 "::RenderLogsTable(): DisplayStart == {} | DisplayEnd == {} | Searched == {} | "
                 "ScrollY == {}",
                 clipper.DisplayStart,
@@ -227,7 +227,7 @@ void LogsViewLayer::RenderLogsTable()
 
         for (auto const& range : ranges)
         {
-            LOG_DEBUG("::RenderLogsTable(): Request => start {} | end {}", range.begin, range.end);
+            LOG_TRACE("::RenderLogsTable(): Request => start {} | end {}", range.begin, range.end);
         }
 
         Dispatch(
