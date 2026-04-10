@@ -41,6 +41,7 @@ Application (Fluxion)
 **Location:** `/src/Graphite/Logger/`
 
 **Functionality:**
+
 - Centralized logging system with asynchronous logging via worker thread
 - Hierarchical log scoping with RAII wrapper (ScopeLogger)
 - Log level filtering (Trace, Debug, Info, Warning, Error, Critical)
@@ -48,12 +49,14 @@ Application (Fluxion)
 - Formatted output with ANSI color codes
 
 **Key Structures:**
+
 - `Logger`: Singleton manager with worker thread
 - `LogMessage`: Contains message, level, scope stack, timestamp
 - `LogScopeFlags`: Bit flags for scope properties (uses TWithFlags)
 - `ScopeLogger`: RAII wrapper for scope entry/exit
 
 **Interface:**
+
 ```
 Logger::GetInstance() -> Logger&
 Logger::Log(level, message)
@@ -63,9 +66,11 @@ ScopeLogger(scope_name) // Auto enters/exits scope
 ```
 
 **Dependencies:**
+
 - None (Foundation component)
 
 **Used By:**
+
 - Everything (centralized logging)
 
 ---
@@ -75,6 +80,7 @@ ScopeLogger(scope_name) // Auto enters/exits scope
 **Location:** `/src/Graphite/Common/`
 
 **Functionality:**
+
 - Thread-safe double buffer for lock-free producer-consumer patterns
 - Thread-safe queue for action dispatching
 - Dynamic array with automatic growth
@@ -84,6 +90,7 @@ ScopeLogger(scope_name) // Auto enters/exits scope
 - Dynamic library loading (DynamicLibrary)
 
 **Key Structures:**
+
 - `TDoubleBuffer<T>`: Front/back buffers with read/write locks
   - `EDoubleBufferSyncPolicy`: Defines read/write synchronization
 - `TThreadSafeQueue<T>`: Lock-free MPMC queue
@@ -94,6 +101,7 @@ ScopeLogger(scope_name) // Auto enters/exits scope
 - `DynamicLibrary`: Load .so/.dylib/.dll at runtime
 
 **Interface:**
+
 ```
 TDoubleBuffer<T>::Read() -> const T&
 TDoubleBuffer<T>::Write() -> T&
@@ -106,9 +114,11 @@ UniqueID::Generate() -> uint64_t
 ```
 
 **Dependencies:**
+
 - Logger (for debug output)
 
 **Used By:**
+
 - All components (foundational utilities)
 
 ---
@@ -118,6 +128,7 @@ UniqueID::Generate() -> uint64_t
 **Location:** `/src/Graphite/Application/`
 
 **Functionality:**
+
 - Template application framework orchestrating initialization, update loop, and cleanup
 - Layer management system for composable UI/game logic
 - Soft-closeable layers with visibility toggle
@@ -126,6 +137,7 @@ UniqueID::Generate() -> uint64_t
 - Renderer interface abstraction
 
 **Key Structures:**
+
 - `TGraphiteApplication<AppState>`: Main app orchestrator
   - Manages layer stack
   - Runs update loop with OnIterate/OnRender callbacks
@@ -144,6 +156,7 @@ UniqueID::Generate() -> uint64_t
 - `IRenderable`: Interface for renderable objects
 
 **Interface:**
+
 ```
 TGraphiteApplication<State>::Run()
 TGraphiteApplication<State>::AddLayer<LayerType>(args...)
@@ -157,11 +170,13 @@ TSoftCloseableLayer<State, Action>::SetIsActive(bool)
 ```
 
 **Dependencies:**
+
 - Logger (logging)
 - Common (Ref, DynArray, UniqueID)
 - Renderer (IRenderer interface)
 
 **Used By:**
+
 - Fluxion (Application inherits from TGraphiteApplication)
 
 ---
@@ -171,6 +186,7 @@ TSoftCloseableLayer<State, Action>::SetIsActive(bool)
 **Location:** `/src/Graphite/Application/Renderer/`
 
 **Functionality:**
+
 - Graphics API abstraction with Vulkan and Metal implementations
 - Command buffer management
 - Swap chain handling
@@ -178,6 +194,7 @@ TSoftCloseableLayer<State, Action>::SetIsActive(bool)
 - Device and queue management
 
 **Key Structures:**
+
 - `VulkanRenderer`: Vulkan backend implementation
   - VkInstance, VkPhysicalDevice, VkDevice, VkQueue
   - VkSwapchain, VkRenderPass, VkFramebuffer
@@ -187,6 +204,7 @@ TSoftCloseableLayer<State, Action>::SetIsActive(bool)
   - CAMetalLayer for window integration
 
 **Interface:**
+
 ```
 Renderer::Begin() -> void
 Renderer::End() -> void
@@ -195,10 +213,12 @@ Renderer::GetSwapchainExtent() -> Extent2D
 ```
 
 **Dependencies:**
+
 - Logger (logging)
 - Common (UniqueID)
 
 **Used By:**
+
 - TGraphiteApplication (rendering backend)
 
 ---
@@ -210,12 +230,14 @@ Renderer::GetSwapchainExtent() -> Extent2D
 **Location:** `/src/API/include/Fluxion/API/Data/`
 
 **Functionality:**
+
 - Defines common data structures shared between Fluxion and plugins
 - Logging-related types (color, highlighting, filtering)
 - Filter composition structures
 - Log row and column metadata
 
 **Key Structures:**
+
 - `Highlight`: Color pair (foreground/background)
 - `Condition`: Single filter condition
   - `EConditionFlag`: IsRegex, IsEquals, IsCaseSensitive (TWithFlags)
@@ -231,6 +253,7 @@ Renderer::GetSwapchainExtent() -> Extent2D
   - `level`, `timestamp`, `scope`, `thread_id`
 
 **Interface:**
+
 ```
 Highlight: color_fg, color_bg
 Condition: + flag handling (SetFlag, HasFlag, ClearFlag via TWithFlags)
@@ -240,9 +263,11 @@ AppState: Centralized state management
 ```
 
 **Dependencies:**
+
 - Graphite::Common (TWithFlags, RefCounted)
 
 **Used By:**
+
 - API::LogsPlugin (implementing interface)
 - Application::Data (using data structures)
 - Application::Layers (reading/filtering logs)
@@ -254,11 +279,13 @@ AppState: Centralized state management
 **Location:** `/src/API/include/Fluxion/API/LogsPlugin/`
 
 **Functionality:**
+
 - Plugin interface definition for log providers
 - Dynamic plugin loading bridge
 - Two-way communication between Fluxion and plugins
 
 **Key Structures:**
+
 - `IFluxionLogsPlugin`: Abstract interface
   - `OnEnable(context)`: Initialize plugin
   - `OnDisable()`: Cleanup
@@ -267,6 +294,7 @@ AppState: Centralized state management
 - `PluginBridge`: Factory and instance management
 
 **Interface:**
+
 ```
 IFluxionLogsPlugin::OnEnable(OnEnableData) -> void
 IFluxionLogsPlugin::OnDisable(OnDisableData) -> void
@@ -276,9 +304,11 @@ PluginBridge::LoadPlugin(path) -> unique_ptr<IFluxionLogsPlugin>
 ```
 
 **Dependencies:**
+
 - API::Data (uses data structures)
 
 **Used By:**
+
 - Application::Data (loading plugins)
 - Application::Layers::LogsViewLayer (getting logs)
 
@@ -291,12 +321,14 @@ PluginBridge::LoadPlugin(path) -> unique_ptr<IFluxionLogsPlugin>
 **Location:** `/src/Application/Fluxion.hpp/cpp`
 
 **Functionality:**
+
 - Main application class orchestrating the entire Fluxion system
 - Extends TGraphiteApplication<AppState> from Graphite framework
 - Initializes all layers and dependencies
 - Manages application lifecycle
 
 **Key Structures:**
+
 - `Fluxion(WindowConfiguration)`: Constructor
   - Loads plugin via PluginBridge
   - Creates AppState with plugin
@@ -310,12 +342,14 @@ PluginBridge::LoadPlugin(path) -> unique_ptr<IFluxionLogsPlugin>
   - BaseLayer
 
 **Interface:**
+
 ```
 Fluxion::Fluxion(window_config)
 Fluxion::Run() // Inherited from TGraphiteApplication
 ```
 
 **Dependencies:**
+
 - Graphite::Application (TGraphiteApplication, TLayer)
 - Graphite::Logger
 - API::LogsPlugin (IFluxionLogsPlugin, PluginBridge)
@@ -323,6 +357,7 @@ Fluxion::Run() // Inherited from TGraphiteApplication
 - Application::Layers (all layers)
 
 **Used By:**
+
 - main.cpp (entry point)
 
 ---
@@ -332,12 +367,14 @@ Fluxion::Run() // Inherited from TGraphiteApplication
 **Location:** `/src/Application/Data/`
 
 **Functionality:**
+
 - Central application state (AppState) holding all mutable data
 - Filter and tab management system
 - Plugin instance ownership
 - Visibility and search state tracking
 
 **Key Structures:**
+
 - `AppState`:
   - `logs_plugin`: Unique pointer to loaded plugin
   - `filters_tabs`: Vector of Tab definitions
@@ -355,6 +392,7 @@ Fluxion::Run() // Inherited from TGraphiteApplication
 - `LayersActive`: Boolean visibility state for DevLayer, FiltersLayer, LogsViewLayer
 
 **Interface:**
+
 ```
 AppState: Public mutable state accessed by layers
 Tab: + flag handling via TWithFlags
@@ -363,14 +401,16 @@ FiltersGeneralMetadata: + flag handling via TWithFlags
 ```
 
 **Dependencies:**
+
 - Graphite::Common (TDoubleBuffer, TWithFlags, Ref, unique_ptr)
 - Graphite::Logger
 - API::Data (Condition, Filter, LogRow, etc.)
 - API::LogsPlugin (IFluxionLogsPlugin)
 
 **Used By:**
+
 - Application::Fluxion (created at initialization)
-- Application::Layers::* (reading/modifying state in OnIterate/OnRender)
+- Application::Layers::\* (reading/modifying state in OnIterate/OnRender)
 
 ---
 
@@ -379,6 +419,7 @@ FiltersGeneralMetadata: + flag handling via TWithFlags
 **Location:** `/src/Application/Layers/`
 
 **Functionality:**
+
 - UI layer system decomposing application concerns
 - Each layer handles specific UI and logic responsibilities
 - Structured as Graphite TLayer<AppState, EFluxionAction> subclasses
@@ -386,14 +427,17 @@ FiltersGeneralMetadata: + flag handling via TWithFlags
 #### 3.3.1 BaseLayer
 
 **Functionality:**
+
 - Foundation UI layer for all other layers
 - Provides basic layer infrastructure
 - Sets up ImGui rendering context
 
 **Key Structures:**
+
 - `BaseLayer`: Inherits from `TLayer<AppState, EFluxionAction>`
 
 **Interface:**
+
 ```
 BaseLayer::OnAdd() -> void
 BaseLayer::OnIterate() -> void
@@ -402,10 +446,12 @@ BaseLayer::OnRemove() -> void
 ```
 
 **Dependencies:**
+
 - Graphite::Application (TLayer)
 - Application::Data (AppState)
 
 **Used By:**
+
 - Fluxion (registered as layer)
 
 ---
@@ -413,24 +459,29 @@ BaseLayer::OnRemove() -> void
 #### 3.3.2 MainMenuLayer
 
 **Functionality:**
+
 - Renders application menu bar
 - Provides navigation and global controls
 
 **Key Structures:**
+
 - `MainMenuLayer`: Inherits from `TLayer<AppState, EFluxionAction>`
 
 **Interface:**
+
 ```
 MainMenuLayer::RenderMenu() -> void
 MainMenuLayer::OnRender() -> void
 ```
 
 **Dependencies:**
+
 - Graphite::Application (TLayer)
 - Application::Data (AppState)
 - ImGui
 
 **Used By:**
+
 - Fluxion (registered as layer)
 
 ---
@@ -438,11 +489,13 @@ MainMenuLayer::OnRender() -> void
 #### 3.3.3 DevLayer
 
 **Functionality:**
+
 - Debug and configuration panel
 - Logger display and level control
 - Toggleable visibility (TSoftCloseableLayer)
 
 **Key Structures:**
+
 - `DevLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>`
   - `is_active`: Visibility flag
 - **Submodules:**
@@ -450,6 +503,7 @@ MainMenuLayer::OnRender() -> void
   - `Theme`: Theme management and customization
 
 **Interface:**
+
 ```
 DevLayer::IsActive() -> bool
 DevLayer::SetIsActive(bool) -> void
@@ -459,12 +513,14 @@ DevLayer::OnRender() -> void
 ```
 
 **Dependencies:**
+
 - Graphite::Application (TSoftCloseableLayer)
 - Graphite::Logger
 - Application::Data (AppState)
 - ImGui
 
 **Used By:**
+
 - Fluxion (registered as layer)
 
 ---
@@ -472,31 +528,37 @@ DevLayer::OnRender() -> void
 #### 3.3.4 FiltersLayer
 
 **Functionality:**
+
 - Filter management UI (add/remove/duplicate tabs and filters)
 - Condition management for each filter
 - Filter application and search execution
+- Drag & drop reordering of filters and conditions
 - Implements action dispatcher for UI interactions
 
 **Key Structures:**
+
 - `FiltersLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>` + implements `TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>`
   - `is_active`: Visibility flag
-- **Actions** (13 total):
+- **Actions** (15 total):
   - Tab operations: AddTab, RemoveTab, DuplicateTab
-  - Filter operations: AddFilter, RemoveFilter, DuplicateFilter
-  - Condition operations: AddCondition, RemoveCondition
+  - Filter operations: AddFilter, RemoveFilter, DuplicateFilter, MoveFilter
+  - Condition operations: AddCondition, RemoveCondition, MoveCondition
   - Filter control: ApplyFilters, DisableFilters
   - Search: NextLog, PrevLog
 - **Payloads:**
   - `FiltersDataModify`: Optional IDs (tab_id, filter_id, condition_id)
   - `SearchLog`: Target filter_id for searching
+  - `MoveFilter`: Source tab_id, filter_id, and target_filter_id for swapping
+  - `MoveCondition`: Source tab_id, filter_id, condition_id, and target_condition_id for swapping
 
 **Interface:**
+
 ```
 FiltersLayer::RenderToolbar() -> void
 FiltersLayer::RenderTabs() -> void
 FiltersLayer::RenderTab(tab) -> void
-FiltersLayer::RenderFilter(tab_id, filter) -> void
-FiltersLayer::RenderCondition(tab_id, filter_id, condition) -> void
+FiltersLayer::RenderFilter(tab_id, filter) -> void    // Drag & drop source/target
+FiltersLayer::RenderCondition(tab_id, filter_id, condition) -> void  // Drag & drop source/target
 FiltersLayer::MarkFiltersMetadataDirty() -> void
 FiltersLayer::OnIterate() -> void // Process action dispatcher
 FiltersLayer::OnRender() -> void
@@ -504,16 +566,19 @@ FilterAction::HandleFiltersLayerAction(state, action) -> void
 ```
 
 **Dependencies:**
+
 - Graphite::Application (TSoftCloseableLayer, TDispatcher)
 - Graphite::Common (TDispatcher, UniqueID)
 - Application::Data (AppState, Tab, Filter, Condition)
 - API::Data (Filter, Condition structures)
-- ImGui
+- ImGui (including drag & drop API)
 
 **Used By:**
+
 - Fluxion (registered as layer)
 
 **Action Flow:**
+
 ```
 User UI (RenderTab) → Dispatcher.Dispatch(action, payload)
 → OnIterate processes queue
@@ -522,11 +587,26 @@ User UI (RenderTab) → Dispatcher.Dispatch(action, payload)
 → Next iteration updates UI
 ```
 
+**Drag & Drop Workflow:**
+
+```
+User drags gripper on filter/condition
+→ ImGui::BeginDragDropSource() captures drag
+→ Payload contains source ID
+→ User hovers over target filter/condition
+→ ImGui::BeginDragDropTarget() accepts drop
+→ ImGui::AcceptDragDropPayload() processes
+→ Dispatcher.Dispatch(MoveFilter/MoveCondition)
+→ Handler swaps positions via std::iter_swap
+→ MarkFiltersMetadataDirty() flags state change
+```
+
 ---
 
 #### 3.3.5 LogsViewLayer
 
 **Functionality:**
+
 - Log table visualization with lazy-loading
 - Range-based log fetching from plugin
 - Pagination support via scrolling
@@ -534,6 +614,7 @@ User UI (RenderTab) → Dispatcher.Dispatch(action, payload)
 - Implements action dispatcher for visible range updates
 
 **Key Structures:**
+
 - `LogsViewLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>` + implements `TDispatcher<LogsViewLayer, LogsViewLayerAction, LogsViewLayerActionPayload>`
   - `is_active`: Visibility flag
 - **Actions** (2 total):
@@ -543,6 +624,7 @@ User UI (RenderTab) → Dispatcher.Dispatch(action, payload)
   - `LogsViewLayerActionPayload`: vector of Range indices for visible logs
 
 **Interface:**
+
 ```
 LogsViewLayer::RenderLogsTable() -> void
 LogsViewLayer::OnIterate() -> void // Process action dispatcher
@@ -551,6 +633,7 @@ LogsViewLayerAction::HandleLogsViewLayersLayerAction(state, action) -> void
 ```
 
 **Dependencies:**
+
 - Graphite::Application (TSoftCloseableLayer, TDispatcher)
 - Graphite::Common (TDispatcher)
 - Application::Data (AppState, VisibleLogsChunk)
@@ -559,9 +642,11 @@ LogsViewLayerAction::HandleLogsViewLayersLayerAction(state, action) -> void
 - ImGui
 
 **Used By:**
+
 - Fluxion (registered as layer)
 
 **Lazy-Loading Workflow:**
+
 ```
 User scrolls table
 → Visible range changes
@@ -577,6 +662,7 @@ User scrolls table
 ## Component Interaction Patterns
 
 ### Pattern 1: Plugin Architecture
+
 ```
 Fluxion
   ├─> PluginBridge::LoadPlugin(path)
@@ -585,6 +671,7 @@ Fluxion
 ```
 
 ### Pattern 2: Dispatcher-Based Action Handling
+
 ```
 UI Layer (Render methods)
   └─> User interaction (ImGui button click)
@@ -595,6 +682,7 @@ UI Layer (Render methods)
 ```
 
 ### Pattern 3: State-Driven Rendering
+
 ```
 AppState (central mutable state)
   ├─> FiltersLayer::OnRender reads filters_tabs
@@ -605,6 +693,7 @@ AppState (central mutable state)
 ```
 
 ### Pattern 4: Lazy-Loading with Ranges
+
 ```
 LogsViewLayer detects scroll
   └─> Calculates new visible range
@@ -616,6 +705,7 @@ LogsViewLayer detects scroll
 ```
 
 ### Pattern 5: Double-Buffered Concurrent Access
+
 ```
 TDoubleBuffer<AppState>
   ├─> UI threads (layers) read from front buffer
@@ -628,35 +718,34 @@ TDoubleBuffer<AppState>
 
 ## Dependency Summary Matrix
 
-| Component | Depends On | Used By |
-|-----------|-----------|---------|
-| **Graphite::Logger** | None | Everything |
-| **Graphite::Common** | Logger | Everything |
-| **Graphite::Application** | Logger, Common, Renderer | Fluxion, Layers |
-| **Graphite::Renderer** | Logger, Common | TGraphiteApplication |
-| **API::Data** | Common | Application::Data, Layers |
-| **API::LogsPlugin** | API::Data | Application::Data, LogsViewLayer |
-| **Application::Fluxion** | All Graphite, API, Data, Layers | main.cpp |
-| **Application::Data** | Graphite, API | Fluxion, All Layers |
-| **Application::Layers** | Graphite::Application, Data, API | Fluxion |
+| Component                 | Depends On                       | Used By                          |
+| ------------------------- | -------------------------------- | -------------------------------- |
+| **Graphite::Logger**      | None                             | Everything                       |
+| **Graphite::Common**      | Logger                           | Everything                       |
+| **Graphite::Application** | Logger, Common, Renderer         | Fluxion, Layers                  |
+| **Graphite::Renderer**    | Logger, Common                   | TGraphiteApplication             |
+| **API::Data**             | Common                           | Application::Data, Layers        |
+| **API::LogsPlugin**       | API::Data                        | Application::Data, LogsViewLayer |
+| **Application::Fluxion**  | All Graphite, API, Data, Layers  | main.cpp                         |
+| **Application::Data**     | Graphite, API                    | Fluxion, All Layers              |
+| **Application::Layers**   | Graphite::Application, Data, API | Fluxion                          |
 
 ---
 
 ## Component Responsibilities Summary
 
-| Component | Primary Responsibility |
-|-----------|----------------------|
-| **Logger** | Asynchronous logging with scopes |
-| **Common** | Threading, memory, ID generation utilities |
-| **Application** | Framework (app lifecycle, layers, rendering) |
-| **Renderer** | Graphics API abstraction |
-| **API::Data** | Shared data definitions |
-| **API::LogsPlugin** | Plugin interface contract |
-| **Fluxion** | Application orchestration |
-| **Application::Data** | Central state management |
-| **BaseLayer** | Layer foundation |
-| **MainMenuLayer** | Menu bar rendering |
-| **DevLayer** | Debug UI |
-| **FiltersLayer** | Filter management UI |
-| **LogsViewLayer** | Log visualization and lazy-loading |
-
+| Component             | Primary Responsibility                       |
+| --------------------- | -------------------------------------------- |
+| **Logger**            | Asynchronous logging with scopes             |
+| **Common**            | Threading, memory, ID generation utilities   |
+| **Application**       | Framework (app lifecycle, layers, rendering) |
+| **Renderer**          | Graphics API abstraction                     |
+| **API::Data**         | Shared data definitions                      |
+| **API::LogsPlugin**   | Plugin interface contract                    |
+| **Fluxion**           | Application orchestration                    |
+| **Application::Data** | Central state management                     |
+| **BaseLayer**         | Layer foundation                             |
+| **MainMenuLayer**     | Menu bar rendering                           |
+| **DevLayer**          | Debug UI                                     |
+| **FiltersLayer**      | Filter management UI                         |
+| **LogsViewLayer**     | Log visualization and lazy-loading           |

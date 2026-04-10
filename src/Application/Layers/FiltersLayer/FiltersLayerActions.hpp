@@ -29,11 +29,13 @@ enum class EFilterActionType : std::uint8_t
     AddTab,
     RemoveTab,
     DuplicateTab,
+    MoveFilter,
     AddFilter,
     RemoveFilter,
     DuplicateFilter,
     AddCondition,
-    RemoveCondition
+    RemoveCondition,
+    MoveCondition
 };
 
 namespace Payloads {
@@ -50,12 +52,30 @@ struct SearchLog
     Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
 };
 
+struct MoveFilter
+{
+    Graphite::Common::Utility::UniqueID tab_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID target_filter_id{
+        Graphite::Common::Utility::UniqueID::Default()};
+};
+
+struct MoveCondition
+{
+    Graphite::Common::Utility::UniqueID tab_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID condition_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID target_condition_id{
+        Graphite::Common::Utility::UniqueID::Default()};
+};
+
 }; // namespace Payloads
 
 struct FilterActionPayload
 {
     EFilterActionType type{EFilterActionType::None};
-    std::variant<Payloads::FiltersDataModify, Payloads::SearchLog> data{};
+    std::variant<Payloads::FiltersDataModify, Payloads::SearchLog, Payloads::MoveFilter, Payloads::MoveCondition>
+        data{};
 };
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action);

@@ -543,6 +543,113 @@ void handle<EFilterActionType::PrevLog>(AppState& application_state, Payloads::S
         });
 }
 
+template <>
+void handle<EFilterActionType::MoveFilter>(AppState& application_state, Payloads::MoveFilter const& payload)
+{
+    LOG_SCOPE("::handle<MoveFilter>()");
+    GRAPHITE_ASSERT(
+        payload.tab_id != Graphite::Common::Utility::UniqueID::Default(),
+        "tab_id should not be default for MoveFilter payload");
+    GRAPHITE_ASSERT(
+        payload.filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        "filter_id should not be default for MoveFilter payload");
+    GRAPHITE_ASSERT(
+        payload.target_filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        "target_filter_id should not be default for MoveFilter payload");
+
+    application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
+        auto tab_it = FindByID(tabs_back, payload.tab_id);
+        if (tab_it == tabs_back.end())
+        {
+            LOG_WARN("::handle<MoveFilter>(): Failed to find tab with ID {}", payload.tab_id);
+            return;
+        }
+
+        (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
+            auto filter_it = FindByID(filters_back, payload.filter_id);
+            auto target_it = FindByID(filters_back, payload.target_filter_id);
+
+            if (filter_it != filters_back.end() && target_it != filters_back.end())
+            {
+                std::iter_swap(filter_it, target_it);
+                LOG_TRACE(
+                    "::handle<MoveFilter>(): Swapped filter {} with {}",
+                    payload.filter_id,
+                    payload.target_filter_id);
+            }
+            else
+            {
+                LOG_WARN(
+                    "::handle<MoveFilter>(): Failed to find one of the filters (filter_id: {}, "
+                    "target_filter_id: {})",
+                    payload.filter_id,
+                    payload.target_filter_id);
+            }
+        });
+    });
+}
+
+template <>
+void handle<EFilterActionType::MoveCondition>(
+    AppState& application_state,
+    Payloads::MoveCondition const& payload)
+{
+    LOG_SCOPE("::handle<MoveCondition>()");
+    GRAPHITE_ASSERT(
+        payload.tab_id != Graphite::Common::Utility::UniqueID::Default(),
+        "tab_id should not be default for MoveCondition payload");
+    GRAPHITE_ASSERT(
+        payload.filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        "filter_id should not be default for MoveCondition payload");
+    GRAPHITE_ASSERT(
+        payload.condition_id != Graphite::Common::Utility::UniqueID::Default(),
+        "condition_id should not be default for MoveCondition payload");
+    GRAPHITE_ASSERT(
+        payload.target_condition_id != Graphite::Common::Utility::UniqueID::Default(),
+        "target_condition_id should not be default for MoveCondition payload");
+
+    application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
+        auto tab_it = FindByID(tabs_back, payload.tab_id);
+        if (tab_it == tabs_back.end())
+        {
+            LOG_WARN("::handle<MoveCondition>(): Failed to find tab with ID {}", payload.tab_id);
+            return;
+        }
+
+        (*tab_it)->filters.UpdateBackBufferCopy([&](auto& filters_back) {
+            auto filter_it = FindByID(filters_back, payload.filter_id);
+            if (filter_it == filters_back.end())
+            {
+                LOG_WARN(
+                    "::handle<MoveCondition>(): Failed to find filter with ID {}", payload.filter_id);
+                return;
+            }
+
+            (*filter_it)->conditions.UpdateBackBufferCopy([&](auto& conditions_back) {
+                auto condition_it = FindByID(conditions_back, payload.condition_id);
+                auto target_it = FindByID(conditions_back, payload.target_condition_id);
+
+                if (condition_it != conditions_back.end() && target_it != conditions_back.end())
+                {
+                    std::iter_swap(condition_it, target_it);
+                    LOG_TRACE(
+                        "::handle<MoveCondition>(): Swapped condition {} with {}",
+                        payload.condition_id,
+                        payload.target_condition_id);
+                }
+                else
+                {
+                    LOG_WARN(
+                        "::handle<MoveCondition>(): Failed to find one of the conditions "
+                        "(condition_id: {}, target_condition_id: {})",
+                        payload.condition_id,
+                        payload.target_condition_id);
+                }
+            });
+        });
+    });
+}
+
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& payload)
 {
     static auto constexpr c_no_payload{0};
@@ -640,6 +747,15 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
             });
         break;
     }
+    case EFilterActionType::MoveFilter: {
+        handle<EFilterActionType::MoveFilter>(
+            application_state, std::get<Payloads::MoveFilter>(payload.data));
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
+            });
+        break;
+    }
     case EFilterActionType::AddCondition: {
         handle<EFilterActionType::AddCondition>(
             application_state, std::get<Payloads::FiltersDataModify>(payload.data));
@@ -656,6 +772,15 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::Applied] = false;
+                metadata[EFiltersMetadataFlag::SavedToDisk] = false;
+            });
+        break;
+    }
+    case EFilterActionType::MoveCondition: {
+        handle<EFilterActionType::MoveCondition>(
+            application_state, std::get<Payloads::MoveCondition>(payload.data));
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
         break;

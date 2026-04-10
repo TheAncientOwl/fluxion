@@ -419,10 +419,35 @@ void FiltersLayer::RenderFilter(
     using EFilterFlag = Filters::EFilterFlag;
 
     UIHelpers::Styles::PushButtonGripper();
-    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {
-        // TODO:
-    });
+    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Filter", [&] {});
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+    {
+        ImGui::SetDragDropPayload(
+            "FILTER_PAYLOAD", &filter.id, sizeof(Graphite::Common::Utility::UniqueID));
+        ImGui::Text("%s", filter.name.c_str());
+        ImGui::EndDragDropSource();
+    }
     UIHelpers::Styles::PopButtonGripper();
+
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("FILTER_PAYLOAD"))
+        {
+            auto& dragged_filter_id =
+                *static_cast<const Graphite::Common::Utility::UniqueID*>(payload->Data);
+            if (dragged_filter_id != filter.id)
+            {
+                Dispatch(
+                    {.type = Actions::FiltersLayer::EFilterActionType::MoveFilter,
+                     .data = Actions::FiltersLayer::Payloads::MoveFilter{
+                         .tab_id = owning_tab_id,
+                         .filter_id = dragged_filter_id,
+                         .target_filter_id = filter.id}});
+                MarkFiltersMetadataDirty();
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
 
     ImGui::SameLine();
     bool const is_collapsed{filter[EFilterFlag::IsCollapsed]};
@@ -559,10 +584,36 @@ void FiltersLayer::RenderCondition(
     ImGui::BeginChild(s_condition_id, ImVec2{0, 0}, ImGuiChildFlags_AutoResizeY);
 
     UIHelpers::Styles::PushButtonGripper();
-    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Condition", [&] {
-        // TODO: Implement move
-    });
+    Graphite::Common::UI::IconButton(ICON_CI_GRIPPER, "Move Condition", [&] {});
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+    {
+        ImGui::SetDragDropPayload(
+            "CONDITION_PAYLOAD", &condition.id, sizeof(Graphite::Common::Utility::UniqueID));
+        ImGui::Text("Condition");
+        ImGui::EndDragDropSource();
+    }
     UIHelpers::Styles::PopButtonGripper();
+
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONDITION_PAYLOAD"))
+        {
+            auto& dragged_condition_id =
+                *static_cast<const Graphite::Common::Utility::UniqueID*>(payload->Data);
+            if (dragged_condition_id != condition.id)
+            {
+                Dispatch(
+                    {.type = Actions::FiltersLayer::EFilterActionType::MoveCondition,
+                     .data = Actions::FiltersLayer::Payloads::MoveCondition{
+                         .tab_id = owning_tab_id,
+                         .filter_id = owning_filter_id,
+                         .condition_id = dragged_condition_id,
+                         .target_condition_id = condition.id}});
+                MarkFiltersMetadataDirty();
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
 
     ImGui::SameLine();
     UIHelpers::Styles::PushRedButton();

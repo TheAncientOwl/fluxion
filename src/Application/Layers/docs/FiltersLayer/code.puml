@@ -69,8 +69,33 @@ else AddTab
 else AddFilter
   filters -> dispatch: Push action with FiltersDataModify
   dispatch --> filters: Queued
+else RemoveFilter
+  filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else DuplicateFilter
+  filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else MoveFilter (Drag & Drop)
+  filters -> dispatch: Push action with MoveFilter payload
+  note right of filters
+    User drags filter gripper
+    to target filter location
+    Swaps positions in vector
+  end note
+  dispatch --> filters: Queued
 else AddCondition
   filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else RemoveCondition
+  filters -> dispatch: Push action with FiltersDataModify
+  dispatch --> filters: Queued
+else MoveCondition (Drag & Drop)
+  filters -> dispatch: Push action with MoveCondition payload
+  note right of filters
+    User drags condition gripper
+    to target condition location
+    Swaps positions in vector
+  end note
   dispatch --> filters: Queued
 else NextLog/PrevLog
   filters -> dispatch: Push action with SearchLog

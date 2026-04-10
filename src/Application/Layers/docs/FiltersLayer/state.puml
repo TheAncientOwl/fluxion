@@ -16,11 +16,13 @@ package "Actions" {
         + AddTab
         + RemoveTab
         + DuplicateTab
+        + MoveFilter
         + AddFilter
         + RemoveFilter
         + DuplicateFilter
         + AddCondition
         + RemoveCondition
+        + MoveCondition
     }
     
     struct FiltersDataModify {
