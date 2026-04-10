@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.34
+/// @version 0.35
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -424,7 +424,10 @@ void FiltersLayer::RenderFilter(
     {
         ImGui::SetDragDropPayload(
             "FILTER_PAYLOAD", &filter.id, sizeof(Graphite::Common::Utility::UniqueID));
+        ImGui::PushStyleColor(ImGuiCol_Text, filter.colors.foreground);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, filter.colors.background);
         ImGui::Text("%s", filter.name.c_str());
+        ImGui::PopStyleColor(2);
         ImGui::EndDragDropSource();
     }
     UIHelpers::Styles::PopButtonGripper();
@@ -589,7 +592,33 @@ void FiltersLayer::RenderCondition(
     {
         ImGui::SetDragDropPayload(
             "CONDITION_PAYLOAD", &condition.id, sizeof(Graphite::Common::Utility::UniqueID));
-        ImGui::Text("Condition");
+
+        auto const& header = m_application->GetApplicationState().logs.table_header;
+        std::string column_name = "Unknown";
+        for (auto const& col : header)
+        {
+            if (col.id == condition.over_column_id)
+            {
+                column_name = col.display_name;
+                break;
+            }
+        }
+
+        using EConditionFlag = Filters::EConditionFlag;
+        std::string flags;
+        if (condition[EConditionFlag::IsRegex])
+            flags += "R";
+        if (condition[EConditionFlag::IsEquals])
+            flags += "E";
+        if (condition[EConditionFlag::IsCaseSensitive])
+            flags += "C";
+
+        ImGui::TextUnformatted(column_name.c_str());
+        ImGui::Text("%s", condition.data.c_str());
+        if (!flags.empty())
+        {
+            ImGui::TextDisabled("[%s]", flags.c_str());
+        }
         ImGui::EndDragDropSource();
     }
     UIHelpers::Styles::PopButtonGripper();
