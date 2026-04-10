@@ -143,30 +143,43 @@ Each layer has its own documentation directory with state, interface, and code f
 
 📁 `src/Application/Layers/FiltersLayer/docs/`
 
-**Purpose**: Filter creation and management UI with dispatcher-based actions.
+**Purpose**: Filter creation and management UI with drag & drop reordering and persistent storage.
 
 **Key Features**:
 
 - Extends `TSoftCloseableLayer` - Can be toggled visible/hidden
 - Implements `TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>` - Action queue
+- Drag & drop reordering for filters and conditions with visual previews
+- Persistent storage - Filters saved to/loaded from `data/filters/filters.txt`
 - Renders tabs, filters, and conditions
+- Full color customization per filter
 
 **Action Types** (EFilterActionType):
 
 - `ApplyFilters` - Apply current filters to logs
 - `DisableFilters` - Clear all filters
 - Tab Management: `AddTab`, `RemoveTab`, `DuplicateTab`
-- Filter Management: `AddFilter`, `RemoveFilter`, `DuplicateFilter`
-- Condition Management: `AddCondition`, `RemoveCondition`
+- Filter Management: `AddFilter`, `RemoveFilter`, `DuplicateFilter`, `MoveFilter`
+- Condition Management: `AddCondition`, `RemoveCondition`, `MoveCondition`
 - Navigation: `NextLog`, `PrevLog` - Search through filtered logs
+- Persistence: `SaveFilters`, `LoadFilters` - Serialize/deserialize to disk
 
 **Key Methods**:
 
-- `RenderToolbar()` - Toolbar buttons
+- `RenderToolbar()` - Toolbar buttons (Add Tab, Apply, Disable)
 - `RenderTabs()` - Tab UI and management
-- `RenderFilter()` - Filter editing UI
-- `RenderCondition()` - Condition editing UI
+- `RenderFilter()` - Filter editing UI with drag & drop source
+- `RenderCondition()` - Condition editing UI with drag & drop source
 - `MarkFiltersMetadataDirty()` - Mark UI state as dirty
+- `SaveFiltersToFile()` - Persist filters to disk
+- `LoadFiltersFromFile()` - Load filters from disk on startup
+
+**Persistence**:
+
+- Filters are automatically loaded from `data/filters/filters.txt` on application startup
+- Supports manual save via SaveFilters action
+- Graceful fallback to defaults if file not found
+- Preserves all settings: filter names, colors, conditions, priorities, flags
 
 ---
 

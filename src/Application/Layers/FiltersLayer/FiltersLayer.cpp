@@ -274,6 +274,21 @@ void FiltersLayer::MarkFiltersMetadataDirty()
 
 void FiltersLayer::RenderToolbar()
 {
+    auto& app_state{m_application->GetApplicationState()};
+
+    ImGui::BeginDisabled(
+        app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::SavedToDisk]);
+    Graphite::Common::UI::TabItemIconButton(ICON_CI_SAVE, "Save Filters", [&]() {
+        Dispatch(
+            {.type = Actions::FiltersLayer::EFilterActionType::SaveFilters,
+             Actions::FiltersLayer::Payloads::FiltersDataModify{
+                 .tab_id = std::nullopt,
+                 .filter_id = std::nullopt,
+                 .condition_id = std::nullopt,
+             }});
+    });
+    ImGui::EndDisabled();
+
     Graphite::Common::UI::TabItemIconButton(ICON_CI_NEW_FOLDER, "Add Tab", [&] {
         Dispatch(
             {.type = Actions::FiltersLayer::EFilterActionType::AddTab,
@@ -281,8 +296,6 @@ void FiltersLayer::RenderToolbar()
                  .tab_id = std::nullopt, .filter_id = std::nullopt, .condition_id = std::nullopt}});
         MarkFiltersMetadataDirty();
     });
-
-    auto& app_state{m_application->GetApplicationState()};
 
     ImGui::BeginDisabled(app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::Applied]);
     Graphite::Common::UI::TabItemIconButton(ICON_CI_WAND, "Apply Filters", [&]() {

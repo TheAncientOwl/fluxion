@@ -10,6 +10,9 @@
 ///
 
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 
 #include "FiltersLayerActions.hpp"
 #include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
@@ -650,6 +653,205 @@ void handle<EFilterActionType::MoveCondition>(
     });
 }
 
+void SaveFiltersToFile(AppState const& application_state)
+{
+    LOG_SCOPE("::SaveFiltersToFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path filters_dir = std::filesystem::path(home) / ".fluxion";
+        std::filesystem::create_directories(filters_dir);
+
+        std::filesystem::path filters_file = filters_dir / "filters.flx";
+        std::ofstream ofs(filters_file);
+
+        auto const& tabs = application_state.filters.tabs.GetFront();
+        ofs << "FILTERS_FILE_V1\n";
+        ofs << tabs.size() << "\n";
+
+        for (auto const& tab : tabs)
+        {
+            ofs << tab->name << "\n";
+            ofs << (tab->operator[](Filters::ETabFlag::IsActive) ? "1" : "0") << "\n";
+            ofs << tab->filters.GetFront().size() << "\n";
+
+            for (auto const& filter : tab->filters.GetFront())
+            {
+                ofs << filter->name << "\n";
+                ofs << filter->priority << "\n";
+                ofs << (filter->operator[](Filters::EFilterFlag::IsActive) ? "1" : "0") << "\n";
+                ofs << (filter->operator[](Filters::EFilterFlag::IsHighlightOnly) ? "1" : "0") << "\n";
+                ofs << (filter->operator[](Filters::EFilterFlag::IsCollapsed) ? "1" : "0") << "\n";
+                ofs << filter->colors.foreground.x << " " << filter->colors.foreground.y << " "
+                    << filter->colors.foreground.z << " " << filter->colors.foreground.w << "\n";
+                ofs << filter->colors.background.x << " " << filter->colors.background.y << " "
+                    << filter->colors.background.z << " " << filter->colors.background.w << "\n";
+                ofs << filter->conditions.GetFront().size() << "\n";
+
+                for (auto const& condition : filter->conditions.GetFront())
+                {
+                    ofs << condition->data << "\n";
+                    ofs << (condition->operator[](Filters::EConditionFlag::IsRegex) ? "1" : "0")
+                        << "\n";
+                    ofs << (condition->operator[](Filters::EConditionFlag::IsEquals) ? "1" : "0")
+                        << "\n";
+                    ofs << (condition->operator[](Filters::EConditionFlag::IsCaseSensitive) ? "1" : "0")
+                        << "\n";
+                }
+            }
+        }
+
+        ofs.close();
+        LOG_INFO("::SaveFiltersToFile(): Successfully saved filters to {}", filters_file.string());
+
+        // Mark as saved
+        const_cast<AppState&>(application_state)
+            .filters.metadata.UpdateBackBufferCopyLocking([](FiltersGeneralMetadata& metadata) {
+                metadata[Filters::EFiltersMetadataFlag::SavedToDisk] = true;
+            });
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::SaveFiltersToFile(): Failed to save filters: {}", e.what());
+    }
+}
+
+void LoadFiltersFromFile(AppState& application_state)
+{
+    LOG_SCOPE("::LoadFiltersFromFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path filters_file = std::filesystem::path(home) / ".fluxion/filters.flx";
+
+        if (!std::filesystem::exists(filters_file))
+        {
+            LOG_INFO("::LoadFiltersFromFile(): No saved filters found, using defaults");
+            return;
+        }
+
+        std::ifstream ifs(filters_file);
+        std::string line;
+
+        // Read and validate header
+        std::getline(ifs, line);
+        if (line != "FILTERS_FILE_V1")
+        {
+            LOG_WARN("::LoadFiltersFromFile(): Invalid filters file format");
+            return;
+        }
+
+        std::vector<Filters::Tab::Ptr> loaded_tabs;
+
+        std::size_t tab_count;
+        ifs >> tab_count;
+        ifs.ignore();
+
+        for (std::size_t t = 0; t < tab_count; ++t)
+        {
+            auto tab_ptr = std::make_shared<Filters::Tab>();
+            tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+
+            std::getline(ifs, tab_ptr->name);
+            int tab_active;
+            ifs >> tab_active;
+            ifs.ignore();
+            (*tab_ptr)[Filters::ETabFlag::IsActive] = (tab_active == 1);
+
+            std::size_t filter_count;
+            ifs >> filter_count;
+            ifs.ignore();
+
+            std::vector<Filters::Filter::Ptr> loaded_filters;
+
+            for (std::size_t f = 0; f < filter_count; ++f)
+            {
+                auto filter_ptr = std::make_shared<Filters::Filter>();
+                filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+
+                std::getline(ifs, filter_ptr->name);
+                ifs >> filter_ptr->priority;
+                ifs.ignore();
+
+                int filter_active, highlight_only, collapsed;
+                ifs >> filter_active >> highlight_only >> collapsed;
+                ifs.ignore();
+
+                (*filter_ptr)[Filters::EFilterFlag::IsActive] = (filter_active == 1);
+                (*filter_ptr)[Filters::EFilterFlag::IsHighlightOnly] = (highlight_only == 1);
+                (*filter_ptr)[Filters::EFilterFlag::IsCollapsed] = (collapsed == 1);
+
+                ifs >> filter_ptr->colors.foreground.x >> filter_ptr->colors.foreground.y >>
+                    filter_ptr->colors.foreground.z >> filter_ptr->colors.foreground.w;
+                ifs >> filter_ptr->colors.background.x >> filter_ptr->colors.background.y >>
+                    filter_ptr->colors.background.z >> filter_ptr->colors.background.w;
+                ifs.ignore();
+
+                std::size_t condition_count;
+                ifs >> condition_count;
+                ifs.ignore();
+
+                std::vector<Filters::Condition::Ptr> loaded_conditions;
+
+                for (std::size_t c = 0; c < condition_count; ++c)
+                {
+                    auto condition_ptr = std::make_shared<Filters::Condition>();
+                    condition_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+
+                    std::getline(ifs, condition_ptr->data);
+
+                    int is_regex, is_equals, is_case_sensitive;
+                    ifs >> is_regex >> is_equals >> is_case_sensitive;
+                    ifs.ignore();
+
+                    (*condition_ptr)[Filters::EConditionFlag::IsRegex] = (is_regex == 1);
+                    (*condition_ptr)[Filters::EConditionFlag::IsEquals] = (is_equals == 1);
+                    (*condition_ptr)[Filters::EConditionFlag::IsCaseSensitive] =
+                        (is_case_sensitive == 1);
+
+                    loaded_conditions.push_back(std::move(condition_ptr));
+                }
+
+                filter_ptr->conditions.Init(
+                    std::vector(loaded_conditions), std::move(loaded_conditions));
+                loaded_filters.push_back(std::move(filter_ptr));
+            }
+
+            tab_ptr->filters.Init(std::vector(loaded_filters), std::move(loaded_filters));
+            tab_ptr->UpdateImGuiID();
+            loaded_tabs.push_back(std::move(tab_ptr));
+        }
+
+        if (loaded_tabs.empty())
+        {
+            LOG_WARN("::LoadFiltersFromFile(): Loaded filters file is empty, using defaults");
+            return;
+        }
+
+        application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
+            tabs_back = std::move(loaded_tabs);
+            tabs_back.shrink_to_fit();
+        });
+
+        LOG_INFO("::LoadFiltersFromFile(): Successfully loaded {} tabs from disk", tab_count);
+
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](FiltersGeneralMetadata& metadata) {
+                metadata[Filters::EFiltersMetadataFlag::SavedToDisk] = true;
+            });
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::LoadFiltersFromFile(): Failed to load filters: {}", e.what());
+    }
+}
+
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& payload)
 {
     static auto constexpr c_no_payload{0};
@@ -783,6 +985,14 @@ void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload c
             [](FiltersGeneralMetadata& metadata) {
                 metadata[EFiltersMetadataFlag::SavedToDisk] = false;
             });
+        break;
+    }
+    case EFilterActionType::SaveFilters: {
+        SaveFiltersToFile(application_state);
+        break;
+    }
+    case EFilterActionType::LoadFilters: {
+        LoadFiltersFromFile(application_state);
         break;
     }
     default: {

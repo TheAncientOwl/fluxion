@@ -35,7 +35,10 @@ enum class EFilterActionType : std::uint8_t
     DuplicateFilter,
     AddCondition,
     RemoveCondition,
-    MoveCondition
+    MoveCondition,
+
+    SaveFilters,
+    LoadFilters
 };
 
 namespace Payloads {
@@ -77,6 +80,9 @@ struct FilterActionPayload
     std::variant<Payloads::FiltersDataModify, Payloads::SearchLog, Payloads::MoveFilter, Payloads::MoveCondition>
         data{};
 };
+
+void SaveFiltersToFile(AppState const& application_state);
+void LoadFiltersFromFile(AppState& application_state);
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action);
 

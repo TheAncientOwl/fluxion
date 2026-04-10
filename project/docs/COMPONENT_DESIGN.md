@@ -533,18 +533,20 @@ DevLayer::OnRender() -> void
 - Condition management for each filter
 - Filter application and search execution
 - Drag & drop reordering of filters and conditions
+- Persistent storage: save/load filters to/from disk
 - Implements action dispatcher for UI interactions
 
 **Key Structures:**
 
 - `FiltersLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>` + implements `TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>`
   - `is_active`: Visibility flag
-- **Actions** (15 total):
+- **Actions** (17 total):
   - Tab operations: AddTab, RemoveTab, DuplicateTab
   - Filter operations: AddFilter, RemoveFilter, DuplicateFilter, MoveFilter
   - Condition operations: AddCondition, RemoveCondition, MoveCondition
   - Filter control: ApplyFilters, DisableFilters
   - Search: NextLog, PrevLog
+  - Persistence: SaveFilters, LoadFilters
 - **Payloads:**
   - `FiltersDataModify`: Optional IDs (tab_id, filter_id, condition_id)
   - `SearchLog`: Target filter_id for searching
@@ -563,6 +565,8 @@ FiltersLayer::MarkFiltersMetadataDirty() -> void
 FiltersLayer::OnIterate() -> void // Process action dispatcher
 FiltersLayer::OnRender() -> void
 FilterAction::HandleFiltersLayerAction(state, action) -> void
+SaveFiltersToFile(state) -> void  // Serializes to data/filters/filters.txt
+LoadFiltersFromFile(state) -> void  // Deserializes from disk
 ```
 
 **Dependencies:**
@@ -572,6 +576,7 @@ FilterAction::HandleFiltersLayerAction(state, action) -> void
 - Application::Data (AppState, Tab, Filter, Condition)
 - API::Data (Filter, Condition structures)
 - ImGui (including drag & drop API)
+- C++ Standard Library (filesystem, fstream for persistence)
 
 **Used By:**
 
@@ -600,6 +605,32 @@ User drags gripper on filter/condition
 → Handler swaps positions via std::iter_swap
 → MarkFiltersMetadataDirty() flags state change
 ```
+
+**Persistence Workflow:**
+
+```
+Application startup
+→ Fluxion::AppInit()
+→ LoadFiltersFromFile(AppState)
+→ If file exists: Deserialize all tabs/filters/conditions
+→ If file missing: Use default filters
+→ Both cases mark SavedToDisk flag
+
+User modifies filters
+→ MarkFiltersMetadataDirty() clears SavedToDisk flag
+
+User triggers SaveFilters action
+→ SaveFiltersToFile(AppState)
+→ Serializes complete filter tree to data/filters/filters.txt
+→ Marks SavedToDisk flag true
+```
+
+**File Format:**
+
+- Location: `~/fluxion/filters.flx`
+- Format: Plain text with format version (FILTERS_FILE_V1)
+- Structure: Header → Tab count → [Tab name, flags, filters...] → [Filter details, conditions...]
+- Preserves: All filter settings, colors, condition flags, priorities
 
 ---
 

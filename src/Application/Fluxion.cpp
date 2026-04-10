@@ -38,6 +38,8 @@ FluxionApplication::FluxionApplication(
 FluxionApplication::~FluxionApplication()
 {
     LOG_SCOPE("::~FluxionApplication()");
+    // Save filters to disk on application shutdown
+    Layers::Actions::FiltersLayer::SaveFiltersToFile(m_app_state);
 }
 
 void FluxionApplication::AppInit()
@@ -56,6 +58,9 @@ void FluxionApplication::AppInit()
     m_app_state.logs_plugin = std::make_unique<DummyPlugin>();
     // TODO: this is only for dev purpose, this should be moved somewhere else.
     m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
+
+    // Load filters from disk after logger is initialized
+    Layers::Actions::FiltersLayer::LoadFiltersFromFile(m_app_state);
 
     AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
     AddLayer<Layers::DevLayer>(
