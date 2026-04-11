@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Render App's menu.
 ///
 
@@ -14,6 +14,7 @@
 #include "Fluxion.hpp"
 #include "Fluxion/Application/Data/AppState.hpp"
 #include "Graphite/Application/Layers/TLayer.hpp"
+#include "Graphite/Common/UI/FileDialog.hpp"
 
 namespace Fluxion::Application::Layers {
 
@@ -34,6 +35,9 @@ public:
 
 private:
     void RenderMenu();
+
+    Graphite::Common::UI::FileDialog m_file_dialog;
+    std::filesystem::path m_last_file_dialog_path;
 };
 
 } // namespace Fluxion::Application::Layers

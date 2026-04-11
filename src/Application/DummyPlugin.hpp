@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -131,9 +131,11 @@ public:
         // No UI to render for dummy plugin
     }
 
-    void ImportLogs(std::filesystem::path const& /*path*/) override
+    void ImportLogs(std::filesystem::path const& path) override
     {
-        // No import functionality for dummy plugin
+        USE_LOG_SCOPE(Fluxion::Application::DummyPlugin);
+        LOG_SCOPE("ImportLogs");
+        LOG_INFO("::ImportLogs(): Importing {}", path.c_str());
     }
 
     void ApplyFilters(

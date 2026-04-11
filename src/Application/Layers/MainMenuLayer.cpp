@@ -5,13 +5,15 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
 #include "MainMenuLayer.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "Graphite/Logger.hpp"
+
+#include <filesystem>
 
 #include "IconsCodicons.h"
 #include "imgui.h"
@@ -42,6 +44,21 @@ MainMenuLayer::MainMenuLayer(
 void MainMenuLayer::OnAdd()
 {
     LOG_SCOPE("::OnAdd()");
+
+    // Initialize last visited path
+    m_last_file_dialog_path = std::filesystem::current_path();
+
+    // Configure file dialog for importing logs
+    std::vector<Graphite::Common::UI::FileFilter> log_filters = {
+        {"Log Files", {".log", ".txt"}}, {"All Files", {".*"}}};
+    m_file_dialog.SetSelectionCallback([this](const Graphite::Common::UI::FileDialogResult& result) {
+        if (result.was_selected)
+        {
+            LOG_INFO("Selected log file: {}", result.path.string());
+            m_last_file_dialog_path = result.path.parent_path();
+            m_application->GetApplicationState().logs_plugin->ImportLogs(result.path);
+        }
+    });
 }
 
 void MainMenuLayer::OnIterate()
@@ -52,6 +69,8 @@ void MainMenuLayer::OnIterate()
 void MainMenuLayer::OnRender()
 {
     LOG_SCOPE("::OnRender()");
+
+    m_file_dialog.Render();
 
     RenderMenu();
 }
@@ -66,6 +85,18 @@ void MainMenuLayer::RenderMenu()
     LOG_SCOPE("::RenderMenu()");
     if (ImGui::BeginMainMenuBar())
     {
+        if (ImGui::BeginMenu(ICON_CI_CODE_OSS " File"))
+        {
+            if (ImGui::MenuItem(ICON_CI_ROCKET " Import Logs"))
+            {
+                m_file_dialog.Open(
+                    "Select Log File to Import",
+                    Graphite::Common::UI::EFileDialogMode::OpenFile,
+                    m_last_file_dialog_path);
+            }
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
             m_application->ForEachLayer<
