@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -126,7 +126,7 @@ public:
 
     std::string_view GetDisplayName() const override { return "DummyPlugin"; }
 
-    void RenderMenuLayer() override
+    void RenderMenu() override
     {
         // No UI to render for dummy plugin
     }

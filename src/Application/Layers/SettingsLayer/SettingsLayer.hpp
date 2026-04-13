@@ -5,7 +5,7 @@
 ///
 /// @file SettingsLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Settings UI layer for application configuration.
 ///
 
@@ -42,6 +42,8 @@ public:
 
 private:
     void RenderPluginSelection();
+    void RenderPluginMenu();
+
     void ScanAvailablePlugins();
 
     std::vector<std::filesystem::path> m_available_plugins;

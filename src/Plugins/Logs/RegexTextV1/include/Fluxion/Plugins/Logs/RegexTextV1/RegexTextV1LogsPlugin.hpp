@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -21,7 +21,7 @@ class RegexTextV1LogsPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugi
     void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) const override;
     void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) const override;
 
-    void RenderMenuLayer() override;
+    void RenderMenu() override;
 
     void ImportLogs(std::filesystem::path const& path) override;
 

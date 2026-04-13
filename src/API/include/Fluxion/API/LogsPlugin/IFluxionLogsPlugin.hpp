@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -33,7 +33,7 @@ public:
     virtual void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) const = 0;
     virtual void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) const = 0;
 
-    virtual void RenderMenuLayer() = 0;
+    virtual void RenderMenu() = 0;
 
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
 

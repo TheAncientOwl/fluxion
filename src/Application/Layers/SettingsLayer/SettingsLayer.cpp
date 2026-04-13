@@ -5,7 +5,7 @@
 ///
 /// @file SettingsLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see SettingsLayer.hpp.
 ///
 
@@ -85,6 +85,12 @@ void SettingsLayer::OnRender()
             ImGui::EndTabItem();
         }
 
+        if (ImGui::BeginTabItem("Plugin Menu"))
+        {
+            RenderPluginMenu();
+            ImGui::EndTabItem();
+        }
+
         ImGui::EndTabBar();
     }
 
@@ -94,6 +100,30 @@ void SettingsLayer::OnRender()
 void SettingsLayer::OnRemove()
 {
     LOG_SCOPE("::OnRemove()");
+}
+
+void SettingsLayer::RenderPluginMenu()
+{
+    auto& app_state{m_application->GetApplicationState()};
+
+    ImGui::TextDisabled(
+        "Current Plugin Path: %s",
+        app_state.selected_logs_plugin_path.empty()
+            ? "None"
+            : app_state.selected_logs_plugin_path.filename().c_str());
+
+    if (app_state.logs_plugin == nullptr)
+    {
+        return;
+    }
+
+    ImGui::SetWindowFontScale(1.35f);
+    ImGui::TextUnformatted(app_state.logs_plugin->GetDisplayName().data());
+    ImGui::SetWindowFontScale(1.0f);
+
+    app_state.logs_plugin->RenderMenu();
+
+    ImGui::Spacing();
 }
 
 void SettingsLayer::ScanAvailablePlugins()
