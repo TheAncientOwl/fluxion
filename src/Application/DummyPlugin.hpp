@@ -5,7 +5,7 @@
 ///
 /// @file DummyPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Dummy IFluxionPlugin impl with hardcoded data.
 ///
 
@@ -114,12 +114,12 @@ public:
         }
     }
 
-    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/) const override
+    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/) override
     {
         // No action needed for dummy plugin
     }
 
-    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/) const override
+    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/) override
     {
         // No action needed for dummy plugin
     }

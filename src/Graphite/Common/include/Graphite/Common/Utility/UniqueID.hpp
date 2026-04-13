@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief UniqueID abstraction.
 ///
 
@@ -14,6 +14,7 @@
 #include <array>
 #include <format>
 #include <ostream>
+#include <type_traits>
 
 namespace Graphite::Common::Utility {
 
@@ -63,6 +64,13 @@ public: // hashing
         std::size_t operator()(UniqueID const&) const;
     };
     friend std::size_t Hash::operator()(UniqueID const&) const;
+
+    template <typename TNumeric>
+        requires std::is_arithmetic_v<TNumeric>
+    TNumeric ToHash() const
+    {
+        return static_cast<TNumeric>(Hash{}(*this));
+    }
 
 public: // operators
     bool operator<(UniqueID const&) const;

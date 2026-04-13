@@ -5,7 +5,7 @@
 ///
 /// @file DynamicLibrary.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief Implementation of @see DynamicLibrary.hpp.
 ///
 
@@ -26,9 +26,10 @@ using LibHandle = void*;
 DynamicLibrary::DynamicLibrary(const char* path)
 {
 #if defined(_WIN32)
-    handle = LoadLibraryA(path.c_str());
+    handle = LoadLibraryA(path);
 #else
-    handle = dlopen(path, RTLD_LAZY);
+    // Use RTLD_GLOBAL to share symbols (e.g., ImGui) with the main application
+    handle = dlopen(path, RTLD_LAZY | RTLD_GLOBAL);
 #endif
 }
 

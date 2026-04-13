@@ -19,7 +19,6 @@ set_target_properties(fluxion_logs_plugin__regex_text_v1 PROPERTIES
 target_link_libraries(fluxion_logs_plugin__regex_text_v1 PUBLIC
     project_compile_options
     external_icons_codicons
-    external_imgui
     graphite_interface
     graphite_impl
     fluxion_api_interface
@@ -30,6 +29,7 @@ target_link_libraries(fluxion_logs_plugin__regex_text_v1 PUBLIC
 target_include_directories(fluxion_logs_plugin__regex_text_v1 PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/Graphite/Logger/include
+    ${PROJECT_SOURCE_DIR}/external/imgui
 )
 
 # --- 3. Install to ~/.fluxion/plugins/logs ---
@@ -37,4 +37,12 @@ add_custom_command(TARGET fluxion_logs_plugin__regex_text_v1 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__regex_text_v1> $ENV{HOME}/.fluxion/plugins/logs
     COMMENT "Copying logs plugin to ~/.fluxion/plugins/logs"
+)
+
+# Also install on every cmake configure to ensure plugin is available even if not rebuilt
+add_custom_target(install_regex_text_v1_plugin ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__regex_text_v1> $ENV{HOME}/.fluxion/plugins/logs
+    DEPENDS fluxion_logs_plugin__regex_text_v1
+    COMMENT "Installing logs plugin to ~/.fluxion/plugins/logs"
 )

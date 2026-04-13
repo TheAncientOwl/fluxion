@@ -5,7 +5,7 @@
 ///
 /// @file SettingsLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see SettingsLayer.hpp.
 ///
 
@@ -14,6 +14,7 @@
 #include "IconsCodicons.h"
 #include "imgui.h"
 
+#include "DummyPlugin.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Logger.hpp"
 #include "Layers/FiltersLayer/FiltersLayerActions.hpp"
@@ -128,6 +129,8 @@ void SettingsLayer::RenderPluginMenu()
     ImGui::TextUnformatted(app_state.logs_plugin->GetDisplayName().data());
     ImGui::SetWindowFontScale(1.0f);
 
+    ImGui::Separator();
+
     app_state.logs_plugin->RenderMenu();
 
     ImGui::Spacing();
@@ -199,7 +202,7 @@ void SettingsLayer::RenderPluginSelection()
     }
 
     std::optional<std::filesystem::path> pending_plugin_path;
-    if (ImGui::BeginListBox("##logs_plugins", ImVec2(-1, 200)))
+    if (ImGui::BeginListBox("##logs_plugins", ImVec2(-1, -1)))
     {
         for (int i = 0; i < static_cast<int>(m_available_plugins.size()); ++i)
         {
@@ -268,6 +271,11 @@ void SettingsLayer::RenderPluginSelection()
                             metadata[Data::Filters::EFiltersMetadataFlag::SavedToDisk] = true;
                         });
 
+                    // Destroy old plugin BEFORE unloading the library
+                    LOG_INFO("Destroying old plugin");
+                    app_state.logs_plugin.reset();
+                    app_state.loaded_plugin_library.reset();
+
                     // Load new plugin with persistent library handle
                     app_state.loaded_plugin_library =
                         std::make_unique<Graphite::Common::Plugin::DynamicLibrary>(plugin_path);
@@ -276,6 +284,7 @@ void SettingsLayer::RenderPluginSelection()
                     // Save plugin path to disk
                     Actions::FiltersLayer::SavePluginPathToFile(app_state);
 
+                    bool plugin_loaded = false;
                     if (app_state.loaded_plugin_library && app_state.loaded_plugin_library->isLoaded())
                     {
                         using CreateFunc = Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*)();
@@ -287,6 +296,7 @@ void SettingsLayer::RenderPluginSelection()
                             LOG_INFO("Creating and enabling new plugin");
                             app_state.logs_plugin.reset(factory());
                             app_state.logs_plugin->OnEnable({});
+                            plugin_loaded = true;
                         }
                         else
                         {
@@ -298,6 +308,15 @@ void SettingsLayer::RenderPluginSelection()
                     else
                     {
                         LOG_ERROR("Failed to load plugin library at {}", plugin_path.c_str());
+                    }
+
+                    // Fall back to DummyPlugin if loading failed
+                    if (!plugin_loaded)
+                    {
+                        LOG_WARN("Plugin loading failed, falling back to DummyPlugin");
+                        app_state.logs_plugin = nullptr;
+                        app_state.selected_logs_plugin_path.clear();
+                        app_state.loaded_plugin_library.reset();
                     }
                 }
             }

@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -42,6 +42,9 @@ FluxionApplication::FluxionApplication(
 FluxionApplication::~FluxionApplication()
 {
     LOG_SCOPE("::~FluxionApplication()");
+    // Destroy plugin before unloading library
+    m_app_state.logs_plugin.reset();
+    m_app_state.loaded_plugin_library.reset();
     // Save plugin path and filters to disk on application shutdown
     Layers::Actions::FiltersLayer::SavePluginPathToFile(m_app_state);
     Layers::Actions::FiltersLayer::SaveFiltersToFile(m_app_state);

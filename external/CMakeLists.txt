@@ -16,7 +16,7 @@ else()
     list(APPEND IMGUI_SOURCES ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp)
 endif()
 
-add_library(external_imgui STATIC ${IMGUI_SOURCES})
+add_library(external_imgui SHARED ${IMGUI_SOURCES})
 
 target_include_directories(external_imgui SYSTEM PUBLIC ${IMGUI_DIR})
 
