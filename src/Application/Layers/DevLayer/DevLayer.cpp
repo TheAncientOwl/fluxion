@@ -12,7 +12,6 @@
 #include "DevLayer.hpp"
 #include "Graphite/Logger.hpp"
 #include "Modules/Logger.hpp"
-#include "Modules/Theme.hpp"
 
 #include "IconsCodicons.h"
 #include "imgui.h"
@@ -63,12 +62,6 @@ void DevLayer::OnRender()
         if (ImGui::BeginTabItem(ICON_CI_OUTPUT " Logger"))
         {
             Modules::DevLayer::RenderLogger();
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem(ICON_CI_SYMBOL_COLOR " Theme"))
-        {
-            Modules::DevLayer::RenderTheme();
             ImGui::EndTabItem();
         }
 

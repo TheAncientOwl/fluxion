@@ -5,7 +5,7 @@
 ///
 /// @file SettingsLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see SettingsLayer.hpp.
 ///
 
@@ -18,6 +18,7 @@
 #include "Graphite/Logger.hpp"
 #include "Layers/FiltersLayer/FiltersLayerActions.hpp"
 
+#include "Modules/Theme.hpp"
 #include "SettingsLayer.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Layers::SettingsLayer);
@@ -88,6 +89,12 @@ void SettingsLayer::OnRender()
         if (ImGui::BeginTabItem("Plugin Menu"))
         {
             RenderPluginMenu();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem(ICON_CI_SYMBOL_COLOR " Theme"))
+        {
+            Modules::SettingsLayer::RenderTheme();
             ImGui::EndTabItem();
         }
 

@@ -5,12 +5,12 @@
 ///
 /// @file Theme.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Dev version of app theme.
 ///
 
-namespace Fluxion::Application::Layers::Modules::DevLayer {
+namespace Fluxion::Application::Layers::Modules::SettingsLayer {
 
 void RenderTheme();
 
-} // namespace Fluxion::Application::Layers::Modules::DevLayer
+} // namespace Fluxion::Application::Layers::Modules::SettingsLayer

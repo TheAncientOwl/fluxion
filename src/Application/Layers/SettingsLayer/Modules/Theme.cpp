@@ -5,20 +5,21 @@
 ///
 /// @file Theme.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see Theme.hpp.
 ///
 
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Application::Layers::Modules::DevLayer::Themes);
-USE_LOG_SCOPE(Fluxion::Application::Layers::Modules::DevLayer::Themes);
+DEFINE_LOG_SCOPE(Fluxion::Application::Layers::Modules::SettingsLayer::Themes);
+USE_LOG_SCOPE(Fluxion::Application::Layers::Modules::SettingsLayer::Themes);
 
-namespace Fluxion::Application::Layers::Modules::DevLayer {
+namespace Fluxion::Application::Layers::Modules::SettingsLayer {
 
 void SetupImGuiDarkStyle()
 {
     LOG_SCOPE("::SetupImGuiDarkStyle()");
+    LOG_INFO("::SetupImGuiDarkStyle(): setting theme");
     ImGui::StyleColorsDark();
 
     ImGuiStyle& style = ImGui::GetStyle();
@@ -50,6 +51,7 @@ void SetupImGuiDarkStyle()
 void SetupForestGreenStyle()
 {
     LOG_SCOPE("::SetupForestGreenStyle()");
+    LOG_INFO("::SetupForestGreenStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -172,6 +174,7 @@ void SetupForestGreenStyle()
 void SetupImGuiAmethystStyle()
 {
     LOG_SCOPE("::SetupImGuiAmethystStyle()");
+    LOG_INFO("::SetupImGuiAmethystStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -270,6 +273,7 @@ void SetupImGuiAmethystStyle()
 void SetupImGuiSapphireStyle()
 {
     LOG_SCOPE("::SetupImGuiSapphireStyle()");
+    LOG_INFO("::SetupImGuiSapphireStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -363,6 +367,7 @@ void SetupImGuiSapphireStyle()
 void SetupImGuiAmberYellowStyle()
 {
     LOG_SCOPE("::SetupImGuiAmberYellowStyle()");
+    LOG_INFO("::SetupImGuiAmberYellowStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -458,6 +463,7 @@ void SetupImGuiAmberYellowStyle()
 void SetupImGuiDraculaStyle()
 {
     LOG_SCOPE("::SetupImGuiDraculaStyle()");
+    LOG_INFO("::SetupImGuiDraculaStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -554,6 +560,7 @@ void SetupImGuiDraculaStyle()
 void SetupImGuiCatppuccinMochaStyle()
 {
     LOG_SCOPE("::SetupImGuiCatppuccinMochaStyle()");
+    LOG_INFO("::SetupImGuiCatppuccinMochaStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -645,6 +652,7 @@ void SetupImGuiCatppuccinMochaStyle()
 void SetupImGuiGruvboxHardStyle()
 {
     LOG_SCOPE("::SetupImGuiGruvboxHardStyle()");
+    LOG_INFO("::SetupImGuiGruvboxHardStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -734,6 +742,7 @@ void SetupImGuiGruvboxHardStyle()
 void SetupImGuiCrimsonVesuviusStyle()
 {
     LOG_SCOPE("::SetupImGuiCrimsonVesuviusStyle()");
+    LOG_INFO("::SetupImGuiCrimsonVesuviusStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -819,6 +828,7 @@ void SetupImGuiCrimsonVesuviusStyle()
 void SetupImGuiRoseQuartzStyle()
 {
     LOG_SCOPE("::SetupImGuiRoseQuartzStyle()");
+    LOG_INFO("::SetupImGuiRoseQuartzStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -904,6 +914,7 @@ void SetupImGuiRoseQuartzStyle()
 void SetupImGuiCyberpunkStyle()
 {
     LOG_SCOPE("::SetupImGuiCyberpunkStyle()");
+    LOG_INFO("::SetupImGuiCyberpunkStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -991,6 +1002,7 @@ void SetupImGuiCyberpunkStyle()
 void SetupImGuiPaperAndInkStyle()
 {
     LOG_SCOPE("::SetupImGuiPaperAndInkStyle()");
+    LOG_INFO("::SetupImGuiPaperAndInkStyle(): setting theme");
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -1173,4 +1185,4 @@ void RenderTheme()
     }
 }
 
-} // namespace Fluxion::Application::Layers::Modules::DevLayer
+} // namespace Fluxion::Application::Layers::Modules::SettingsLayer
