@@ -5,15 +5,13 @@
 ///
 /// @file DynamicLibrary.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief DLL utility class.
 ///
 
 #pragma once
 
 #include <filesystem>
-#include <iostream>
-#include <string>
 
 namespace Graphite::Common::Plugin {
 
@@ -36,7 +34,7 @@ public:
 
     ~DynamicLibrary();
 
-    void* getSymbol(std::string_view const name);
+    void* getSymbol(std::string_view const name) const;
     bool isLoaded() const;
 
 private:

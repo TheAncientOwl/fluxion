@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.18
+/// @version 0.19
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -77,7 +77,14 @@ void LogsViewLayer::OnRender()
 
     ImGui::Begin(ICON_CI_OUTPUT " Logs", &app_state.layers_active.logs_view);
 
-    RenderLogsTable();
+    if (m_application->GetApplicationState().logs_plugin->GetTotalLogs())
+    {
+        RenderLogsTable();
+    }
+    else
+    {
+        ImGui::TextUnformatted("No logs loaded...");
+    }
 
     ImGui::End();
 }

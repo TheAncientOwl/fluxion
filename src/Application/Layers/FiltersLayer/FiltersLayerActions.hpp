@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -83,6 +83,9 @@ struct FilterActionPayload
 
 void SaveFiltersToFile(AppState const& application_state);
 void LoadFiltersFromFile(AppState& application_state);
+
+void SavePluginPathToFile(AppState const& application_state);
+void LoadPluginPathFromFile(AppState& application_state);
 
 void HandleFiltersLayerAction(AppState& application_state, FilterActionPayload const& action);
 

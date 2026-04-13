@@ -5,22 +5,26 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Implementation of @see Fluxion.hpp.
 ///
+
+#include <filesystem>
 
 #include "IconsCodicons.h"
 #include "imgui.h"
 
 #include "DummyPlugin.hpp"
 #include "Fluxion.hpp"
+#include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Logger.hpp"
 #include "Layers/BaseLayer.hpp"
 #include "Layers/DevLayer/DevLayer.hpp"
-#include "Layers/FiltersLayer//FiltersLayerActions.hpp"
 #include "Layers/FiltersLayer/FiltersLayer.hpp"
+#include "Layers/FiltersLayer/FiltersLayerActions.hpp"
 #include "Layers/LogsViewLayer/LogsViewLayer.hpp"
 #include "Layers/MainMenuLayer.hpp"
+#include "Layers/SettingsLayer/SettingsLayer.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
 USE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
@@ -38,7 +42,8 @@ FluxionApplication::FluxionApplication(
 FluxionApplication::~FluxionApplication()
 {
     LOG_SCOPE("::~FluxionApplication()");
-    // Save filters to disk on application shutdown
+    // Save plugin path and filters to disk on application shutdown
+    Layers::Actions::FiltersLayer::SavePluginPathToFile(m_app_state);
     Layers::Actions::FiltersLayer::SaveFiltersToFile(m_app_state);
 }
 
@@ -54,9 +59,52 @@ void FluxionApplication::AppInit()
 
     SetupFonts();
 
-    // TODO: this is only for testing purpose during impl
-    m_app_state.logs_plugin = std::make_unique<DummyPlugin>();
-    // TODO: this is only for dev purpose, this should be moved somewhere else.
+    // Load previously used plugin path from configuration
+    Layers::Actions::FiltersLayer::LoadPluginPathFromFile(m_app_state);
+
+    // Try to load the saved plugin, fall back to DummyPlugin if not available
+    bool plugin_loaded = false;
+    if (!m_app_state.selected_logs_plugin_path.empty() &&
+        std::filesystem::exists(m_app_state.selected_logs_plugin_path))
+    {
+        try
+        {
+            m_app_state.loaded_plugin_library =
+                std::make_unique<Graphite::Common::Plugin::DynamicLibrary>(
+                    m_app_state.selected_logs_plugin_path);
+
+            if (m_app_state.loaded_plugin_library && m_app_state.loaded_plugin_library->isLoaded())
+            {
+                using CreateFunc = Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*)();
+                auto const factory{reinterpret_cast<CreateFunc>(
+                    m_app_state.loaded_plugin_library->getSymbol("CreateFluxionLogsPlugin"))};
+
+                if (factory != nullptr)
+                {
+                    LOG_INFO(
+                        "Loading saved logs plugin from: {}",
+                        m_app_state.selected_logs_plugin_path.string());
+                    m_app_state.logs_plugin.reset(factory());
+                    m_app_state.logs_plugin->OnEnable({});
+                    plugin_loaded = true;
+                }
+            }
+        }
+        catch (std::exception const& e)
+        {
+            LOG_ERROR("Failed to load saved plugin: {}", e.what());
+        }
+    }
+
+    // Fall back to DummyPlugin if no plugin was loaded
+    if (!plugin_loaded)
+    {
+        LOG_INFO("Using DummyPlugin as fallback");
+        m_app_state.logs_plugin = std::make_unique<DummyPlugin>();
+        m_app_state.selected_logs_plugin_path.clear();
+    }
+
+    // Set the table header from the loaded plugin
     m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
 
     // Load filters from disk after logger is initialized
@@ -66,6 +114,7 @@ void FluxionApplication::AppInit()
     AddLayer<Layers::DevLayer>(
         shared_from_this(), std::numeric_limits<Graphite::Application::Layers::ZIndex>::max());
     AddLayer<Layers::MainMenuLayer>(shared_from_this(), 1);
+    AddLayer<Layers::SettingsLayer>(shared_from_this(), 2);
     AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);
     AddLayer<Layers::FiltersLayer>(shared_from_this(), 20);
 }

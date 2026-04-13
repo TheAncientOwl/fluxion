@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -430,6 +430,22 @@ template <>
 void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int const& /* no-payload */)
 {
     LOG_SCOPE("::handle<ApplyFilters>()");
+
+    if (application_state.logs_plugin->GetTotalLogs() == 0)
+    {
+        LOG_INFO(
+            "::handle<ApplyFilters>(): No logs recorded; Next steps -> save tabs -> update "
+            "metadata -> stop filtering.");
+        Actions::FiltersLayer::SaveFiltersToFile(application_state);
+
+        application_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Data::Filters::FiltersGeneralMetadata& metadata) {
+                metadata[Data::Filters::EFiltersMetadataFlag::Applied] = true;
+                metadata[Data::Filters::EFiltersMetadataFlag::SavedToDisk] = true;
+            });
+        return;
+    }
+
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters{};
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only{};
 
@@ -849,6 +865,90 @@ void LoadFiltersFromFile(AppState& application_state)
     catch (std::exception const& e)
     {
         LOG_ERROR("::LoadFiltersFromFile(): Failed to load filters: {}", e.what());
+    }
+}
+
+void SavePluginPathToFile(AppState const& application_state)
+{
+    LOG_SCOPE("::SavePluginPathToFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+        std::filesystem::create_directories(config_dir);
+
+        std::filesystem::path plugin_config_file = config_dir / "config.flx";
+        std::ofstream ofs(plugin_config_file);
+
+        ofs << "PLUGIN_CONFIG_V1\n";
+        ofs << application_state.selected_logs_plugin_path.string() << "\n";
+
+        ofs.close();
+        LOG_INFO(
+            "::SavePluginPathToFile(): Successfully saved plugin path to {}",
+            plugin_config_file.string());
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::SavePluginPathToFile(): Failed to save plugin path: {}", e.what());
+    }
+}
+
+void LoadPluginPathFromFile(AppState& application_state)
+{
+    LOG_SCOPE("::LoadPluginPathFromFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path plugin_config_file =
+            std::filesystem::path(home) / ".fluxion" / "config.flx";
+
+        if (!std::filesystem::exists(plugin_config_file))
+        {
+            LOG_INFO("::LoadPluginPathFromFile(): No saved plugin configuration found");
+            return;
+        }
+
+        std::ifstream ifs(plugin_config_file);
+        std::string line;
+
+        // Read and validate header
+        std::getline(ifs, line);
+        if (line != "PLUGIN_CONFIG_V1")
+        {
+            LOG_WARN("::LoadPluginPathFromFile(): Invalid plugin config file format");
+            return;
+        }
+
+        // Read plugin path
+        std::string plugin_path_str;
+        if (std::getline(ifs, plugin_path_str))
+        {
+            std::filesystem::path plugin_path(plugin_path_str);
+
+            // Validate that the plugin file still exists
+            if (!plugin_path.empty() && std::filesystem::exists(plugin_path))
+            {
+                application_state.selected_logs_plugin_path = plugin_path;
+                LOG_INFO("::LoadPluginPathFromFile(): Loaded plugin path: {}", plugin_path_str);
+            }
+            else if (!plugin_path.empty())
+            {
+                LOG_WARN(
+                    "::LoadPluginPathFromFile(): Saved plugin path no longer exists: {}",
+                    plugin_path_str);
+            }
+        }
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::LoadPluginPathFromFile(): Failed to load plugin path: {}", e.what());
     }
 }
 

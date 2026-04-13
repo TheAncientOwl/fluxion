@@ -5,18 +5,20 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.16
+/// @version 0.17
 /// @brief Application state.
 ///
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <unordered_map>
 
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 #include "Fluxion/Application/Data/Data.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
+#include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 
 namespace Fluxion::Application {
 
@@ -30,6 +32,8 @@ enum class EFluxionAction : std::uint8_t
 struct AppState
 {
     std::unique_ptr<Fluxion::API::LogsPlugin::IFluxionLogsPlugin> logs_plugin{nullptr};
+    std::filesystem::path selected_logs_plugin_path{};
+    std::unique_ptr<Graphite::Common::Plugin::DynamicLibrary> loaded_plugin_library{nullptr};
 
     using IdToMetadataMap =
         std::unordered_map<Graphite::Common::Utility::UniqueID, Data::Logs::SharedFilterMetadata>;
@@ -50,6 +54,7 @@ struct AppState
         bool logs_view{true};
         bool debug{true};
         bool filters{true};
+        bool settings{true};
     } layers_active{};
 
     struct

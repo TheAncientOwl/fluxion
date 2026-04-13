@@ -10,7 +10,7 @@ add_library(graphite_common_impl STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueID.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ImGuiHelpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileDialog.cpp
-    # ${CMAKE_CURRENT_SOURCE_DIR}/src/DynamicLibrary.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DynamicLibrary.cpp
 )
 
 set_target_properties(graphite_common_impl PROPERTIES

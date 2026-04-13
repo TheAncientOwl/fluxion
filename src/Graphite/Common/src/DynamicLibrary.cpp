@@ -5,7 +5,7 @@
 ///
 /// @file DynamicLibrary.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Implementation of @see DynamicLibrary.hpp.
 ///
 
@@ -52,7 +52,7 @@ DynamicLibrary::~DynamicLibrary()
     }
 }
 
-void* DynamicLibrary::getSymbol(std::string_view const name)
+void* DynamicLibrary::getSymbol(std::string_view const name) const
 {
 #if defined(_WIN32)
     return (void*)GetProcAddress(handle, name.data());
