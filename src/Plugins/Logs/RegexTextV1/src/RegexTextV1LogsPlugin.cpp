@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -30,6 +30,7 @@ std::string_view RegexTextV1LogsPlugin::GetDisplayName() const
 void RegexTextV1LogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/)
 {
     LOG_SCOPE("::OnEnable()");
+    LOG_TRACE("::OnEnable()");
     m_regex_tags.UpdateBackBufferCopy([](RegexTags& back_tags) {
         auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
         new_tag->display_name = "New Tag";
@@ -42,6 +43,7 @@ void RegexTextV1LogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableDat
 void RegexTextV1LogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
 {
     LOG_SCOPE("::OnDisable()");
+    LOG_TRACE("::OnDisable()");
 }
 
 void RegexTextV1LogsPlugin::RenderMenu()
@@ -55,7 +57,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
     Graphite::Common::UI::IconButton(ICON_CI_REPO_PULL, "Import", []() {});
     ImGui::SameLine();
     Graphite::Common::UI::IconButton(ICON_CI_REPO_PUSH, "Export", []() {});
-    static char s_full_regex[]{"dawd"};
+    static char s_full_regex[]{"TODO: Compute/Concat the full regex"};
     ImGui::SameLine();
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     ImGui::InputText("##full-regex", s_full_regex, sizeof(s_full_regex), ImGuiInputTextFlags_ReadOnly);
@@ -72,15 +74,19 @@ void RegexTextV1LogsPlugin::RenderMenu()
         ImGui::TableNextColumn();
         Graphite::Common::UI::IconButton(ICON_CI_ADD, "Add", [&]() {
             m_regex_tags.UpdateBackBufferCopy([](RegexTags& back_tags) {
+                LOG_INFO("::RenderMenu(): Add Tag.");
                 auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+                new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+                LOG_INFO("::RenderMenu(): New Tag ID {}.", new_tag->id);
+
                 new_tag->display_name = "New Tag";
                 new_tag->regex_data = ".*";
-                new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
                 new_tag->visible = true;
             });
         });
         ImGui::SameLine();
-        Graphite::Common::UI::IconButton(ICON_CI_WAND, "Apply", []() {});
+        Graphite::Common::UI::IconButton(
+            ICON_CI_WAND, "Apply", []() { LOG_INFO("::RenderMenu(): Apply Tags."); });
 
         ImGui::TableNextColumn();
         static char s_tag_name[]{"Tag Name"};
@@ -107,8 +113,16 @@ void RegexTextV1LogsPlugin::RenderMenu()
                 m_regex_tags.UpdateBackBufferCopy([idx](RegexTags& back_tags) {
                     if (idx < back_tags.size())
                     {
+                        LOG_INFO(
+                            "::RenderMenu(): Delete Tag {} {}",
+                            back_tags.back()->id,
+                            back_tags.back()->display_name);
                         back_tags.erase(
                             back_tags.begin() + static_cast<RegexTags::difference_type>(idx));
+                    }
+                    else
+                    {
+                        LOG_INFO("::RenderMenu(): No Tag to be deleted.");
                     }
                 });
             });
@@ -121,6 +135,11 @@ void RegexTextV1LogsPlugin::RenderMenu()
                     m_regex_tags.UpdateBackBufferCopy([idx](RegexTags& back_tags) {
                         if (idx < back_tags.size())
                         {
+                            LOG_INFO(
+                                "::RenderMenu(): Toggle Tag Visible {} {} to {}",
+                                back_tags[idx]->id,
+                                back_tags[idx]->display_name,
+                                !back_tags[idx]->visible);
                             back_tags[idx]->visible = !back_tags[idx]->visible;
                         }
                     });

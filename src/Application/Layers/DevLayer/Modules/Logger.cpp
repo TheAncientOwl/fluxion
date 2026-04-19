@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -321,7 +321,7 @@ namespace Fluxion::Application::Layers::Modules::DevLayer {
 void RenderLogger()
 {
     LOG_SCOPE("::RenderLogger");
-    auto& Logger = Graphite::Logger::Logger::Instance();
+    auto& Logger = Graphite::Logger::GetLogger();
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text(ICON_CI_TASKLIST " Levels");

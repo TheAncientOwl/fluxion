@@ -53,6 +53,7 @@ target_compile_definitions(fluxion PRIVATE
     $<$<CONFIG:Release>:GRAPHITE_NO_LOGGER>
 )
 
+
 # Set output directories
 set_target_properties(fluxion PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

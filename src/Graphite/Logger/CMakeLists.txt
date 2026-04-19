@@ -6,7 +6,7 @@ target_include_directories(graphite_logger_interface INTERFACE
 )
 
 # --- 2. Implementation ---
-add_library(graphite_logger_impl STATIC
+add_library(graphite_logger_impl SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Logger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Ansi.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LogFormatter.cpp

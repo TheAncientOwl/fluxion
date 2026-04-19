@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.13
+/// @version 1.14
 /// @brief Logging utilities
 ///
 
@@ -30,7 +30,24 @@
 
 #include "Graphite/Common/Utility/TWithFlags.hpp"
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+#ifdef GRAPHITE_LOGGER_BUILD
+#define GRAPHITE_LOGGER_API __declspec(dllexport)
+#else
+#define GRAPHITE_LOGGER_API __declspec(dllimport)
+#endif
+#else
+#ifdef GRAPHITE_LOGGER_BUILD
+#define GRAPHITE_LOGGER_API __attribute__((visibility("default")))
+#else
+#define GRAPHITE_LOGGER_API
+#endif
+#endif
+
 namespace Graphite::Logger {
+
+class Logger;
+GRAPHITE_LOGGER_API Logger& GetLogger();
 
 // clang-format off
 enum class ELogLevel : std::uint8_t
@@ -95,14 +112,10 @@ public: // Types
         std::unordered_map<std::string, LogScopeFlags, StringHash, std::equal_to<>>;
     using LogLevels = std::array<GlobalLogLevel, 7>;
 
-public: // Singleton
-    static Logger& Instance();
+public: // API
+    Logger();
     ~Logger();
 
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
-
-public: // API
     std::string_view DefineLogScope(std::string_view scope);
 
     template <typename... Args>
@@ -151,8 +164,6 @@ public: // API
 private:
     static std::filesystem::path GetConfigFilePath();
     static std::filesystem::path GetLogFilePath();
-
-    Logger();
 
     void Enqueue(LogMessage&& msg);
     void ProcessQueue();
@@ -207,38 +218,38 @@ private:
 #else
 #define CONCAT_IMPL(x, y) x##y
 #define CONCAT(x, y) CONCAT_IMPL(x, y)
-#define DEFINE_LOG_SCOPE(name)                                                       \
-    namespace {                                                                      \
-    [[maybe_unused]] static auto const CONCAT(                                       \
-        CONCAT(__defined_graphite_log_scope_, __LINE__),                             \
-        __COUNTER__) = ::Graphite::Logger::Logger::Instance().DefineLogScope(#name); \
+#define DEFINE_LOG_SCOPE(name)                                                \
+    namespace {                                                               \
+    [[maybe_unused]] static auto const CONCAT(                                \
+        CONCAT(__defined_graphite_log_scope_, __LINE__),                      \
+        __COUNTER__) = ::Graphite::Logger::GetLogger().DefineLogScope(#name); \
     }
 
 #define USE_LOG_SCOPE(scope) auto const __graphite_log_scope = #scope
 
-#define LOG_TRACE(fmt, ...)                     \
-    ::Graphite::Logger::Logger::Instance().Log( \
+#define LOG_TRACE(fmt, ...)              \
+    ::Graphite::Logger::GetLogger().Log( \
         ::Graphite::Logger::ELogLevel::Trace, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_INFO(fmt, ...)                      \
-    ::Graphite::Logger::Logger::Instance().Log( \
+#define LOG_INFO(fmt, ...)               \
+    ::Graphite::Logger::GetLogger().Log( \
         ::Graphite::Logger::ELogLevel::Info, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_WARN(fmt, ...)                      \
-    ::Graphite::Logger::Logger::Instance().Log( \
+#define LOG_WARN(fmt, ...)               \
+    ::Graphite::Logger::GetLogger().Log( \
         ::Graphite::Logger::ELogLevel::Warn, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_ERROR(fmt, ...)                     \
-    ::Graphite::Logger::Logger::Instance().Log( \
+#define LOG_ERROR(fmt, ...)              \
+    ::Graphite::Logger::GetLogger().Log( \
         ::Graphite::Logger::ELogLevel::Error, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_CRITICAL(fmt, ...)                                                                          \
-    ::Graphite::Logger::Logger::Instance().Log(                                                         \
+    ::Graphite::Logger::GetLogger().Log(                                                                \
         ::Graphite::Logger::ELogLevel::Critical, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__); \
     std::this_thread::sleep_for(std::chrono::seconds{2})
 
-#define LOG_DEBUG(fmt, ...)                     \
-    ::Graphite::Logger::Logger::Instance().Log( \
+#define LOG_DEBUG(fmt, ...)              \
+    ::Graphite::Logger::GetLogger().Log( \
         ::Graphite::Logger::ELogLevel::Debug, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 #define LOG_SCOPE(fmt, ...)                                               \

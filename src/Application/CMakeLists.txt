@@ -20,6 +20,8 @@ add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer/FiltersLayerActions.cpp
 )
 
+target_compile_definitions(fluxion_app PRIVATE GRAPHITE_LOGGER_BUILD)
+
 set_target_properties(fluxion_app PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

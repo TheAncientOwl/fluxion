@@ -5,7 +5,7 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief ImGui entry point.
 ///
 
@@ -19,7 +19,7 @@ DEFINE_LOG_SCOPE(Fluxion::Main);
 int main()
 {
     USE_LOG_SCOPE(Fluxion::Main);
-    Graphite::Logger::Logger::Instance().LoadConfig();
+    Graphite::Logger::GetLogger().LoadConfig();
 
     LOG_SCOPE("");
 
@@ -35,7 +35,7 @@ int main()
 
     app->Run();
 
-    Graphite::Logger::Logger::Instance().SaveConfig();
+    Graphite::Logger::GetLogger().SaveConfig();
 
     return EXIT_SUCCESS;
 }

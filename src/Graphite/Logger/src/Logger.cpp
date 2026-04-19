@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.13
+/// @version 1.14
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -31,10 +31,10 @@ namespace Graphite::Logger {
 
 static std::mutex g_write_mutex;
 
-Logger& Logger::Instance()
+GRAPHITE_LOGGER_API Logger& GetLogger()
 {
-    static Logger logger{};
-    return logger;
+    static Logger g_logger{};
+    return g_logger;
 }
 
 GlobalLogLevel::GlobalLogLevel(ELogLevel const p_level, std::string p_icon, std::string p_label, ImVec4 const p_color)
@@ -81,11 +81,18 @@ void Logger::LoadConfig()
     std::string name{};
 
     std::lock_guard lock{m_scope_mutex};
-    for (auto& scope : m_queued_defined_scopes)
-    {
-        m_scope_enabled[std::move(scope)] = GetDefaultScopeFlags();
-    }
-    m_queued_defined_scopes = {};
+    // for (auto const& scope : m_queued_defined_scopes)
+    // {
+    //     std::println("> {}", scope);
+    // }
+    // std::terminate();
+
+    // for (auto& scope : m_queued_defined_scopes)
+    // {
+    //     m_scope_enabled[std::move(scope)] = GetDefaultScopeFlags();
+    // }
+
+    // m_queued_defined_scopes = {};
 
     while (std::getline(ifs, line))
     {
@@ -154,7 +161,14 @@ std::filesystem::path Logger::GetConfigFilePath()
 
 std::string_view Logger::DefineLogScope(std::string_view scope)
 {
-    m_queued_defined_scopes.emplace_back(scope);
+    std::println("Logger instance: {}", (void*)&GetLogger());
+
+    std::println("::Graphite::Logger::DefineLogScope(): scope == {}", scope);
+    // m_queued_defined_scopes.emplace_back(scope);
+
+    std::lock_guard<std::mutex> lock{m_scope_mutex};
+    m_scope_enabled.emplace(scope, GetDefaultScopeFlags());
+
     return scope;
 }
 
@@ -424,7 +438,7 @@ void Logger::PrintMessage(const LogMessage& msg)
 ScopeLogger::ScopeLogger(std::string tag, std::string_view scope)
     : m_scope{scope}, m_tag{std::move(tag)}, m_start{}
 {
-    if (!Logger::Instance().IsLevelEnabled(ELogLevel::Scope))
+    if (!Graphite::Logger::GetLogger().IsLevelEnabled(ELogLevel::Scope))
         return;
 
     m_start = std::chrono::high_resolution_clock::now();
@@ -432,13 +446,13 @@ ScopeLogger::ScopeLogger(std::string tag, std::string_view scope)
     static constexpr auto green = "\033[32m";
     static constexpr auto gray = "\033[90m";
 
-    Logger::Instance().Log(
+    Graphite::Logger::GetLogger().Log(
         ELogLevel::Scope, m_scope, "{}[{}+{}]{} Begin {}» {}{}", gray, green, gray, green, gray, green, m_tag);
 }
 
 ScopeLogger::~ScopeLogger()
 {
-    if (!Logger::Instance().IsLevelEnabled(ELogLevel::Scope))
+    if (!Graphite::Logger::GetLogger().IsLevelEnabled(ELogLevel::Scope))
         return;
 
     auto const end = std::chrono::high_resolution_clock::now();
@@ -502,7 +516,7 @@ ScopeLogger::~ScopeLogger()
     }
     oss << reset;
 
-    Logger::Instance().Log(
+    Graphite::Logger::GetLogger().Log(
         ELogLevel::Scope,
         m_scope,
         "{}[{}-{}]{} End   {}» {}{} ~ elapsed {}",
