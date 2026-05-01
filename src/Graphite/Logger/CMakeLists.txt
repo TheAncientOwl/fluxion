@@ -26,6 +26,8 @@ target_link_libraries(graphite_logger_impl PRIVATE
     external_icons_codicons
     graphite_logger_interface
     graphite_common_interface
+    graphite_settings_interface
+    graphite_settings_impl
 )
 
 target_include_directories(graphite_logger_impl

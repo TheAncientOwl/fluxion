@@ -50,12 +50,14 @@ if(NOT APPLE)
         project_compile_options
         graphite_renderer_interface
         graphite_logger_interface
+        graphite_settings_interface
     )
 else()
     target_link_libraries(graphite_renderer_impl PRIVATE 
         external_imgui
         project_compile_options
         graphite_logger_interface
+        graphite_settings_interface
         graphite_renderer_interface
     )
 endif()

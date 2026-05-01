@@ -5,7 +5,7 @@
 ///
 /// @file SettingsManager.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.14
+/// @version 1.15
 /// @brief Settings management using JSON
 ///
 
@@ -77,6 +77,31 @@ void SettingsManager::erase(std::string_view key)
         m_data.erase(key);
         Save();
     }
+}
+
+std::vector<std::string> SettingsManager::GetKeys() const
+{
+    std::vector<std::string> keys;
+    for (auto const& [key, _] : m_data.items())
+    {
+        keys.push_back(key);
+    }
+    return keys;
+}
+
+void SettingsManager::SetJsonValue(std::string_view key, json const& value)
+{
+    m_data[key] = value;
+    Save();
+}
+
+std::optional<json> SettingsManager::GetJsonValue(std::string_view key) const
+{
+    if (m_data.contains(key))
+    {
+        return m_data[key];
+    }
+    return std::nullopt;
 }
 
 // Macros to reduce boilerplate

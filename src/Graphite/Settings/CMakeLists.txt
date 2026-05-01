@@ -4,6 +4,10 @@ target_include_directories(graphite_settings_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_link_libraries(graphite_settings_interface INTERFACE 
+    external_nlohmann_json
+)
+
 # --- 2. Implementation ---
 add_library(graphite_settings_impl STATIC
     src/SettingsManager.cpp

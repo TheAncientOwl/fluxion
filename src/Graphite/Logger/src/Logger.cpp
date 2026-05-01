@@ -45,95 +45,62 @@ GlobalLogLevel::GlobalLogLevel(ELogLevel const p_level, std::string p_icon, std:
 
 void Logger::SaveConfig()
 {
-    auto const config_path = GetConfigFilePath();
-    std::ofstream ofs(config_path, std::ios::trunc);
-    if (!ofs.is_open())
-    {
-#ifdef _WIN32
-        LOG_ERROR("Failed to open config file {}", config_path.string());
-#else
-        LOG_ERROR("Failed to open config file {}", config_path.c_str());
-#endif
-        return;
-    }
-
+    try
     {
         std::lock_guard lock{m_scope_mutex};
 
+        // Save scopes as JSON object with scope name as key and enabled state as value
         for (auto const& [scope, enabled] : m_scope_enabled)
         {
-            ofs << static_cast<int>(enabled.GetStorage()) << " " << scope << "\n";
+            m_settings_manager.set<int>(scope, static_cast<int>(enabled.GetStorage()));
         }
+
+        // Save global level mask with a special key
+        m_settings_manager.set<int>("__global_level_mask", m_global_level_mask.load());
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR("Failed to save logger config: {}", e.what());
     }
 }
 
 void Logger::LoadConfig()
 {
-    auto const config_path = GetConfigFilePath();
-    std::ifstream ifs(config_path);
-    if (!ifs.is_open())
+    try
     {
-        return;
+        std::lock_guard lock{m_scope_mutex};
+
+        // Get all keys from settings
+        auto const keys = m_settings_manager.GetKeys();
+
+        for (auto const& key : keys)
+        {
+            // Skip internal keys
+            if (key.substr(0, 2) == "__")
+            {
+                if (key == "__global_level_mask")
+                {
+                    if (auto value = m_settings_manager.get<int>(key))
+                    {
+                        m_global_level_mask.store(
+                            static_cast<std::uint8_t>(*value), std::memory_order_relaxed);
+                    }
+                }
+                continue;
+            }
+
+            // Load scope configuration
+            if (auto value = m_settings_manager.get<int>(key))
+            {
+                LogScopeFlags flags = GetDefaultScopeFlags();
+                flags.SetStorage(static_cast<LogScopeFlags::Storage>(*value));
+                m_scope_enabled[key] = flags;
+            }
+        }
     }
-
-    std::string line{};
-    std::string state{};
-    std::string name{};
-
-    std::lock_guard lock{m_scope_mutex};
-    // for (auto const& scope : m_queued_defined_scopes)
-    // {
-    //     std::println("> {}", scope);
-    // }
-    // std::terminate();
-
-    // for (auto& scope : m_queued_defined_scopes)
-    // {
-    //     m_scope_enabled[std::move(scope)] = GetDefaultScopeFlags();
-    // }
-
-    // m_queued_defined_scopes = {};
-
-    while (std::getline(ifs, line))
+    catch (const std::exception& e)
     {
-        std::istringstream iss(line);
-
-        if (!(iss >> state))
-        {
-            continue;
-        }
-
-        std::getline(iss, name);
-        auto const start = name.find_first_not_of(" \t");
-        if (start != std::string::npos)
-        {
-            name = name.substr(start);
-        }
-        else
-        {
-            name.clear();
-        }
-
-        LogScopeFlags flags = GetDefaultScopeFlags();
-        int storage{0};
-        try
-        {
-            storage = std::stoi(state);
-        }
-        catch (...)
-        {
-            continue;
-        }
-
-        flags.SetStorage(static_cast<LogScopeFlags::Storage>(storage));
-        if (name == GetGlobalScopeKey())
-        {
-            m_global_level_mask.store(flags.GetStorage(), std::memory_order_relaxed);
-        }
-        else
-        {
-            m_scope_enabled[std::move(name)] = flags;
-        }
+        // Silently ignore errors during load
     }
 }
 
@@ -322,6 +289,20 @@ Logger::Logger()
     , m_log_file{Logger::GetLogFilePath(), std::ios::trunc}
     , m_worker{}
     , m_global_level_mask{GetDefaultScopeFlags().GetStorage()}
+    , m_settings_manager{
+          []() {
+              const char* home = std::getenv("HOME");
+              if (!home)
+              {
+                  home = std::getenv("USERPROFILE");
+                  if (!home)
+                  {
+                      throw std::runtime_error("Cannot determine home directory for settings");
+                  }
+              }
+              return std::filesystem::path(home) / ".fluxion";
+          }(),
+          "app.graphite.logger"}
 {
     if (!m_log_file.is_open())
     {
