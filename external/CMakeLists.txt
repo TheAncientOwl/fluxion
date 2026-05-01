@@ -52,3 +52,10 @@ add_library(external_icons_codicons INTERFACE)
 target_include_directories(external_icons_codicons INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/icons
 )
+
+# --- 3. nlohmann/json ---
+add_library(external_nlohmann_json INTERFACE)
+
+target_include_directories(external_nlohmann_json INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/nlohmann_json/single_include
+)
