@@ -12,6 +12,7 @@ add_library(fluxion_app STATIC
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/SettingsLayer/SettingsLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/SettingsLayer/Modules/Theme.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/SettingsLayer/Modules/LogsPlugin.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer/LogsViewLayer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer/LogsViewLayerActions.cpp

@@ -5,18 +5,16 @@
 ///
 /// @file SettingsLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Settings UI layer for application configuration.
 ///
 
 #pragma once
 
-#include <filesystem>
-#include <vector>
-
 #include "Fluxion.hpp"
 #include "Fluxion/Application/Data/AppState.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
+#include "Modules/LogsPlugin.hpp"
 
 namespace Fluxion::Application::Layers {
 
@@ -41,13 +39,7 @@ public:
     void OnRemove() override;
 
 private:
-    void RenderPluginSelection();
-    void RenderPluginMenu();
-
-    void ScanAvailablePlugins();
-
-    std::vector<std::filesystem::path> m_available_plugins;
-    int m_selected_plugin_index{-1};
+    Modules::SettingsLayer::LogsPluginRenderer m_logs_plugin_renderer{};
 };
 
 } // namespace Fluxion::Application::Layers
