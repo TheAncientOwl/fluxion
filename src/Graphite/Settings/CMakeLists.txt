@@ -10,7 +10,7 @@ target_link_libraries(graphite_settings_interface INTERFACE
 
 # --- 2. Implementation ---
 add_library(graphite_settings_impl STATIC
-    src/SettingsManager.cpp
+    src/PersistentSettings.cpp
 )
 
 target_include_directories(graphite_settings_impl PUBLIC

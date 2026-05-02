@@ -29,7 +29,7 @@
 #include "imgui.h"
 
 #include "Graphite/Common/Utility/TWithFlags.hpp"
-#include "Graphite/Settings/SettingsManager.hpp"
+#include "Graphite/Settings/PersistentSettings.hpp"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #ifdef GRAPHITE_LOGGER_BUILD
@@ -187,7 +187,7 @@ private:
     std::atomic<uint8_t> m_global_level_mask;
 
     std::vector<std::string> m_queued_defined_scopes{};
-    Graphite::Settings::SettingsManager m_settings_manager;
+    Graphite::Settings::PersistentSettings m_settings;
 };
 
 class ScopeLogger

@@ -52,11 +52,11 @@ void Logger::SaveConfig()
         // Save scopes as JSON object with scope name as key and enabled state as value
         for (auto const& [scope, enabled] : m_scope_enabled)
         {
-            m_settings_manager.set<int>(scope, static_cast<int>(enabled.GetStorage()));
+            m_settings.set<int>(scope, static_cast<int>(enabled.GetStorage()));
         }
 
         // Save global level mask with a special key
-        m_settings_manager.set<int>("__global_level_mask", m_global_level_mask.load());
+        m_settings.set<int>("__global_level_mask", m_global_level_mask.load());
     }
     catch (const std::exception& e)
     {
@@ -71,7 +71,7 @@ void Logger::LoadConfig()
         std::lock_guard lock{m_scope_mutex};
 
         // Get all keys from settings
-        auto const keys = m_settings_manager.GetKeys();
+        auto const keys = m_settings.GetKeys();
 
         for (auto const& key : keys)
         {
@@ -80,7 +80,7 @@ void Logger::LoadConfig()
             {
                 if (key == "__global_level_mask")
                 {
-                    if (auto value = m_settings_manager.get<int>(key))
+                    if (auto value = m_settings.get<int>(key))
                     {
                         m_global_level_mask.store(
                             static_cast<std::uint8_t>(*value), std::memory_order_relaxed);
@@ -90,7 +90,7 @@ void Logger::LoadConfig()
             }
 
             // Load scope configuration
-            if (auto value = m_settings_manager.get<int>(key))
+            if (auto value = m_settings.get<int>(key))
             {
                 LogScopeFlags flags = GetDefaultScopeFlags();
                 flags.SetStorage(static_cast<LogScopeFlags::Storage>(*value));
@@ -289,7 +289,7 @@ Logger::Logger()
     , m_log_file{Logger::GetLogFilePath(), std::ios::trunc}
     , m_worker{}
     , m_global_level_mask{GetDefaultScopeFlags().GetStorage()}
-    , m_settings_manager{
+    , m_settings{
           []() {
               const char* home = std::getenv("HOME");
               if (!home)

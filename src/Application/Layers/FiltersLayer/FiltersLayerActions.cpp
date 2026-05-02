@@ -17,7 +17,7 @@
 #include "FiltersLayerActions.hpp"
 #include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
 #include "Graphite/Logger.hpp"
-#include "Graphite/Settings/SettingsManager.hpp"
+#include "Graphite/Settings/PersistentSettings.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer::Actions);
 USE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer::Actions);
@@ -681,8 +681,8 @@ void SaveFiltersToFile(AppState const& application_state)
             home = ".";
         std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
 
-        // Create SettingsManager for filters
-        Graphite::Settings::SettingsManager settings_manager(config_dir, "filters");
+        // Create PersistentSettings for filters
+        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
 
         // Build JSON structure
         auto const& tabs = application_state.filters.tabs.GetFront();
@@ -744,8 +744,8 @@ void SaveFiltersToFile(AppState const& application_state)
             tabs_json.push_back(tab_json);
         }
 
-        // Save using SettingsManager
-        settings_manager.SetJsonValue("tabs", tabs_json);
+        // Save using PersistentSettings
+        settings.SetJsonValue("tabs", tabs_json);
 
         LOG_INFO(
             "::SaveFiltersToFile(): Successfully saved filters to {}/filters.json",
@@ -774,11 +774,11 @@ void LoadFiltersFromFile(AppState& application_state)
             home = ".";
         std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
 
-        // Create SettingsManager for filters
-        Graphite::Settings::SettingsManager settings_manager(config_dir, "filters");
+        // Create PersistentSettings for filters
+        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
 
         // Get the JSON data
-        auto tabs_json_opt = settings_manager.GetJsonValue("tabs");
+        auto tabs_json_opt = settings.GetJsonValue("tabs");
         if (!tabs_json_opt)
         {
             LOG_INFO("::LoadFiltersFromFile(): No saved filters found, using defaults");
@@ -898,12 +898,11 @@ void SavePluginPathToFile(AppState const& application_state)
             home = ".";
         std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
 
-        // Create SettingsManager for plugin config
-        Graphite::Settings::SettingsManager settings_manager(config_dir, "plugin_config");
+        // Create PersistentSettings for plugin config
+        Graphite::Settings::PersistentSettings settings(config_dir, "plugin_config");
 
         // Save plugin path
-        settings_manager.set<std::string>(
-            "plugin_path", application_state.selected_logs_plugin_path.string());
+        settings.set<std::string>("plugin_path", application_state.selected_logs_plugin_path.string());
 
         LOG_INFO(
             "::SavePluginPathToFile(): Successfully saved plugin path to {}/plugin_config.json",
@@ -926,11 +925,11 @@ void LoadPluginPathFromFile(AppState& application_state)
             home = ".";
         std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
 
-        // Create SettingsManager for plugin config
-        Graphite::Settings::SettingsManager settings_manager(config_dir, "plugin_config");
+        // Create PersistentSettings for plugin config
+        Graphite::Settings::PersistentSettings settings(config_dir, "plugin_config");
 
         // Load plugin path
-        if (auto plugin_path_opt = settings_manager.get<std::string>("plugin_path"))
+        if (auto plugin_path_opt = settings.get<std::string>("plugin_path"))
         {
             std::filesystem::path plugin_path(*plugin_path_opt);
 

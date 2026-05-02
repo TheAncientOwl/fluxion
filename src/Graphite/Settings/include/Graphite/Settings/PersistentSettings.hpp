@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file SettingsManager.hpp
+/// @file PersistentSettings.hpp
 /// @author Alexandru Delegeanu
 /// @version 1.15
 /// @brief Settings management using JSON
@@ -21,10 +21,10 @@ namespace Graphite::Settings {
 
 using json = nlohmann::json;
 
-class SettingsManager
+class PersistentSettings
 {
 public:
-    SettingsManager(std::filesystem::path home, std::string file_name);
+    PersistentSettings(std::filesystem::path home, std::string file_name);
 
     template <typename T>
     void set(std::string_view key, T const& value);
