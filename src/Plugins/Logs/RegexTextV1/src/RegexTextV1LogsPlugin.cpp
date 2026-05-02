@@ -9,11 +9,18 @@
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
+#include <fstream>
+#include <regex>
+#include <string>
+
+#include <exception>
+#include "stdcsv.h"
+
+#include "IconsCodicons.h"
+
 #include "Fluxion/Plugins/Logs/RegexTextV1/RegexTextV1LogsPlugin.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
-
-#include "IconsCodicons.h"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
@@ -27,16 +34,68 @@ std::string_view RegexTextV1LogsPlugin::GetDisplayName() const
     return "RegexTextV1";
 }
 
-void RegexTextV1LogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/)
+void RegexTextV1LogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data)
 {
+    m_home_path = data.plugin_home_path;
+
     LOG_SCOPE("::OnEnable()");
     LOG_TRACE("::OnEnable()");
     m_regex_tags.UpdateBackBufferCopy([](RegexTags& back_tags) {
-        auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
-        new_tag->display_name = "New Tag";
-        new_tag->regex_data = ".*";
-        new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
-        new_tag->visible = true;
+        //{ auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+        // new_tag->display_name = "New Tag";
+        // new_tag->regex_data = ".*";
+        // new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+        // new_tag->visible = true;}
+
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "Timestamp";
+            new_tag->regex_data = R"(\d+)";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = true;
+        }
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "-";
+            new_tag->regex_data = R"(\s+)";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = false;
+        }
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "Channel";
+            new_tag->regex_data = R"(Channel[1-4])";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = true;
+        }
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "-";
+            new_tag->regex_data = R"(\s+)";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = false;
+        }
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "Level";
+            new_tag->regex_data = R"(trace|info|error|debug|warn)";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = true;
+        }
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "-";
+            new_tag->regex_data = R"(\s+)";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = false;
+        }
+        {
+            auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
+            new_tag->display_name = "Payload";
+            new_tag->regex_data = R"(.*)";
+            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->visible = true;
+        }
     });
 }
 
@@ -160,9 +219,86 @@ void RegexTextV1LogsPlugin::RenderMenu()
     }
 }
 
-void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& /*path*/)
+void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("::ImportLogs()");
+    LOG_INFO("Importing {}", path.c_str());
+
+    m_regex_tags.SyncFrontBufferCopy();
+    auto const& tags{m_regex_tags.GetFront()};
+
+    std::string full_pattern{};
+    for (auto const& tag : tags)
+    {
+        if (tag->visible)
+        {
+            full_pattern += "(" + tag->regex_data + ")";
+        }
+        else
+        {
+            full_pattern += tag->regex_data;
+        }
+    }
+    LOG_INFO("::ImportLogs(): Full regex pattern: {}", full_pattern);
+
+    std::regex line_regex{};
+    try
+    {
+        line_regex = std::regex(full_pattern);
+    }
+    catch (std::exception const& e)
+    {
+        LOG_WARN("Invalid regex: {}", e.what());
+        return;
+    }
+
+    std::ifstream raw_logs_file{path};
+    if (!raw_logs_file.is_open())
+    {
+        LOG_WARN("::ImportLogs(): Could not open file {}", path.c_str());
+        return;
+    }
+
+    auto const output_path{m_home_path / (path.filename().string() + ".converted.csv")};
+    auto writer = miocsv::Writer{output_path};
+    LOG_INFO("Output CSV file {}", output_path.string());
+
+    std::string line{};
+    line.reserve(1024);
+    std::size_t total_logs{0};
+
+    while (std::getline(raw_logs_file, line))
+    {
+        std::smatch matches;
+        if (std::regex_match(line, matches, line_regex))
+        {
+            ++total_logs;
+            if (total_logs % 1000 == 0)
+            {
+                LOG_INFO("Read another 1000 chunk, total: {} / 2000000", total_logs);
+            }
+
+            // matches[0] is full match, start from 1 like Rust version
+            miocsv::Row row{};
+            for (std::size_t i = 1; i < matches.size(); ++i)
+            {
+                if (matches[i].matched)
+                {
+                    row.append(matches[i].str());
+                    // LOG_TRACE("::ImportLogs(): Col {}: {}", i, matches[i].str());
+                    // TODO: store or process column value
+                    // e.g. LOG_TRACE("Col {}: {}", i, matches[i].str());
+                }
+            }
+            writer.write_row(row);
+        }
+        else
+        {
+            LOG_WARN("::ImportLogs(): Regex did not match entry '{}'", line);
+        }
+    }
+
+    LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
 }
 
 std::optional<std::size_t> RegexTextV1LogsPlugin::GetNextLog(

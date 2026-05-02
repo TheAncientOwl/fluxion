@@ -51,6 +51,8 @@ public:
 private:
     Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<std::shared_ptr<Data::RegexTag>>>
         m_regex_tags{};
+
+    std::filesystem::path m_home_path{};
 };
 
 } // namespace Fluxion::Plugins::Logs::RegexTextV1

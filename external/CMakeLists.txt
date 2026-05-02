@@ -59,3 +59,10 @@ add_library(external_nlohmann_json INTERFACE)
 target_include_directories(external_nlohmann_json INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/nlohmann_json/single_include
 )
+
+# --- 4. MIOCSV ---
+add_library(external_miocsv INTERFACE)
+
+target_include_directories(external_miocsv INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/MIOCSV/include
+)

@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -24,6 +25,7 @@ namespace Fluxion::API::LogsPlugin::Data {
 
 struct OnEnableData
 {
+    std::filesystem::path plugin_home_path{};
 };
 
 struct OnDisableData

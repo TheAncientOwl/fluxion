@@ -140,7 +140,32 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
                         {
                             LOG_INFO("Creating and enabling new plugin");
                             app_state.logs_plugin.reset(factory());
-                            app_state.logs_plugin->OnEnable({});
+
+                            Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+
+                            // setup plugin home path
+                            const char* home_env = std::getenv("HOME");
+                            if (!home_env)
+                            {
+                                enable_data.plugin_home_path =
+                                    std::filesystem::path(home_env) / ".fluxion";
+                                LOG_ERROR("HOME environment variable not set");
+                            }
+                            else if (app_state.logs_plugin)
+                            {
+                                enable_data.plugin_home_path =
+                                    std::filesystem::path(home_env) / ".fluxion" /
+                                    std::string(app_state.logs_plugin->GetDisplayName());
+                            }
+                            else
+                            {
+                                GRAPHITE_ASSERT(
+                                    false, "HOME env variable not set and logs_plugin ptr is null");
+                            }
+                            std::filesystem::create_directories(enable_data.plugin_home_path);
+
+                            // enable plugin
+                            app_state.logs_plugin->OnEnable(enable_data);
                             plugin_loaded = true;
                         }
                         else

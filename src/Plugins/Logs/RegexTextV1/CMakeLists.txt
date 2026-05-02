@@ -19,6 +19,7 @@ set_target_properties(fluxion_logs_plugin__regex_text_v1 PROPERTIES
 target_link_libraries(fluxion_logs_plugin__regex_text_v1 PUBLIC
     project_compile_options
     external_icons_codicons
+    external_miocsv
     graphite_interface
     graphite_impl
     fluxion_api_interface
