@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.19
+/// @version 0.20
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -109,6 +109,12 @@ void LogsViewLayer::RenderLogsTable()
     LOG_SCOPE("::RenderLogsTable()");
     auto& app_state{m_application->GetApplicationState()};
     auto const& headers{app_state.logs_plugin->GetTableHeader()};
+
+    if (headers.empty())
+    {
+        LOG_TRACE("::RenderLogsTable(): Received empty header");
+        return;
+    }
 
     ImGui::BeginChild("LogsTableRegion");
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 5));

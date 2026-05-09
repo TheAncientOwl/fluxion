@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -15,6 +15,7 @@
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Plugin/GraphiteExport.hpp"
+#include "Graphite/Settings/PersistentSettings.hpp"
 
 #include "Data.hpp"
 
@@ -49,10 +50,16 @@ public:
         Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override;
 
 private:
+    std::filesystem::path MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const;
+    Graphite::Settings::PersistentSettings GetConfig() const;
+
+private:
     Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<std::shared_ptr<Data::RegexTag>>>
         m_regex_tags{};
 
     std::filesystem::path m_home_path{};
+    std::optional<std::filesystem::path> m_last_imported_logs_path{};
+    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
 };
 
 } // namespace Fluxion::Plugins::Logs::RegexTextV1

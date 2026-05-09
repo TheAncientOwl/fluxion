@@ -5,7 +5,7 @@
 ///
 /// @file PersistentSettings.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.15
+/// @version 1.16
 /// @brief Settings management using JSON
 ///
 
@@ -154,6 +154,9 @@ std::optional<json> PersistentSettings::GetJsonValue(std::string_view key) const
 // Scalar types
 DEFINE_SET_SCALAR(std::string)
 DEFINE_GET_SCALAR(std::string, is_string())
+
+DEFINE_SET_SCALAR(std::size_t)
+DEFINE_GET_SCALAR(std::size_t, is_number_integer())
 
 DEFINE_SET_SCALAR(int)
 DEFINE_GET_SCALAR(int, is_number_integer())

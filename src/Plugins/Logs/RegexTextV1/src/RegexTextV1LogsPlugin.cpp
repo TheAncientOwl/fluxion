@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -14,6 +14,7 @@
 #include <string>
 
 #include <exception>
+#include "miocsv.h"
 #include "stdcsv.h"
 
 #include "IconsCodicons.h"
@@ -228,10 +229,15 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
     auto const& tags{m_regex_tags.GetFront()};
 
     std::string full_pattern{};
+    m_imported_logs_header.clear();
     for (auto const& tag : tags)
     {
         if (tag->visible)
         {
+            // TODO: generated IDs
+            // TODO: save to config
+            m_imported_logs_header.push_back(
+                {Graphite::Common::Utility::UniqueID::Default(), tag->display_name});
             full_pattern += "(" + tag->regex_data + ")";
         }
         else
@@ -252,6 +258,7 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
+    m_last_imported_logs_path = path;
     std::ifstream raw_logs_file{path};
     if (!raw_logs_file.is_open())
     {
@@ -259,7 +266,7 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    auto const output_path{m_home_path / (path.filename().string() + ".converted.csv")};
+    auto const output_path{MakeConvertedLogsPath(path)};
     auto writer = miocsv::Writer{output_path};
     LOG_INFO("Output CSV file {}", output_path.string());
 
@@ -299,6 +306,8 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
     }
 
     LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
+    auto settings{GetConfig()};
+    settings.set("total_logs", total_logs);
 }
 
 std::optional<std::size_t> RegexTextV1LogsPlugin::GetNextLog(
@@ -329,19 +338,86 @@ void RegexTextV1LogsPlugin::DisableFilters()
 
 std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> RegexTextV1LogsPlugin::GetTableHeader() const
 {
-    return {};
+    return m_imported_logs_header;
 }
 
 std::size_t RegexTextV1LogsPlugin::GetTotalLogs() const
 {
-    return 0;
+    auto const total_logs_opt{GetConfig().get<std::size_t>("total_logs")};
+    return static_cast<bool>(total_logs_opt) ? *total_logs_opt : 0;
 }
 
 void RegexTextV1LogsPlugin::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& /*ranges*/,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter /*out_logs*/) const
+    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
+    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const
 {
     LOG_SCOPE("::GetLogs()");
+
+    if (!static_cast<bool>(m_last_imported_logs_path))
+    {
+        LOG_INFO("::GetLogs(): No logs were imported before");
+        return;
+    }
+
+    auto const total_logs_opt{GetConfig().get<std::size_t>("total_logs")};
+    if (!static_cast<bool>(total_logs_opt))
+    {
+        LOG_WARN("::GetLogs(): total_logs is not set in config");
+    }
+
+    auto const last_line_index{[&ranges]() {
+        std::size_t last_idx{std::numeric_limits<std::size_t>::min()};
+        for (auto& range : ranges)
+        {
+            last_idx = std::max(last_idx, range.end);
+        }
+        return last_idx;
+    }()};
+
+    auto reader = miocsv::MIOReader{MakeConvertedLogsPath(*m_last_imported_logs_path)};
+    for (auto row : reader)
+    {
+        auto const row_num{reader.get_row_num()};
+
+        if (row_num > last_line_index || row_num > *total_logs_opt)
+        {
+            break;
+        }
+
+        if (!std::any_of(ranges.begin(), ranges.end(), [row_num](auto const& range) {
+                return range.begin <= row_num && row_num < range.end;
+            }))
+        {
+            continue;
+        }
+
+        auto& target_row = out_logs[row_num];
+        if (target_row.data.size() < row.size())
+        {
+            target_row.data.resize(row.size());
+        }
+
+        for (std::size_t col_idx = 0; col_idx < row.size(); ++col_idx)
+        {
+            // TODO: check with move(row)
+            target_row.data[col_idx] = row[col_idx];
+        }
+
+        // TODO: update with filters when implemented
+        target_row.metadata = {};
+    }
+}
+
+std::filesystem::path RegexTextV1LogsPlugin::MakeConvertedLogsPath(
+    std::filesystem::path const& raw_logs_path) const
+{
+    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".converted.csv")};
+    return output_path;
+}
+
+Graphite::Settings::PersistentSettings RegexTextV1LogsPlugin::GetConfig() const
+{
+    return Graphite::Settings::PersistentSettings{m_home_path, "config"};
 }
 
 } // namespace Fluxion::Plugins::Logs::RegexTextV1
