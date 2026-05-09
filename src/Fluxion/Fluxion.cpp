@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -14,7 +14,6 @@
 #include "IconsCodicons.h"
 #include "imgui.h"
 
-#include "DummyPlugin.hpp"
 #include "Fluxion.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Logger.hpp"
@@ -125,13 +124,14 @@ void FluxionApplication::AppInit()
     // Fall back to DummyPlugin if no plugin was loaded
     if (!plugin_loaded)
     {
-        LOG_INFO("Using DummyPlugin as fallback");
-        m_app_state.logs_plugin = std::make_unique<DummyPlugin>();
+        LOG_INFO("::AppInit(): No plugin loaded");
         m_app_state.selected_logs_plugin_path.clear();
     }
-
-    // Set the table header from the loaded plugin
-    m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
+    else
+    {
+        // Set the table header from the loaded plugin
+        m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
+    }
 
     // Load filters from disk after logger is initialized
     Layers::Actions::FiltersLayer::LoadFiltersFromFile(m_app_state);

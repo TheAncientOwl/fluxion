@@ -1,1 +1,2 @@
 add_subdirectory(RegexTextV1)
+add_subdirectory(DummyPlugin)

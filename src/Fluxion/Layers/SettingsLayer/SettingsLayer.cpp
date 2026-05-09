@@ -5,7 +5,7 @@
 ///
 /// @file SettingsLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see SettingsLayer.hpp.
 ///
 
@@ -14,7 +14,6 @@
 #include "IconsCodicons.h"
 #include "imgui.h"
 
-#include "DummyPlugin.hpp"
 #include "Graphite/Logger.hpp"
 
 #include "Modules/Theme.hpp"
