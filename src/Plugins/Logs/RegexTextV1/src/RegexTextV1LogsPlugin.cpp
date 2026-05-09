@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -377,7 +377,7 @@ void RegexTextV1LogsPlugin::GetLogs(
     auto reader = miocsv::MIOReader{MakeConvertedLogsPath(*m_last_imported_logs_path)};
     for (auto row : reader)
     {
-        auto const row_num{reader.get_row_num()};
+        auto const row_num{reader.get_row_num() - 1};
 
         if (row_num > last_line_index || row_num > *total_logs_opt)
         {
