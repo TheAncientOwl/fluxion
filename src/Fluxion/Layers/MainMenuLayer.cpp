@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Implementation of @see MainMenuLayer.hpp.
 ///
 
@@ -56,7 +56,9 @@ void MainMenuLayer::OnAdd()
         {
             LOG_INFO("Selected log file: {}", result.path.string());
             m_last_file_dialog_path = result.path.parent_path();
-            m_application->GetApplicationState().logs_plugin->ImportLogs(result.path);
+            auto& app_state{m_application->GetApplicationState()};
+            app_state.logs_plugin->ImportLogs(result.path);
+            app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
         }
     });
 }

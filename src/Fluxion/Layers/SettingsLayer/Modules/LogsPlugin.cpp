@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -167,6 +167,8 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
                             // enable plugin
                             app_state.logs_plugin->OnEnable(enable_data);
                             plugin_loaded = true;
+
+                            app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
                         }
                         else
                         {
