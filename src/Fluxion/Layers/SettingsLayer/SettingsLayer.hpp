@@ -12,7 +12,7 @@
 #pragma once
 
 #include "Fluxion.hpp"
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "Modules/LogsPlugin.hpp"
 

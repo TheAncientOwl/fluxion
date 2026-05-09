@@ -10,7 +10,7 @@
 ///
 
 #include "LogsViewLayer.hpp"
-#include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
+#include "Fluxion/Data/Formatters.hpp" // IWYU pragma: keep
 #include "Graphite/Logger.hpp"
 
 #include "IconsCodicons.h"

@@ -17,7 +17,7 @@
 #include "FiltersLayer.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 
-#include "Fluxion/Application/Data/Formatters.hpp" // IWYU pragma: keep
+#include "Fluxion/Data/Formatters.hpp" // IWYU pragma: keep
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer);
 USE_LOG_SCOPE(Fluxion::Application::Layers::FiltersLayer);

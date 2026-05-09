@@ -13,7 +13,7 @@
 
 #include <variant>
 
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 
 namespace Fluxion::Application::Layers::Actions::FiltersLayer {
 

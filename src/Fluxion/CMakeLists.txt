@@ -1,3 +1,4 @@
+add_subdirectory(API)
 add_subdirectory(Data)
 
 # --- 1. Implementation ---

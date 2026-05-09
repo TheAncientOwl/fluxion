@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <vector>
 
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 
 namespace Fluxion::Application::Layers::Modules::SettingsLayer {
 

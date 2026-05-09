@@ -10,7 +10,7 @@
 ///
 
 #include "LogsViewLayerActions.hpp"
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 #include "Graphite/Logger.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Layers::LogsViewLayer::Actions);

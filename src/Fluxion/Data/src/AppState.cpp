@@ -9,7 +9,7 @@
 /// @brief Implementation of @see AppState.hpp.
 ///
 
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 
 namespace Fluxion::Application::DefaultState {
 AppState Make()

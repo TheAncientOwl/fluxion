@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-#include "Application/Fluxion.hpp"
+#include "Fluxion/Fluxion.hpp"
 #include "Graphite/Logger.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Main);

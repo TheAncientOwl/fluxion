@@ -9,7 +9,7 @@
 /// @brief Implementation of @see FluxionData/Data.hpp::Tabs.
 ///
 
-#include "Fluxion/Application/Data/Data.hpp"
+#include "Fluxion/Data/Data.hpp"
 
 namespace Fluxion::Application::Data {
 

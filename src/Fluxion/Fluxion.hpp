@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 #include "Graphite/Application/TGraphiteApplication.hpp"
 
 namespace Fluxion::Application {

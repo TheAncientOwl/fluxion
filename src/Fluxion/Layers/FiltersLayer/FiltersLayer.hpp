@@ -3,32 +3,32 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file LogsViewLayer.hpp
+/// @file FiltersLayer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.9
 /// @brief Main layer responsible for rendering logs table.
 ///
 
 #pragma once
 
+#include "FiltersLayerActions.hpp"
 #include "Fluxion.hpp"
-#include "Fluxion/Application/Data/AppState.hpp"
+#include "Fluxion/Data/AppState.hpp"
 #include "Graphite/Application/Layers/TSoftCloseableLayer.hpp"
 #include "Graphite/Application/Layers/Utility/TDispatcher.hpp"
-#include "LogsViewLayerActions.hpp"
 
 namespace Fluxion::Application::Layers {
 
-class LogsViewLayer
+class FiltersLayer
     : public Graphite::Application::Layers::TSoftMenuCloseableLayer<AppState, EFluxionAction>
     , public Graphite::Application::Layers::Utility::
-          TDispatcher<LogsViewLayer, EFluxionAction::LogsViewLayerAction, Actions::LogsViewLayer::LogsViewLayerActionPayload>
+          TDispatcher<FiltersLayer, EFluxionAction::FilterAction, Actions::FiltersLayer::FilterActionPayload>
 {
-public:
+public: // Public API
     static std::string_view GetLayerName() noexcept;
     std::string_view GetName() const noexcept override;
 
-    LogsViewLayer(
+    FiltersLayer(
         FluxionApplication::FluxionApplication::Ptr application,
         Graphite::Application::Layers::ZIndex const z_index);
 
@@ -41,8 +41,21 @@ public:
     inline void SetIsActive(bool const open) override;
     inline std::string_view GetDisplayName() const noexcept override;
 
-private:
-    void RenderLogsTable();
+private: // Private API
+    void MarkFiltersMetadataDirty();
+
+private: // Private Rendering API
+    void RenderToolbar();
+    void RenderTabs();
+
+    void RenderTab(std::shared_ptr<Fluxion::Application::Data::Filters::Tab> tab_ptr);
+    void RenderFilter(
+        Graphite::Common::Utility::UniqueID const& owning_tab_id,
+        Fluxion::Application::Data::Filters::Filter& filter);
+    void RenderCondition(
+        Graphite::Common::Utility::UniqueID const& owning_tab_id,
+        Graphite::Common::Utility::UniqueID const& owning_filter_id,
+        Fluxion::Application::Data::Filters::Condition& condition);
 };
 
 } // namespace Fluxion::Application::Layers

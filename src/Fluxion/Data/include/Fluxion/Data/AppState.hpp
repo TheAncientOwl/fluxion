@@ -16,7 +16,7 @@
 #include <unordered_map>
 
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
-#include "Fluxion/Application/Data/Data.hpp"
+#include "Fluxion/Data/Data.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 
