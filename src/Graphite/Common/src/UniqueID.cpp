@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -16,6 +16,64 @@
 #include "Graphite/Common/Utility/UniqueID.hpp"
 
 namespace Graphite::Common::Utility {
+
+UniqueID::UniqueID(std::string_view const id_str)
+{
+    m_data.fill(0);
+
+    if (id_str.size() != 36)
+    {
+        return;
+    }
+
+    auto hex_to_byte = [](char c) -> unsigned char {
+        if (c >= '0' && c <= '9')
+        {
+            return static_cast<unsigned char>(c - '0');
+        }
+
+        if (c >= 'a' && c <= 'f')
+        {
+            return static_cast<unsigned char>(10 + (c - 'a'));
+        }
+
+        if (c >= 'A' && c <= 'F')
+        {
+            return static_cast<unsigned char>(10 + (c - 'A'));
+        }
+
+        return 0xFF;
+    };
+
+    std::size_t data_index = 0;
+
+    for (std::size_t i = 0; i < id_str.size();)
+    {
+        if (i == 8 || i == 13 || i == 18 || i == 23)
+        {
+            if (id_str[i] != '-')
+            {
+                m_data.fill(0);
+                return;
+            }
+
+            ++i;
+            continue;
+        }
+
+        unsigned char high = hex_to_byte(id_str[i]);
+        unsigned char low = hex_to_byte(id_str[i + 1]);
+
+        if (high == 0xFF || low == 0xFF)
+        {
+            m_data.fill(0);
+            return;
+        }
+
+        m_data[data_index++] = static_cast<unsigned char>((high << 4) | low);
+        i += 2;
+    }
+}
 
 UniqueID::UniqueID(UniqueID&& other) noexcept : m_data{std::move(other.m_data)}
 {

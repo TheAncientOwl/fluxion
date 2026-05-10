@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.7
+/// @version 1.8
 /// @brief UniqueID abstraction.
 ///
 
@@ -21,6 +21,11 @@ namespace Graphite::Common::Utility {
 class UniqueID
 {
 public: // lifecycle
+    ///
+    /// @brief Create ID from string in format OOOOOOOO-OOOO-OOOO-OOOO-OOOOOOOOOOOO
+    ///
+    UniqueID(std::string_view const id_str);
+
     UniqueID() = default;
     ~UniqueID() = default;
     UniqueID(UniqueID const&) = default;

@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -42,6 +42,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
                 return;
             }
 
+            // TODO: better handle logs request / culling so we don't hit the plugin for the same chunks every frame
             LOG_INFO(
                 "::handle<UpdateVisibleLogs>(): buffer_preparer > Begin culling. Map size: {}",
                 visible_logs_chunk.logs.size());

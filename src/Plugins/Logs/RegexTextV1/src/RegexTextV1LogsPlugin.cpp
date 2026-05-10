@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -31,6 +31,13 @@ std::filesystem::path RegexTextV1LogsPlugin::MakeConvertedLogsPath(
     std::filesystem::path const& raw_logs_path) const
 {
     auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".converted.csv")};
+    return output_path;
+}
+
+std::filesystem::path RegexTextV1LogsPlugin::MakeFilteredLogsPath(
+    std::filesystem::path const& raw_logs_path) const
+{
+    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".filtered.csv")};
     return output_path;
 }
 

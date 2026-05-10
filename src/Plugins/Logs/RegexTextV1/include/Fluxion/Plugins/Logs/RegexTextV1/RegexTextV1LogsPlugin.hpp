@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -51,6 +51,7 @@ public:
 
 private:
     std::filesystem::path MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const;
+    std::filesystem::path MakeFilteredLogsPath(std::filesystem::path const& raw_logs_path) const;
     Graphite::Settings::PersistentSettings GetConfig() const;
 
 private:

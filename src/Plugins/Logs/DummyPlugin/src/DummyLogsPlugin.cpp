@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -45,6 +45,10 @@ struct ActiveFilter
     std::vector<ComputedCondition> conditions{};
 };
 
+///
+/// @note Conversion has to be done because of plugin specific regex implementation
+/// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
+///
 inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
 {
     using namespace Fluxion::API::LogsPlugin::Data;

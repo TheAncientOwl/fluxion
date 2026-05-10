@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.20
+/// @version 0.21
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -197,7 +197,10 @@ void LogsViewLayer::RenderLogsTable()
                 if (it != front_buffer.logs.cend())
                 {
                     auto const& row{it->second};
-                    auto const& highlight{app_state.filters.id_to_metadata[row.metadata.highlight_id]};
+                    auto const& highlight{
+                        row.metadata.highlight_id != Graphite::Common::Utility::UniqueID::Default()
+                            ? app_state.filters.id_to_metadata[row.metadata.highlight_id]
+                            : Data::Logs::SharedFilterMetadata{}};
 
                     if (row_idx == searched_log_state.index)
                     {
@@ -211,6 +214,7 @@ void LogsViewLayer::RenderLogsTable()
                         ImGui::PushStyleColor(ImGuiCol_Text, highlight.colors.foreground);
                     }
 
+                    GRAPHITE_ASSERT(row.data.size() == headers.size(), "Row size != header size");
                     for (auto const& field : row.data)
                     {
                         ImGui::TableNextColumn();

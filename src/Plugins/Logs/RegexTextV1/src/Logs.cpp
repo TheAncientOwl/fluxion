@@ -5,7 +5,7 @@
 ///
 /// @file Logs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -25,6 +25,67 @@ DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
 
 namespace Fluxion::Plugins::Logs::RegexTextV1 {
+
+namespace FilterImpl {
+
+struct ComputedCondition
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+{
+    std::size_t column_index{};
+    std::variant<std::regex, std::string> condition{};
+};
+
+struct ActiveFilter
+{
+    Graphite::Common::Utility::UniqueID id;
+    std::uint8_t priority{};
+    std::vector<ComputedCondition> conditions{};
+};
+
+///
+/// @note Conversion has to be done because of plugin specific regex implementation
+/// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
+///
+inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+{
+    using namespace Fluxion::API::LogsPlugin::Data;
+    LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
+
+    std::vector<ActiveFilter> out{};
+    out.reserve(filters.size());
+
+    for (auto const& filter : filters)
+    {
+        std::vector<ComputedCondition> out_conditions{};
+        out_conditions.reserve(filter.conditions.size());
+
+        for (auto const& condition : filter.conditions)
+        {
+            auto& out_condition = out_conditions.emplace_back();
+            out_condition.column_index = condition.column_index;
+
+            out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
+            out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
+            out_condition[EConditionFlag::IsCaseSensitive] =
+                condition[EConditionFlag::IsCaseSensitive];
+
+            if (condition[EConditionFlag::IsRegex])
+            {
+                out_condition.condition = std::regex{condition.data};
+            }
+            else
+            {
+                out_condition.condition = std::move(condition.data);
+            }
+        }
+
+        out.emplace_back(filter.id, filter.priority, std::move(out_conditions));
+    }
+
+    return out;
+}
+
+}; // namespace FilterImpl
 
 void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
 {
@@ -70,9 +131,14 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    auto const output_path{MakeConvertedLogsPath(path)};
-    auto writer = miocsv::Writer{output_path};
-    LOG_INFO("Output CSV file {}", output_path.string());
+    auto const output_converted_path{MakeConvertedLogsPath(path)};
+    auto converted_writer = miocsv::Writer{output_converted_path};
+    LOG_INFO("Output converted CSV file {}", output_converted_path.string());
+
+    auto const output_filtered_path{MakeFilteredLogsPath(path)};
+    auto filtered_writer = miocsv::Writer{output_filtered_path};
+    LOG_INFO("Output filtered CSV file {}", output_filtered_path.string());
+    auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
     std::string line{};
     line.reserve(1024);
@@ -90,18 +156,22 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
             }
 
             // matches[0] is full match, start from 1 like Rust version
+            // TODO: try and move row outside while
             miocsv::Row row{};
+            miocsv::Row filtered_row{default_filter_id, default_filter_id};
             for (std::size_t i = 1; i < matches.size(); ++i)
             {
                 if (matches[i].matched)
                 {
-                    row.append(matches[i].str());
+                    auto match{matches[i].str()};
+                    row.append(match);
+                    filtered_row.append(std::move(match));
                     // LOG_TRACE("::ImportLogs(): Col {}: {}", i, matches[i].str());
                     // TODO: store or process column value
-                    // e.g. LOG_TRACE("Col {}: {}", i, matches[i].str());
                 }
             }
-            writer.write_row(row);
+            converted_writer.write_row(row);
+            filtered_writer.write_row(filtered_row);
         }
         else
         {
@@ -145,6 +215,13 @@ void RegexTextV1LogsPlugin::GetLogs(
 {
     LOG_SCOPE("::GetLogs()");
 
+    std::stringstream ss{};
+    for (auto range : ranges)
+    {
+        ss << "[" << range.begin << ", " << range.end << "), ";
+    }
+    LOG_INFO("::GetLogs(): Requested ranges: {}", ss.str());
+
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
         LOG_INFO("::GetLogs(): No logs were imported before");
@@ -166,7 +243,7 @@ void RegexTextV1LogsPlugin::GetLogs(
         return last_idx;
     }()};
 
-    auto reader = miocsv::MIOReader{MakeConvertedLogsPath(*m_last_imported_logs_path)};
+    auto reader = miocsv::MIOReader{MakeFilteredLogsPath(*m_last_imported_logs_path)};
     for (auto row : reader)
     {
         auto const row_num{reader.get_row_num() - 1};
@@ -184,19 +261,129 @@ void RegexTextV1LogsPlugin::GetLogs(
         }
 
         auto& target_row = out_logs[row_num];
-        if (target_row.data.size() < row.size())
+        auto const actual_row_size{row.size() - 2}; // -2 = first 2 filter IDs
+        if (target_row.data.size() != actual_row_size)
         {
-            target_row.data.resize(row.size());
+            target_row.data.resize(actual_row_size);
         }
 
-        for (std::size_t col_idx = 0; col_idx < row.size(); ++col_idx)
+        for (std::size_t col_idx = 2; col_idx < row.size(); ++col_idx)
         {
             // TODO: check with move(row)
-            target_row.data[col_idx] = row[col_idx];
+            target_row.data[col_idx - 2] = row[col_idx];
         }
 
-        // TODO: update with filters when implemented
-        target_row.metadata = {};
+        target_row.metadata = {
+            .filter_id = Graphite::Common::Utility::UniqueID{row[0]},
+            .highlight_id = Graphite::Common::Utility::UniqueID{row[1]}};
+    }
+}
+
+void RegexTextV1LogsPlugin::ApplyFilters(
+    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
+    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+{
+    LOG_SCOPE("::ApplyFilters()");
+    using namespace Fluxion::API::LogsPlugin::Data;
+
+    auto const filters = FilterImpl::Convert(std::move(_filters));
+    auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
+    LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
+    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+
+    if (!static_cast<bool>(m_last_imported_logs_path))
+    {
+        LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
+        return;
+    }
+    auto const output_filtered_path{MakeFilteredLogsPath(*m_last_imported_logs_path)};
+    auto filtered_logs_writer = miocsv::Writer{output_filtered_path};
+    LOG_INFO("::ApplyFilters(): Output filtered CSV file {}", output_filtered_path.string());
+
+    auto const input_logs_path{MakeConvertedLogsPath(*m_last_imported_logs_path)};
+    auto converted_logs_reader = miocsv::MIOReader{input_logs_path};
+    LOG_INFO("::ApplyFilters(): Converted CSV file {}", input_logs_path.string());
+
+    std::size_t total_filtered_logs{0};
+    for (auto row : converted_logs_reader)
+    {
+        for (auto const& filter : filters)
+        {
+            bool matches{true};
+            for (auto const& condition : filter.conditions)
+            {
+                auto const& target{row[condition.column_index]};
+
+                bool const equals{
+                    condition[EConditionFlag::IsRegex]
+                        ? std::regex_match(target, std::get<std::regex>(condition.condition))
+                        : target == std::get<std::string>(condition.condition)};
+
+                if (condition[EConditionFlag::IsEquals] != equals)
+                {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (matches)
+            {
+                ++total_filtered_logs;
+
+                Graphite::Common::Utility::UniqueID highlight_id{filter.id};
+                auto highlight_priority{filter.priority};
+                for (auto const& highlight_filter : highlight_only)
+                {
+                    bool highlight_matches{true};
+                    for (auto const& condition : highlight_filter.conditions)
+                    {
+                        auto const& target{row[condition.column_index]};
+
+                        bool const equals{
+                            condition[EConditionFlag::IsRegex]
+                                ? std::regex_match(target, std::get<std::regex>(condition.condition))
+                                : target == std::get<std::string>(condition.condition)};
+
+                        if (condition[EConditionFlag::IsEquals] != equals)
+                        {
+                            highlight_matches = false;
+                            break;
+                        }
+                    }
+                    if (highlight_matches && highlight_filter.priority > highlight_priority)
+                    {
+                        highlight_id = highlight_filter.id;
+                        highlight_priority = highlight_filter.priority;
+                    }
+                }
+
+                auto filtered_row = miocsv::Row{filter.id.ToString(), highlight_id.ToString()};
+                for (auto field : row)
+                {
+                    filtered_row.append(field);
+                }
+                filtered_logs_writer.write_row(filtered_row);
+                break;
+            }
+        }
+    }
+
+    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", total_filtered_logs);
+    auto settings{GetConfig()};
+    // TODO: move "total_logs" key to some constexpr global
+    settings.set("total_logs", total_filtered_logs);
+}
+
+void RegexTextV1LogsPlugin::DisableFilters()
+{
+    LOG_SCOPE("::DisableFilters()");
+    if (static_cast<bool>(m_last_imported_logs_path))
+    {
+        ImportLogs(*m_last_imported_logs_path);
+    }
+    else
+    {
+        LOG_INFO("::DisableFilters(): No logs imported before, nothing to disable");
     }
 }
 
