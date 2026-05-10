@@ -7,7 +7,11 @@ target_include_directories(fluxion_logs_plugin__regex_text_v1_interface INTERFAC
 
 # --- 2. Implementation ---
 add_library(fluxion_logs_plugin__regex_text_v1 SHARED
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Filters.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Lifecycle.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Logs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RegexTextV1LogsPlugin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RenderMenu.cpp
 )
 
 set_target_properties(fluxion_logs_plugin__regex_text_v1 PROPERTIES
