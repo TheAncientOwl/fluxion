@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -453,7 +453,8 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
     auto const& tabs{application_state.filters.tabs.GetBack()};
     auto const& header{application_state.logs_plugin->GetTableHeader()};
 
-    auto get_column_index = [&header](Graphite::Common::Utility::UniqueID const id) {
+    auto get_column_index =
+        [&header](Graphite::Common::Utility::UniqueID const id) -> std::optional<std::size_t> {
         for (std::size_t index = 0; index < header.size(); ++index)
         {
             if (header[index].id == id)
@@ -462,9 +463,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
             }
         }
 
-        GRAPHITE_ASSERT(false, std::string{"Failed to find header with ID "} + id);
-
-        return std::size_t{0};
+        return std::nullopt;
     };
 
     for (auto const& tab_ptr : tabs)
@@ -488,8 +487,15 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
             for (auto const& condition_ptr : filter.conditions.GetBack())
             {
                 auto const& condition{*condition_ptr};
+                auto const column_index{get_column_index(condition.over_column_id)};
+                if (!static_cast<bool>(column_index))
+                {
+                    continue;
+                }
+
                 auto& out_condition = out_conditions.emplace_back();
-                out_condition.column_index = get_column_index(condition.over_column_id);
+
+                out_condition.column_index = *column_index;
                 out_condition.data = condition.data;
 
                 using EInternalConditionFlag = EConditionFlag;
@@ -727,6 +733,7 @@ void SaveFiltersToFile(AppState const& application_state)
                 for (auto const& condition : filter->conditions.GetFront())
                 {
                     nlohmann::json condition_json;
+                    condition_json["over_column_id"] = condition->over_column_id.ToString();
                     condition_json["data"] = condition->data;
                     condition_json["is_regex"] =
                         static_cast<bool>(condition->operator[](Filters::EConditionFlag::IsRegex));
@@ -842,6 +849,8 @@ void LoadFiltersFromFile(AppState& application_state)
                     auto condition_ptr = std::make_shared<Filters::Condition>();
                     condition_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
 
+                    condition_ptr->over_column_id = Graphite::Common::Utility::UniqueID{
+                        condition_json.at("over_column_id").get<std::string>()};
                     condition_ptr->data = condition_json.at("data").get<std::string>();
                     (*condition_ptr)[Filters::EConditionFlag::IsRegex] =
                         condition_json.at("is_regex").get<bool>();

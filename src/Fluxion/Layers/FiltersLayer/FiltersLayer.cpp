@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.35
+/// @version 0.36
 /// @brief Implementation of @see FiltersLayer.hpp.
 ///
 
@@ -669,34 +669,29 @@ void FiltersLayer::RenderCondition(
 
     auto const& header = m_application->GetApplicationState().logs.table_header;
 
-    std::optional<std::size_t> selected_index{};
+    std::optional<std::size_t> selected_index_opt{};
     for (std::size_t i = 0; i < header.size(); ++i)
     {
         if (header[i].id == condition.over_column_id)
         {
-            selected_index = i;
+            selected_index_opt = i;
             break;
         }
-    }
-    if (!static_cast<bool>(selected_index) && !header.empty())
-    {
-        selected_index = 0;
-        condition.over_column_id = header.front().id;
     }
 
     ImGui::SameLine();
     ImGui::PushItemWidth(125);
-    const char* preview_value = header.empty() || !static_cast<bool>(selected_index)
+    const char* preview_value = header.empty() || !static_cast<bool>(selected_index_opt)
                                     ? "None"
-                                    : header[*selected_index].display_name.c_str();
+                                    : header[*selected_index_opt].display_name.c_str();
     if (ImGui::BeginCombo("##alternative", preview_value))
     {
         for (std::size_t select_index = 0; select_index < header.size(); ++select_index)
         {
-            bool is_selected = (*selected_index == select_index);
+            bool is_selected = (selected_index_opt == select_index);
             if (ImGui::Selectable(header[select_index].display_name.c_str(), is_selected))
             {
-                selected_index = select_index;
+                selected_index_opt = select_index;
                 condition.over_column_id = header[select_index].id;
                 MarkFiltersMetadataDirty();
             }

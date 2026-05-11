@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -86,27 +86,6 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
                     LOG_INFO("Clearing rendered logs");
                     app_state.logs.visible_chunk.UpdateBackBufferSwap(
                         [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
-
-                    LOG_INFO("Resetting conditions column IDs to default");
-                    app_state.filters.tabs.UpdateBackBufferCopy([](std::vector<Data::Filters::Tab::Ptr>& tabs) {
-                        for (auto& tab : tabs)
-                        {
-                            tab->filters.UpdateBackBufferCopy(
-                                [](std::vector<Data::Filters::Filter::Ptr>& filters) {
-                                    for (auto& filter : filters)
-                                    {
-                                        filter->conditions.UpdateBackBufferCopy(
-                                            [](std::vector<Data::Filters::Condition::Ptr>& conditions) {
-                                                for (auto& condition : conditions)
-                                                {
-                                                    condition->over_column_id =
-                                                        Graphite::Common::Utility::UniqueID::Default();
-                                                }
-                                            });
-                                    }
-                                });
-                        }
-                    });
 
                     LOG_INFO("Saving filters to disk");
                     Actions::FiltersLayer::SaveFiltersToFile(app_state);
