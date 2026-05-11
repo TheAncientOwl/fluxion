@@ -5,7 +5,7 @@
 ///
 /// @file Logs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -143,6 +143,17 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
     line.reserve(1024);
     std::size_t total_logs{0};
 
+    miocsv::Row row{};
+    miocsv::Row filtered_row{default_filter_id, default_filter_id};
+    std::string dummy{};
+    for (auto const& _ : m_imported_logs_header)
+    {
+        row.append(dummy);
+        filtered_row.append(dummy);
+    }
+
+    filtered_row[0] = default_filter_id;
+    filtered_row[1] = default_filter_id;
     while (std::getline(raw_logs_file, line))
     {
         std::smatch matches;
@@ -154,19 +165,14 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
                 LOG_INFO("Read another 1000 chunk, total: {}", total_logs);
             }
 
-            // matches[0] is full match, start from 1 like Rust version
-            // TODO: try and move row outside while
-            miocsv::Row row{};
-            miocsv::Row filtered_row{default_filter_id, default_filter_id};
-            for (std::size_t i = 1; i < matches.size(); ++i)
+            // matches[0] is full match, start from 1
+            for (std::size_t match_idx = 1; match_idx < matches.size(); ++match_idx)
             {
-                if (matches[i].matched)
+                if (matches[match_idx].matched)
                 {
-                    auto match{matches[i].str()};
-                    row.append(match);
-                    filtered_row.append(std::move(match));
-                    // LOG_TRACE("::ImportLogs(): Col {}: {}", i, matches[i].str());
-                    // TODO: store or process column value
+                    auto match{matches[match_idx].str()};
+                    row[match_idx - 1] = match;
+                    filtered_row[match_idx + 1] = std::move(match);
                 }
             }
             converted_writer.write_row(row);
