@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -27,6 +27,8 @@ using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
 void RegexTextV1LogsPlugin::RenderMenu()
 {
     LOG_SCOPE("::RenderMenu()");
+
+    bool tags_dirty{false};
 
     ImGui::TextUnformatted(ICON_CI_TOOLS " Regex Configurator");
 
@@ -51,8 +53,9 @@ void RegexTextV1LogsPlugin::RenderMenu()
 
         ImGui::TableNextColumn();
         Graphite::Common::UI::IconButton(ICON_CI_ADD, "Add", [&]() {
-            m_regex_tags.UpdateBackBufferCopy([](RegexTags& back_tags) {
+            m_regex_tags.UpdateBackBufferCopy([&tags_dirty](RegexTags& back_tags) {
                 LOG_INFO("::RenderMenu(): Add Tag.");
+                tags_dirty = true;
                 auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
                 new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
                 LOG_INFO("::RenderMenu(): New Tag ID {}.", new_tag->id);
@@ -88,6 +91,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
             ImGui::TableNextColumn();
 
             Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete", [&]() {
+                tags_dirty = true;
                 m_regex_tags.UpdateBackBufferCopy([idx](RegexTags& back_tags) {
                     if (idx < back_tags.size())
                     {
@@ -110,6 +114,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
                 tag.visible ? ICON_CI_EYE : ICON_CI_EYE_CLOSED,
                 tag.visible ? "Toggle Visible: OFF" : "Toggle Visible: ON",
                 [&]() {
+                    tags_dirty = true;
                     m_regex_tags.UpdateBackBufferCopy([idx](RegexTags& back_tags) {
                         if (idx < back_tags.size())
                         {
@@ -125,16 +130,27 @@ void RegexTextV1LogsPlugin::RenderMenu()
 
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
-            Graphite::Common::UI::InputText("##regex-name", tag.display_name);
+            if (Graphite::Common::UI::InputText("##regex-name", tag.display_name))
+            {
+                tags_dirty = true;
+            };
 
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
-            Graphite::Common::UI::InputText("##regex-data", tag.regex_data);
+            if (Graphite::Common::UI::InputText("##regex-data", tag.regex_data))
+            {
+                tags_dirty = true;
+            };
 
             ImGui::PopID();
         }
 
         ImGui::EndTable();
+    }
+
+    if (tags_dirty)
+    {
+        SaveRegexTags(m_regex_tags.GetFront());
     }
 }
 

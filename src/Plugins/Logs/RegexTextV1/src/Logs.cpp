@@ -5,7 +5,7 @@
 ///
 /// @file Logs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -96,12 +96,10 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
     auto const& tags{m_regex_tags.GetFront()};
 
     std::string full_pattern{};
-    m_imported_logs_header.clear();
     for (auto const& tag : tags)
     {
         if (tag->visible)
         {
-            // TODO: save to config
             m_imported_logs_header.push_back({tag->id, tag->display_name});
             full_pattern += "(" + tag->regex_data + ")";
         }
@@ -110,6 +108,7 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
             full_pattern += tag->regex_data;
         }
     }
+    UpdateImportedLogsHeader(tags);
     LOG_INFO("::ImportLogs(): Full regex pattern: {}", full_pattern);
 
     std::regex line_regex{};
