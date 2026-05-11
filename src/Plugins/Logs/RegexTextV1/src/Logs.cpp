@@ -275,8 +275,7 @@ void RegexTextV1LogsPlugin::GetLogs(
 
         for (std::size_t col_idx = 2; col_idx < row.size(); ++col_idx)
         {
-            // TODO: check with move(row)
-            target_row.data[col_idx - 2] = row[col_idx];
+            target_row.data[col_idx - 2] = std::move(row[col_idx]);
         }
 
         target_row.metadata = {
