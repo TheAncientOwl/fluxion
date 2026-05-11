@@ -33,6 +33,7 @@ auto FindByID(std::vector<std::shared_ptr<T>>& vec, Graphite::Common::Utility::U
     return std::find_if(vec.begin(), vec.end(), [&](auto const& ptr) { return ptr->id == id; });
 }
 
+// TODO: look into separating each action / file
 template <EFilterActionType ActionType, typename TPayload>
 void handle(AppState& application_state, TPayload const& payload) = delete;
 
@@ -676,6 +677,7 @@ void handle<EFilterActionType::MoveCondition>(
     });
 }
 
+// TODO: move to DiskIO.cpp
 void SaveFiltersToFile(AppState const& application_state)
 {
     LOG_SCOPE("::SaveFiltersToFile()");
@@ -770,6 +772,7 @@ void SaveFiltersToFile(AppState const& application_state)
     }
 }
 
+// TODO: move to DiskIO.cpp
 void LoadFiltersFromFile(AppState& application_state)
 {
     LOG_SCOPE("::LoadFiltersFromFile()");
@@ -896,6 +899,7 @@ void LoadFiltersFromFile(AppState& application_state)
     }
 }
 
+// TODO: why is this here wtf??? move it to Fluxion class
 void SavePluginPathToFile(AppState const& application_state)
 {
     LOG_SCOPE("::SavePluginPathToFile()");
@@ -923,6 +927,7 @@ void SavePluginPathToFile(AppState const& application_state)
     }
 }
 
+// TODO: why is this here wtf??? move it to Fluxion class
 void LoadPluginPathFromFile(AppState& application_state)
 {
     LOG_SCOPE("::LoadPluginPathFromFile()");
