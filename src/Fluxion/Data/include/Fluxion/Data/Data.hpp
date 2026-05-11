@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief General data.
 ///
 
@@ -104,7 +104,7 @@ struct FiltersGeneralMetadata
 
 namespace Logs {
 
-struct VisibleLogsChunk
+struct VisibleLogs
 {
     Fluxion::API::LogsPlugin::Data::IndexToLogRowMap logs{};
 };

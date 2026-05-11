@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayerActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -33,10 +33,10 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
     // LOG_INFO("begin {} | end {}", action.visible_logs_indices.begin, action.visible_logs_indices.end);
     // TODO: resize the data when the imported logs change
 
-    application_state.logs.visible_chunk.UpdateBackBufferSwap(
+    application_state.logs.visible.UpdateBackBufferSwap(
         // 1. Prepare Back Buffer
         [payload, columns_count = application_state.logs.table_header.size()](
-            VisibleLogsChunk& visible_logs_chunk) {
+            VisibleLogs& visible_logs_chunk) {
             if (payload.visible_logs_indices.empty())
             {
                 return;
@@ -66,7 +66,7 @@ void handle<ELogsViewActionLayerType::UpdateVisibleLogs>(
                 visible_logs_chunk.logs.size());
         },
         // 2. Update Back Buffer
-        [payload, &logs_logic = application_state.logs_plugin](VisibleLogsChunk& visible_logs_chunk) {
+        [payload, &logs_logic = application_state.logs_plugin](VisibleLogs& visible_logs_chunk) {
             logs_logic->GetLogs(
                 payload.visible_logs_indices,
                 Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter{visible_logs_chunk.logs});

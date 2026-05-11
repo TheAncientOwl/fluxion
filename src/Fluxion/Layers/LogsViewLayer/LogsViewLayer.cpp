@@ -5,7 +5,7 @@
 ///
 /// @file LogsViewLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.21
+/// @version 0.22
 /// @brief Implementation of @see LogsViewLayer.hpp.
 ///
 
@@ -65,7 +65,7 @@ void LogsViewLayer::OnIterate()
     LOG_SCOPE("::OnIterate()");
     auto& app_state{m_application->GetApplicationState()};
 
-    app_state.logs.visible_chunk.SyncFrontBufferSwap();
+    app_state.logs.visible.SyncFrontBufferSwap();
     app_state.logs.searched_log.SyncFrontBufferCopy();
 }
 
@@ -169,7 +169,7 @@ void LogsViewLayer::RenderLogsTable()
                 ranges.emplace_back(0, 1);
             }
 
-            auto const& front_buffer = app_state.logs.visible_chunk.GetFront();
+            auto const& front_buffer = app_state.logs.visible.GetFront();
 
             LOG_TRACE(
                 "::RenderLogsTable(): DisplayStart == {} | DisplayEnd == {} | Searched == {} | "

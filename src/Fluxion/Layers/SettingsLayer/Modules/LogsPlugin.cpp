@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -83,8 +83,13 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
                     app_state.logs.searched_log.UpdateBackBufferCopyLocking(
                         [](auto& searched_log) { searched_log.index = std::nullopt; });
 
-                    LOG_INFO("Clearing rendered logs");
-                    app_state.logs.visible_chunk.UpdateBackBufferSwap(
+                    LOG_INFO("Clearing visible logs");
+                    /// @note we have to <clear, swap & clear again> to get rid of front artifacts
+                    /// that are being swapped on back the first time
+                    app_state.logs.visible.UpdateBackBufferSwap(
+                        [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
+                    app_state.logs.visible.SyncFrontBufferSwap();
+                    app_state.logs.visible.UpdateBackBufferSwap(
                         [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
 
                     LOG_INFO("Saving filters to disk");
