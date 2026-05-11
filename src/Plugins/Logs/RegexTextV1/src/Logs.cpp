@@ -237,6 +237,7 @@ void RegexTextV1LogsPlugin::GetLogs(
     if (!static_cast<bool>(total_logs_opt))
     {
         LOG_WARN("::GetLogs(): total_logs is not set in config");
+        return;
     }
 
     auto const last_line_index{[&ranges]() {
