@@ -5,7 +5,7 @@
 ///
 /// @file Lifecycle.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -101,6 +101,9 @@ void RegexTextV1LogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableD
     LOG_TRACE("::OnDisable()");
 
     SaveRegexTags(m_regex_tags.GetFront());
+    auto config{GetConfig()};
+    config.set("total_logs", 0);
+    config.Save();
 }
 
 } // namespace Fluxion::Plugins::Logs::RegexTextV1

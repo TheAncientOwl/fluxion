@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -49,7 +49,7 @@ FluxionApplication::~FluxionApplication()
     Layers::Actions::FiltersLayer::SaveFiltersToFile(m_app_state);
 }
 
-void FluxionApplication::AppInit()
+void FluxionApplication::OnInit()
 {
     LOG_SCOPE("::AppInit()");
     if (ImGui::GetCurrentContext() == nullptr)
@@ -143,6 +143,14 @@ void FluxionApplication::AppInit()
     AddLayer<Layers::SettingsLayer>(shared_from_this(), 2);
     AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);
     AddLayer<Layers::FiltersLayer>(shared_from_this(), 20);
+}
+
+void FluxionApplication::OnShutdown()
+{
+    if (m_app_state.logs_plugin != nullptr)
+    {
+        m_app_state.logs_plugin->OnDisable({});
+    }
 }
 
 void FluxionApplication::SetupFonts()

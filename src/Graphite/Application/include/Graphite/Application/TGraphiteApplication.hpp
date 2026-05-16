@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.8
+/// @version 1.9
 /// @brief Main application.
 ///
 
@@ -127,7 +127,8 @@ protected: // Shared API
     }
 
 private: // Private API
-    virtual void AppInit() = 0;
+    virtual void OnInit() = 0;
+    virtual void OnShutdown() = 0;
 
     void Init()
     {
@@ -138,7 +139,7 @@ private: // Private API
 
         m_worker_thread = std::thread(&TGraphiteApplication::WorkerLoop, this);
 
-        AppInit();
+        OnInit();
     }
 
     void Render() override
@@ -153,6 +154,8 @@ private: // Private API
     {
         USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
         LOG_SCOPE("::Shutdown()");
+
+        OnShutdown();
 
         // 1. Cleanup Layers
         while (!m_layers.empty())

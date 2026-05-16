@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -31,7 +31,8 @@ private:
     void SetupFonts();
 
 private:
-    void AppInit() override;
+    void OnInit() override;
+    void OnShutdown() override;
     void OnProcessAction(Graphite::Common::Utility::TAppAction<EFluxionAction> const& action) override;
 };
 
