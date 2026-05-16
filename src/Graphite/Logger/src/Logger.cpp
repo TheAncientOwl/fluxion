@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.14
+/// @version 1.15
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -57,6 +57,8 @@ void Logger::SaveConfig()
 
         // Save global level mask with a special key
         m_settings.set<int>("__global_level_mask", m_global_level_mask.load());
+
+        m_settings.Save();
     }
     catch (const std::exception& e)
     {

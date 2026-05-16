@@ -5,7 +5,7 @@
 ///
 /// @file PersistentSettings.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.15
+/// @version 1.16
 /// @brief Settings management using JSON
 ///
 
@@ -41,12 +41,13 @@ public:
     void SetJsonValue(std::string_view key, json const& value);
     [[nodiscard]] std::optional<json> GetJsonValue(std::string_view key) const;
 
+    void Save();
+
 private:
     std::filesystem::path m_file_path{};
     json m_data{};
 
     void Load();
-    void Save();
 };
 
 } // namespace Graphite::Settings

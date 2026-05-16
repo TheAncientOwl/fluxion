@@ -5,7 +5,7 @@
 ///
 /// @file Logs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -187,6 +187,7 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
     LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
     auto settings{GetConfig()};
     settings.set("total_logs", total_logs);
+    settings.Save();
 }
 
 std::optional<std::size_t> RegexTextV1LogsPlugin::GetNextLog(
@@ -377,6 +378,7 @@ void RegexTextV1LogsPlugin::ApplyFilters(
     auto settings{GetConfig()};
     // TODO: move "total_logs" key to some constexpr global
     settings.set("total_logs", total_filtered_logs);
+    settings.Save();
 }
 
 void RegexTextV1LogsPlugin::DisableFilters()

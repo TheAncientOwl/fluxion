@@ -5,7 +5,7 @@
 ///
 /// @file FiltersLayer.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.15
+/// @version 0.16
 /// @brief Main layer responsible for rendering logs table.
 ///
 
@@ -689,9 +689,6 @@ void SaveFiltersToFile(AppState const& application_state)
             home = ".";
         std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
 
-        // Create PersistentSettings for filters
-        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
-
         // Build JSON structure
         auto const& tabs = application_state.filters.tabs.GetFront();
         nlohmann::json tabs_json = nlohmann::json::array();
@@ -754,7 +751,9 @@ void SaveFiltersToFile(AppState const& application_state)
         }
 
         // Save using PersistentSettings
+        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
         settings.SetJsonValue("tabs", tabs_json);
+        settings.Save();
 
         LOG_INFO(
             "::SaveFiltersToFile(): Successfully saved filters to {}/filters.json",
@@ -916,6 +915,7 @@ void SavePluginPathToFile(AppState const& application_state)
 
         // Save plugin path
         settings.set<std::string>("plugin_path", application_state.selected_logs_plugin_path.string());
+        settings.Save();
 
         LOG_INFO(
             "::SavePluginPathToFile(): Successfully saved plugin path to {}/plugin_config.json",

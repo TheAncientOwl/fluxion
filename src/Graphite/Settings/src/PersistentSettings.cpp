@@ -5,7 +5,7 @@
 ///
 /// @file PersistentSettings.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.16
+/// @version 1.17
 /// @brief Settings management using JSON
 ///
 
@@ -75,7 +75,6 @@ void PersistentSettings::erase(std::string_view key)
     if (m_data.contains(key))
     {
         m_data.erase(key);
-        Save();
     }
 }
 
@@ -92,7 +91,6 @@ std::vector<std::string> PersistentSettings::GetKeys() const
 void PersistentSettings::SetJsonValue(std::string_view key, json const& value)
 {
     m_data[key] = value;
-    Save();
 }
 
 std::optional<json> PersistentSettings::GetJsonValue(std::string_view key) const
@@ -110,7 +108,6 @@ std::optional<json> PersistentSettings::GetJsonValue(std::string_view key) const
     void PersistentSettings::set<Type>(std::string_view key, Type const& value) \
     {                                                                           \
         m_data[key] = value;                                                    \
-        Save();                                                                 \
     }
 
 #define DEFINE_GET_SCALAR(Type, Condition)                                  \
@@ -130,7 +127,6 @@ std::optional<json> PersistentSettings::GetJsonValue(std::string_view key) const
         std::string_view key, std::vector<Type> const& value) \
     {                                                         \
         m_data[key] = value;                                  \
-        Save();                                               \
     }
 
 #define DEFINE_GET_VECTOR(Type)                                                                       \

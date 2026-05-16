@@ -5,7 +5,7 @@
 ///
 /// @file RegexTextV1LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -64,6 +64,7 @@ void RegexTextV1LogsPlugin::SaveRegexTags(std::vector<std::shared_ptr<Data::Rege
 
     auto config{GetConfig()};
     config.SetJsonValue("tags", tags_json);
+    config.Save();
 }
 
 std::vector<std::shared_ptr<Data::RegexTag>> RegexTextV1LogsPlugin::LoadRegexTags() const
