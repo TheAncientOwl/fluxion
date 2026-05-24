@@ -26,7 +26,7 @@ enum class EFluxionAction : std::uint8_t
 {
     None = 0,
     FilterAction = 1,
-    LogsViewLayerAction = 2
+    LogsTableViewAction = 2
 };
 
 struct AppState
@@ -55,7 +55,7 @@ struct AppState
         bool debug{true};
         bool filters{true};
         bool settings{true};
-    } layers_active{};
+    } views_active{};
 
     struct
     {

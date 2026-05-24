@@ -1,0 +1,20 @@
+@startuml MainMenuView Interface
+
+!theme crt-amber
+
+title MainMenuView - Interface and Methods
+
+package "Fluxion::Application::Views" {
+    class MainMenuView {
+        + <static>GetViewName(): string_view
+        +GetName(): string_view override
+        +MainMenuView(application, render_priority)
+        +OnAdd(): void override
+        +OnIterate(): void override
+        +OnRender(): void override
+        +OnRemove(): void override
+        - RenderMenu(): void
+    }
+}
+
+@enduml

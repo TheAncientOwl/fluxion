@@ -1,0 +1,40 @@
+@startuml FiltersView Interface
+
+!theme crt-amber
+
+title FiltersView - Interface and Methods
+
+package "Fluxion::Application::Views" {
+
+package "FiltersView" {
+    class FiltersView {
+        + <static>GetViewName(): string_view
+
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + FiltersView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+
+        - MarkFiltersMetadataDirty(): void
+        - RenderToolbar(): void
+        - RenderTabs(): void
+        - RenderTab(tab_ptr): void
+        - RenderFilter(owning_tab_id, filter): void
+        - RenderCondition(owning_tab_id, owning_filter_id, condition): void
+    }
+}
+
+package "Action Handler" {
+    class "Actions::FiltersView" {
+        {static} HandleFiltersViewAction(state, action): void
+    }
+}
+
+}
+
+@enduml

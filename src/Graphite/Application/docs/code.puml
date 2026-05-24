@@ -7,7 +7,7 @@ title Graphite Application - Code Flow and Actions
 participant "Main" as main
 participant "Application" as app
 participant "Worker Thread" as worker
-participant "Layers" as layers
+participant "Views" as views
 participant "Renderer" as renderer
 participant "Action Queue" as queue
 
@@ -32,36 +32,36 @@ note right of app
   which triggers OnIterate() + OnRender()
 end note
 
-== Layer Iteration ==
-app -> app: IterateLayers()
-app -> layers: OnIterate() [depth order]
-layers --> app: Iteration complete
+== View Iteration ==
+app -> app: IterateViews()
+app -> views: OnIterate() [depth order]
+views --> app: Iteration complete
 
 == Action Processing ==
 worker -> queue: WaitAndPop(action)
 queue --> worker: Next action or empty
 worker -> app: ProcessAction(action)
-app -> layers: OnAction(action)
-layers --> app: Action handled
+app -> views: OnAction(action)
+views --> app: Action handled
 
-== Layer Rendering ==
-app -> app: RenderLayers()
-app -> layers: OnRender() [depth order]
-layers --> renderer: ImGui rendering
+== View Rendering ==
+app -> app: RenderViews()
+app -> views: OnRender() [depth order]
+views --> renderer: ImGui rendering
 renderer --> app: Frame rendered
 
-== Layer Management ==
-main -> app: AddLayer<LayerImpl>(args)
-app -> layers: Create LayerImpl
-app -> layers: OnAdd()
-app -> app: Sort layers by ZIndex
+== View Management ==
+main -> app: AddView<ViewImpl>(args)
+app -> views: Create ViewImpl
+app -> views: OnAdd()
+app -> app: Sort views by RenderPriority
 app --> main: Return UniqueID
 
-== Soft Close Layer ==
-main -> app: ForEachLayer<TSoftCloseableLayer>(callback)
-app -> layers: dynamic_cast<TSoftCloseableLayer*>
-app -> layers: callback(layer, is_last)
-layers -> layers: SetIsActive(false)
+== Soft Close View ==
+main -> app: ForEachView<TSoftCloseableView>(callback)
+app -> views: dynamic_cast<TSoftCloseableView*>
+app -> views: callback(view, is_last)
+views -> views: SetIsActive(false)
 app --> main: Iteration complete
 
 == Worker Loop ==
@@ -80,7 +80,7 @@ deactivate worker
 == Shutdown ==
 app -> app: Shutdown()
 app -> app: Worker loop stops
-app -> layers: OnRemove() [reverse depth]
+app -> views: OnRemove() [reverse depth]
 app -> renderer: Cleanup()
 app --> main: Shutdown complete
 

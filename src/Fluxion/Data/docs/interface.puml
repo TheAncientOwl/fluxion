@@ -60,10 +60,10 @@ package "Application" {
         + id_to_metadata : vector<Logs::SharedFilterMetadata>
         + visible_chunk : VisibleLogsChunk
         + searched_log : SearchedLog
-        + layers_active : LayersActive
+        + views_active : ViewsActive
     }
     
-    struct LayersActive {
+    struct ViewsActive {
         + logs_view : bool
         + debug : bool
         + filters : bool

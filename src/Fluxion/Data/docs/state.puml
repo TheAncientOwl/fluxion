@@ -94,13 +94,13 @@ package "Application" {
         + id_to_metadata : vector<Logs::SharedFilterMetadata>
         + visible_chunk : VisibleLogsChunk
         + searched_log : SearchedLog
-        + layers_active : LayersActive
+        + views_active : ViewsActive
     }
     AppState --> Tab : manages filters
     AppState --> VisibleLogsChunk : displays logs
     AppState --> SearchedLog : tracks search
     
-    struct LayersActive {
+    struct ViewsActive {
         + logs_view : bool
         + debug : bool
         + filters : bool
@@ -109,7 +109,7 @@ package "Application" {
     enum EFluxionAction {
         + None
         + FilterAction
-        + LogsViewLayerAction
+        + LogsTableViewAction
     }
 }
 

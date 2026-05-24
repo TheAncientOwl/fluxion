@@ -17,13 +17,13 @@
 #include "Fluxion.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Logger.hpp"
-#include "Layers/BaseLayer.hpp"
-#include "Layers/DevLayer/DevLayer.hpp"
-#include "Layers/FiltersLayer/FiltersLayer.hpp"
-#include "Layers/FiltersLayer/FiltersLayerActions.hpp"
-#include "Layers/LogsViewLayer/LogsViewLayer.hpp"
-#include "Layers/MainMenuLayer.hpp"
-#include "Layers/SettingsLayer/SettingsLayer.hpp"
+#include "Views/BaseView.hpp"
+#include "Views/Dev/DevView.hpp"
+#include "Views/Filters/FiltersView.hpp"
+#include "Views/Filters/FiltersViewActions.hpp"
+#include "Views/LogsTable/LogsTableView.hpp"
+#include "Views/MainMenuView.hpp"
+#include "Views/Settings/SettingsView.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
 USE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
@@ -45,8 +45,8 @@ FluxionApplication::~FluxionApplication()
     m_app_state.logs_plugin.reset();
     m_app_state.loaded_plugin_library.reset();
     // Save plugin path and filters to disk on application shutdown
-    Layers::Actions::FiltersLayer::SavePluginPathToFile(m_app_state);
-    Layers::Actions::FiltersLayer::SaveFiltersToFile(m_app_state);
+    Views::Actions::FiltersView::SavePluginPathToFile(m_app_state);
+    Views::Actions::FiltersView::SaveFiltersToFile(m_app_state);
 }
 
 void FluxionApplication::OnInit()
@@ -62,7 +62,7 @@ void FluxionApplication::OnInit()
     SetupFonts();
 
     // Load previously used plugin path from configuration
-    Layers::Actions::FiltersLayer::LoadPluginPathFromFile(m_app_state);
+    Views::Actions::FiltersView::LoadPluginPathFromFile(m_app_state);
 
     // Try to load the saved plugin, fall back to DummyPlugin if not available
     bool plugin_loaded = false;
@@ -134,15 +134,15 @@ void FluxionApplication::OnInit()
     }
 
     // Load filters from disk after logger is initialized
-    Layers::Actions::FiltersLayer::LoadFiltersFromFile(m_app_state);
+    Views::Actions::FiltersView::LoadFiltersFromFile(m_app_state);
 
-    AddLayer<Layers::BaseLayer>(shared_from_this(), 0);
-    AddLayer<Layers::DevLayer>(
-        shared_from_this(), std::numeric_limits<Graphite::Application::Layers::ZIndex>::max());
-    AddLayer<Layers::MainMenuLayer>(shared_from_this(), 1);
-    AddLayer<Layers::SettingsLayer>(shared_from_this(), 2);
-    AddLayer<Layers::LogsViewLayer>(shared_from_this(), 10);
-    AddLayer<Layers::FiltersLayer>(shared_from_this(), 20);
+    AddView<Views::BaseView>(shared_from_this(), 0);
+    AddView<Views::DevView>(
+        shared_from_this(), std::numeric_limits<Graphite::Application::Views::RenderPriority>::max());
+    AddView<Views::MainMenuView>(shared_from_this(), 1);
+    AddView<Views::SettingsView>(shared_from_this(), 2);
+    AddView<Views::LogsTableView>(shared_from_this(), 10);
+    AddView<Views::FiltersView>(shared_from_this(), 20);
 }
 
 void FluxionApplication::OnShutdown()
@@ -177,15 +177,15 @@ void FluxionApplication::OnProcessAction(Graphite::Common::Utility::TAppAction<E
         break;
     }
     case Fluxion::Application::EFluxionAction::FilterAction: {
-        Layers::Actions::FiltersLayer::HandleFiltersLayerAction(
+        Views::Actions::FiltersView::HandleFiltersViewAction(
             m_app_state,
-            std::any_cast<Layers::Actions::FiltersLayer::FilterActionPayload>(action.payload));
+            std::any_cast<Views::Actions::FiltersView::FilterActionPayload>(action.payload));
         break;
     }
-    case Fluxion::Application::EFluxionAction::LogsViewLayerAction: {
-        Layers::Actions::LogsViewLayer::HandleLogsViewLayersLayerAction(
+    case Fluxion::Application::EFluxionAction::LogsTableViewAction: {
+        Views::Actions::LogsTableView::HandleLogsTableViewsViewAction(
             m_app_state,
-            std::any_cast<Layers::Actions::LogsViewLayer::LogsViewLayerActionPayload>(action.payload));
+            std::any_cast<Views::Actions::LogsTableView::LogsTableViewActionPayload>(action.payload));
         break;
     }
     default: {

@@ -4,7 +4,7 @@
 
 Fluxion is organized into three primary component hierarchies:
 
-1. **Graphite Framework** - Foundation layer providing core application infrastructure
+1. **Graphite Framework** - Foundation view providing core application infrastructure
 2. **API** - Plugin interface and shared data structures
 3. **Application** - Fluxion-specific implementation built on Graphite and API
 
@@ -14,7 +14,7 @@ Fluxion is organized into three primary component hierarchies:
 Graphite (Framework)
 ├── Logger: Logging system with worker thread
 ├── Common: Utilities (TDoubleBuffer, TThreadSafeQueue, UniqueID, TWithFlags)
-├── Application: TGraphiteApplication template, TLayer, TSoftCloseableLayer
+├── Application: TGraphiteApplication template, TView, TSoftCloseableView
 └── Renderer: Graphics rendering backend (Vulkan/Metal)
 
 API (Plugin Interface)
@@ -24,12 +24,12 @@ API (Plugin Interface)
 Application (Fluxion)
 ├── Fluxion: Main application orchestrator
 ├── Data: Central app state (AppState, filter management)
-└── Layers: UI layer system
-    ├── BaseLayer: Foundation for all layers
-    ├── MainMenuLayer: Menu bar rendering
-    ├── DevLayer: Debug/logger configuration UI
-    ├── FiltersLayer: Filter management and querying
-    └── LogsViewLayer: Log table visualization
+└── Views: UI view system
+    ├── BaseView: Foundation for all views
+    ├── MainMenuView: Menu bar rendering
+    ├── DevView: Debug/logger configuration UI
+    ├── FiltersView: Filter management and querying
+    └── LogsTableView: Log table visualization
 ```
 
 ---
@@ -130,25 +130,25 @@ UniqueID::Generate() -> uint64_t
 **Functionality:**
 
 - Template application framework orchestrating initialization, update loop, and cleanup
-- Layer management system for composable UI/game logic
-- Soft-closeable layers with visibility toggle
-- Action dispatcher for layer communication
+- View management system for composable UI/game logic
+- Soft-closeable views with visibility toggle
+- Action dispatcher for view communication
 - Window configuration and lifecycle management
 - Renderer interface abstraction
 
 **Key Structures:**
 
 - `TGraphiteApplication<AppState>`: Main app orchestrator
-  - Manages layer stack
+  - Manages view stack
   - Runs update loop with OnIterate/OnRender callbacks
   - Handles window events
-- `TLayer<AppState, ActionEnum>`: Base layer template
+- `TView<AppState, ActionEnum>`: Base view template
   - Lifecycle hooks: OnAdd, OnIterate, OnRender, OnRemove
   - Access to global AppState
-- `TSoftCloseableLayer<AppState, ActionEnum>`: Layer with toggle
+- `TSoftCloseableView<AppState, ActionEnum>`: View with toggle
   - `is_active` boolean flag
   - `IsActive()`, `SetIsActive()`, `GetDisplayName()`
-- `TDispatcher<Layer, ActionEnum, PayloadType>`: Action queue
+- `TDispatcher<View, ActionEnum, PayloadType>`: Action queue
   - Queue actions with payloads
   - Process in OnIterate
 - `WindowConfiguration`: Display settings (resolution, vsync, etc.)
@@ -159,14 +159,14 @@ UniqueID::Generate() -> uint64_t
 
 ```
 TGraphiteApplication<State>::Run()
-TGraphiteApplication<State>::AddLayer<LayerType>(args...)
+TGraphiteApplication<State>::AddView<ViewType>(args...)
 TGraphiteApplication<State>::GetAppState() -> State&
-TLayer<State, Action>::OnAdd() -> void
-TLayer<State, Action>::OnIterate() -> void
-TLayer<State, Action>::OnRender() -> void
-TLayer<State, Action>::OnRemove() -> void
-TDispatcher<Layer, Action, Payload>::Dispatch(action, payload)
-TSoftCloseableLayer<State, Action>::SetIsActive(bool)
+TView<State, Action>::OnAdd() -> void
+TView<State, Action>::OnIterate() -> void
+TView<State, Action>::OnRender() -> void
+TView<State, Action>::OnRemove() -> void
+TDispatcher<View, Action, Payload>::Dispatch(action, payload)
+TSoftCloseableView<State, Action>::SetIsActive(bool)
 ```
 
 **Dependencies:**
@@ -201,7 +201,7 @@ TSoftCloseableLayer<State, Action>::SetIsActive(bool)
   - Command buffer management
 - `MetalRenderer`: Metal backend implementation (macOS)
   - MTLDevice, MTLQueue, MTLCommandQueue
-  - CAMetalLayer for window integration
+  - CAMetalView for window integration
 
 **Interface:**
 
@@ -270,7 +270,7 @@ AppState: Centralized state management
 
 - API::LogsPlugin (implementing interface)
 - Application::Data (using data structures)
-- Application::Layers (reading/filtering logs)
+- Application::Views (reading/filtering logs)
 
 ---
 
@@ -310,7 +310,7 @@ PluginBridge::LoadPlugin(path) -> unique_ptr<IFluxionLogsPlugin>
 **Used By:**
 
 - Application::Data (loading plugins)
-- Application::Layers::LogsViewLayer (getting logs)
+- Application::Views::LogsTableView (getting logs)
 
 ---
 
@@ -324,7 +324,7 @@ PluginBridge::LoadPlugin(path) -> unique_ptr<IFluxionLogsPlugin>
 
 - Main application class orchestrating the entire Fluxion system
 - Extends TGraphiteApplication<AppState> from Graphite framework
-- Initializes all layers and dependencies
+- Initializes all views and dependencies
 - Manages application lifecycle
 
 **Key Structures:**
@@ -332,14 +332,14 @@ PluginBridge::LoadPlugin(path) -> unique_ptr<IFluxionLogsPlugin>
 - `Fluxion(WindowConfiguration)`: Constructor
   - Loads plugin via PluginBridge
   - Creates AppState with plugin
-  - Creates and registers all layers
+  - Creates and registers all views
   - Sets up event handlers
-- Application layering:
-  - MainMenuLayer
-  - FiltersLayer
-  - LogsViewLayer
-  - DevLayer
-  - BaseLayer
+- Application viewing:
+  - MainMenuView
+  - FiltersView
+  - LogsTableView
+  - DevView
+  - BaseView
 
 **Interface:**
 
@@ -350,11 +350,11 @@ Fluxion::Run() // Inherited from TGraphiteApplication
 
 **Dependencies:**
 
-- Graphite::Application (TGraphiteApplication, TLayer)
+- Graphite::Application (TGraphiteApplication, TView)
 - Graphite::Logger
 - API::LogsPlugin (IFluxionLogsPlugin, PluginBridge)
 - Application::Data (AppState)
-- Application::Layers (all layers)
+- Application::Views (all views)
 
 **Used By:**
 
@@ -380,7 +380,7 @@ Fluxion::Run() // Inherited from TGraphiteApplication
   - `filters_tabs`: Vector of Tab definitions
   - `visible_chunk`: Current visible logs (VisibleLogsChunk)
   - `searched_log`: Search results state (SearchedLog)
-  - `layers_active`: Boolean flags for layer visibility
+  - `views_active`: Boolean flags for view visibility
   - `shared_filter_metadata`: FiltersGeneralMetadata
 - `Tab`: Filter tab container
   - `ETabFlag`: IsActive (TWithFlags)
@@ -389,12 +389,12 @@ Fluxion::Run() // Inherited from TGraphiteApplication
   - `EFiltersMetadataFlag`: Applied, SavedToDisk (TWithFlags)
 - `VisibleLogsChunk`: Range+log data for rendered rows
 - `SearchedLog`: Current filtered log indices
-- `LayersActive`: Boolean visibility state for DevLayer, FiltersLayer, LogsViewLayer
+- `ViewsActive`: Boolean visibility state for DevView, FiltersView, LogsTableView
 
 **Interface:**
 
 ```
-AppState: Public mutable state accessed by layers
+AppState: Public mutable state accessed by views
 Tab: + flag handling via TWithFlags
 Filter: + flag handling via TWithFlags
 FiltersGeneralMetadata: + flag handling via TWithFlags
@@ -410,53 +410,53 @@ FiltersGeneralMetadata: + flag handling via TWithFlags
 **Used By:**
 
 - Application::Fluxion (created at initialization)
-- Application::Layers::\* (reading/modifying state in OnIterate/OnRender)
+- Application::Views::\* (reading/modifying state in OnIterate/OnRender)
 
 ---
 
-### 3.3 Layers Component
+### 3.3 Views Component
 
-**Location:** `/src/Application/Layers/`
-
-**Functionality:**
-
-- UI layer system decomposing application concerns
-- Each layer handles specific UI and logic responsibilities
-- Structured as Graphite TLayer<AppState, EFluxionAction> subclasses
-
-#### 3.3.1 BaseLayer
+**Location:** `/src/Application/Views/`
 
 **Functionality:**
 
-- Foundation UI layer for all other layers
-- Provides basic layer infrastructure
+- UI view system decomposing application concerns
+- Each view handles specific UI and logic responsibilities
+- Structured as Graphite TView<AppState, EFluxionAction> subclasses
+
+#### 3.3.1 BaseView
+
+**Functionality:**
+
+- Foundation UI view for all other views
+- Provides basic view infrastructure
 - Sets up ImGui rendering context
 
 **Key Structures:**
 
-- `BaseLayer`: Inherits from `TLayer<AppState, EFluxionAction>`
+- `BaseView`: Inherits from `TView<AppState, EFluxionAction>`
 
 **Interface:**
 
 ```
-BaseLayer::OnAdd() -> void
-BaseLayer::OnIterate() -> void
-BaseLayer::OnRender() -> void
-BaseLayer::OnRemove() -> void
+BaseView::OnAdd() -> void
+BaseView::OnIterate() -> void
+BaseView::OnRender() -> void
+BaseView::OnRemove() -> void
 ```
 
 **Dependencies:**
 
-- Graphite::Application (TLayer)
+- Graphite::Application (TView)
 - Application::Data (AppState)
 
 **Used By:**
 
-- Fluxion (registered as layer)
+- Fluxion (registered as view)
 
 ---
 
-#### 3.3.2 MainMenuLayer
+#### 3.3.2 MainMenuView
 
 **Functionality:**
 
@@ -465,38 +465,38 @@ BaseLayer::OnRemove() -> void
 
 **Key Structures:**
 
-- `MainMenuLayer`: Inherits from `TLayer<AppState, EFluxionAction>`
+- `MainMenuView`: Inherits from `TView<AppState, EFluxionAction>`
 
 **Interface:**
 
 ```
-MainMenuLayer::RenderMenu() -> void
-MainMenuLayer::OnRender() -> void
+MainMenuView::RenderMenu() -> void
+MainMenuView::OnRender() -> void
 ```
 
 **Dependencies:**
 
-- Graphite::Application (TLayer)
+- Graphite::Application (TView)
 - Application::Data (AppState)
 - ImGui
 
 **Used By:**
 
-- Fluxion (registered as layer)
+- Fluxion (registered as view)
 
 ---
 
-#### 3.3.3 DevLayer
+#### 3.3.3 DevView
 
 **Functionality:**
 
 - Debug and configuration panel
 - Logger display and level control
-- Toggleable visibility (TSoftCloseableLayer)
+- Toggleable visibility (TSoftCloseableView)
 
 **Key Structures:**
 
-- `DevLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>`
+- `DevView`: Inherits from `TSoftCloseableView<AppState, EFluxionAction>`
   - `is_active`: Visibility flag
 - **Submodules:**
   - `Logger`: Renders logger configuration and output
@@ -505,27 +505,27 @@ MainMenuLayer::OnRender() -> void
 **Interface:**
 
 ```
-DevLayer::IsActive() -> bool
-DevLayer::SetIsActive(bool) -> void
-DevLayer::GetDisplayName() -> string_view
-DevLayer::RenderLogger() -> void
-DevLayer::OnRender() -> void
+DevView::IsActive() -> bool
+DevView::SetIsActive(bool) -> void
+DevView::GetDisplayName() -> string_view
+DevView::RenderLogger() -> void
+DevView::OnRender() -> void
 ```
 
 **Dependencies:**
 
-- Graphite::Application (TSoftCloseableLayer)
+- Graphite::Application (TSoftCloseableView)
 - Graphite::Logger
 - Application::Data (AppState)
 - ImGui
 
 **Used By:**
 
-- Fluxion (registered as layer)
+- Fluxion (registered as view)
 
 ---
 
-#### 3.3.4 FiltersLayer
+#### 3.3.4 FiltersView
 
 **Functionality:**
 
@@ -538,7 +538,7 @@ DevLayer::OnRender() -> void
 
 **Key Structures:**
 
-- `FiltersLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>` + implements `TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>`
+- `FiltersView`: Inherits from `TSoftCloseableView<AppState, EFluxionAction>` + implements `TDispatcher<FiltersView, FilterAction, FiltersViewActionPayload>`
   - `is_active`: Visibility flag
 - **Actions** (17 total):
   - Tab operations: AddTab, RemoveTab, DuplicateTab
@@ -556,22 +556,22 @@ DevLayer::OnRender() -> void
 **Interface:**
 
 ```
-FiltersLayer::RenderToolbar() -> void
-FiltersLayer::RenderTabs() -> void
-FiltersLayer::RenderTab(tab) -> void
-FiltersLayer::RenderFilter(tab_id, filter) -> void    // Drag & drop source/target
-FiltersLayer::RenderCondition(tab_id, filter_id, condition) -> void  // Drag & drop source/target
-FiltersLayer::MarkFiltersMetadataDirty() -> void
-FiltersLayer::OnIterate() -> void // Process action dispatcher
-FiltersLayer::OnRender() -> void
-FilterAction::HandleFiltersLayerAction(state, action) -> void
+FiltersView::RenderToolbar() -> void
+FiltersView::RenderTabs() -> void
+FiltersView::RenderTab(tab) -> void
+FiltersView::RenderFilter(tab_id, filter) -> void    // Drag & drop source/target
+FiltersView::RenderCondition(tab_id, filter_id, condition) -> void  // Drag & drop source/target
+FiltersView::MarkFiltersMetadataDirty() -> void
+FiltersView::OnIterate() -> void // Process action dispatcher
+FiltersView::OnRender() -> void
+FilterAction::HandleFiltersViewAction(state, action) -> void
 SaveFiltersToFile(state) -> void  // Serializes to data/filters/filters.txt
 LoadFiltersFromFile(state) -> void  // Deserializes from disk
 ```
 
 **Dependencies:**
 
-- Graphite::Application (TSoftCloseableLayer, TDispatcher)
+- Graphite::Application (TSoftCloseableView, TDispatcher)
 - Graphite::Common (TDispatcher, UniqueID)
 - Application::Data (AppState, Tab, Filter, Condition)
 - API::Data (Filter, Condition structures)
@@ -580,14 +580,14 @@ LoadFiltersFromFile(state) -> void  // Deserializes from disk
 
 **Used By:**
 
-- Fluxion (registered as layer)
+- Fluxion (registered as view)
 
 **Action Flow:**
 
 ```
 User UI (RenderTab) → Dispatcher.Dispatch(action, payload)
 → OnIterate processes queue
-→ HandleFiltersLayerAction modifies AppState
+→ HandleFiltersViewAction modifies AppState
 → MarkFiltersMetadataDirty() flags state
 → Next iteration updates UI
 ```
@@ -634,7 +634,7 @@ User triggers SaveFilters action
 
 ---
 
-#### 3.3.5 LogsViewLayer
+#### 3.3.5 LogsTableView
 
 **Functionality:**
 
@@ -646,26 +646,26 @@ User triggers SaveFilters action
 
 **Key Structures:**
 
-- `LogsViewLayer`: Inherits from `TSoftCloseableLayer<AppState, EFluxionAction>` + implements `TDispatcher<LogsViewLayer, LogsViewLayerAction, LogsViewLayerActionPayload>`
+- `LogsTableView`: Inherits from `TSoftCloseableView<AppState, EFluxionAction>` + implements `TDispatcher<LogsTableView, LogsTableViewAction, LogsTableViewActionPayload>`
   - `is_active`: Visibility flag
 - **Actions** (2 total):
   - `UpdateVisibleLogs`: Push new visible ranges to display
   - `None`: No-op
 - **Payloads:**
-  - `LogsViewLayerActionPayload`: vector of Range indices for visible logs
+  - `LogsTableViewActionPayload`: vector of Range indices for visible logs
 
 **Interface:**
 
 ```
-LogsViewLayer::RenderLogsTable() -> void
-LogsViewLayer::OnIterate() -> void // Process action dispatcher
-LogsViewLayer::OnRender() -> void
-LogsViewLayerAction::HandleLogsViewLayersLayerAction(state, action) -> void
+LogsTableView::RenderLogsTable() -> void
+LogsTableView::OnIterate() -> void // Process action dispatcher
+LogsTableView::OnRender() -> void
+LogsTableViewAction::HandleLogsTableViewsViewAction(state, action) -> void
 ```
 
 **Dependencies:**
 
-- Graphite::Application (TSoftCloseableLayer, TDispatcher)
+- Graphite::Application (TSoftCloseableView, TDispatcher)
 - Graphite::Common (TDispatcher)
 - Application::Data (AppState, VisibleLogsChunk)
 - API::Data (LogRow, Highlight, Filter)
@@ -674,7 +674,7 @@ LogsViewLayerAction::HandleLogsViewLayersLayerAction(state, action) -> void
 
 **Used By:**
 
-- Fluxion (registered as layer)
+- Fluxion (registered as view)
 
 **Lazy-Loading Workflow:**
 
@@ -698,13 +698,13 @@ User scrolls table
 Fluxion
   ├─> PluginBridge::LoadPlugin(path)
   └─> Creates AppState with IFluxionLogsPlugin instance
-      └─> LogsViewLayer uses plugin for GetLogsByIndices
+      └─> LogsTableView uses plugin for GetLogsByIndices
 ```
 
 ### Pattern 2: Dispatcher-Based Action Handling
 
 ```
-UI Layer (Render methods)
+UI View (Render methods)
   └─> User interaction (ImGui button click)
     └─> Dispatcher.Dispatch(action, payload)
       └─> OnIterate processes queue
@@ -716,17 +716,17 @@ UI Layer (Render methods)
 
 ```
 AppState (central mutable state)
-  ├─> FiltersLayer::OnRender reads filters_tabs
-  ├─> FiltersLayer::OnRender reads shared_filter_metadata
-  ├─> LogsViewLayer::OnRender reads visible_chunk
-  ├─> LogsViewLayer::OnRender reads layers_active
-  └─> DevLayer::OnRender reads is_active + logger state
+  ├─> FiltersView::OnRender reads filters_tabs
+  ├─> FiltersView::OnRender reads shared_filter_metadata
+  ├─> LogsTableView::OnRender reads visible_chunk
+  ├─> LogsTableView::OnRender reads views_active
+  └─> DevView::OnRender reads is_active + logger state
 ```
 
 ### Pattern 4: Lazy-Loading with Ranges
 
 ```
-LogsViewLayer detects scroll
+LogsTableView detects scroll
   └─> Calculates new visible range
     └─> Dispatches UpdateVisibleLogs action
       └─> OnIterate requests logs from plugin
@@ -739,10 +739,10 @@ LogsViewLayer detects scroll
 
 ```
 TDoubleBuffer<AppState>
-  ├─> UI threads (layers) read from front buffer
+  ├─> UI threads (views) read from front buffer
   ├─> Data modification writes to back buffer
   └─> Synchronized swap on frame boundary
-      └─> Ensures consistency across layers
+      └─> Ensures consistency across views
 ```
 
 ---
@@ -753,30 +753,30 @@ TDoubleBuffer<AppState>
 | ------------------------- | -------------------------------- | -------------------------------- |
 | **Graphite::Logger**      | None                             | Everything                       |
 | **Graphite::Common**      | Logger                           | Everything                       |
-| **Graphite::Application** | Logger, Common, Renderer         | Fluxion, Layers                  |
+| **Graphite::Application** | Logger, Common, Renderer         | Fluxion, Views                   |
 | **Graphite::Renderer**    | Logger, Common                   | TGraphiteApplication             |
-| **API::Data**             | Common                           | Application::Data, Layers        |
-| **API::LogsPlugin**       | API::Data                        | Application::Data, LogsViewLayer |
-| **Application::Fluxion**  | All Graphite, API, Data, Layers  | main.cpp                         |
-| **Application::Data**     | Graphite, API                    | Fluxion, All Layers              |
-| **Application::Layers**   | Graphite::Application, Data, API | Fluxion                          |
+| **API::Data**             | Common                           | Application::Data, Views         |
+| **API::LogsPlugin**       | API::Data                        | Application::Data, LogsTableView |
+| **Application::Fluxion**  | All Graphite, API, Data, Views   | main.cpp                         |
+| **Application::Data**     | Graphite, API                    | Fluxion, All Views               |
+| **Application::Views**    | Graphite::Application, Data, API | Fluxion                          |
 
 ---
 
 ## Component Responsibilities Summary
 
-| Component             | Primary Responsibility                       |
-| --------------------- | -------------------------------------------- |
-| **Logger**            | Asynchronous logging with scopes             |
-| **Common**            | Threading, memory, ID generation utilities   |
-| **Application**       | Framework (app lifecycle, layers, rendering) |
-| **Renderer**          | Graphics API abstraction                     |
-| **API::Data**         | Shared data definitions                      |
-| **API::LogsPlugin**   | Plugin interface contract                    |
-| **Fluxion**           | Application orchestration                    |
-| **Application::Data** | Central state management                     |
-| **BaseLayer**         | Layer foundation                             |
-| **MainMenuLayer**     | Menu bar rendering                           |
-| **DevLayer**          | Debug UI                                     |
-| **FiltersLayer**      | Filter management UI                         |
-| **LogsViewLayer**     | Log visualization and lazy-loading           |
+| Component             | Primary Responsibility                      |
+| --------------------- | ------------------------------------------- |
+| **Logger**            | Asynchronous logging with scopes            |
+| **Common**            | Threading, memory, ID generation utilities  |
+| **Application**       | Framework (app lifecycle, views, rendering) |
+| **Renderer**          | Graphics API abstraction                    |
+| **API::Data**         | Shared data definitions                     |
+| **API::LogsPlugin**   | Plugin interface contract                   |
+| **Fluxion**           | Application orchestration                   |
+| **Application::Data** | Central state management                    |
+| **BaseView**          | View foundation                             |
+| **MainMenuView**      | Menu bar rendering                          |
+| **DevView**           | Debug UI                                    |
+| **FiltersView**       | Filter management UI                        |
+| **LogsTableView**     | Log visualization and lazy-loading          |

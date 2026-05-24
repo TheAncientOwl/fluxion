@@ -10,7 +10,7 @@ package "Fluxion::API::LogsPlugin" {
         + GetDisplayName(): string_view
         + OnEnable(OnEnableData): void
         + OnDisable(OnDisableData): void
-        + RenderMenuLayer(): void
+        + RenderMenuView(): void
 
         + ImportLogs(path): void
         + GetTableHeader(): vector<ColumnDetails>

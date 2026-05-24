@@ -1,0 +1,16 @@
+@startuml BaseView State Diagram
+
+!theme crt-amber
+
+title BaseView - State and Structure
+
+package "Fluxion::Application::Views" {
+    struct BaseView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+    }
+    BaseView --|> "TView<AppState, EFluxionAction>" : inherits
+}
+
+@enduml

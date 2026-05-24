@@ -1,0 +1,33 @@
+@startuml LogsTableView Interface
+
+!theme crt-amber
+
+title LogsTableView - Interface and Methods
+
+package "Fluxion::Application::Views" {
+
+package "LogsTableView" {
+    class LogsTableView {
+        + <static>GetViewName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + LogsTableView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderLogsTable(): void
+    }
+}
+
+package "Action Handler" {
+    class "Actions::LogsTableView" {
+        {static} HandleLogsTableViewsViewAction(state, action): void
+    }
+}
+
+}
+
+@enduml

@@ -1,0 +1,16 @@
+@startuml MainMenuView State Diagram
+
+!theme crt-amber
+
+title MainMenuView - State and Structure
+
+package "Fluxion::Application::Views" {
+    struct MainMenuView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+    }
+    MainMenuView --|> "TView<AppState, EFluxionAction>" : inherits
+}
+
+@enduml

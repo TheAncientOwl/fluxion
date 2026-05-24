@@ -1,0 +1,35 @@
+@startuml LogsTableView State Diagram
+
+!theme crt-amber
+left to right direction
+
+title LogsTableView - State and Structure
+
+package "Fluxion::Application::Views" {
+
+package "Actions" {
+    enum ELogsViewActionViewType {
+        + None
+        + UpdateVisibleLogs
+    }
+    
+    struct LogsTableViewActionPayload {
+        + type : ELogsViewActionViewType
+        + visible_logs_indices : vector<Range>
+    }
+}
+
+package "View" {
+    struct LogsTableView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+        + is_active : bool
+    }
+    LogsTableView --|> "TSoftCloseableView<AppState, EFluxionAction>" : inherits
+    LogsTableView --|> "TDispatcher<LogsTableView, LogsTableViewAction, LogsTableViewActionPayload>" : implements
+}
+
+}
+
+@enduml

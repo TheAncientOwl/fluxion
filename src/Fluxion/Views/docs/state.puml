@@ -1,0 +1,97 @@
+@startuml Application Views State Diagram
+
+!theme crt-amber
+left to right direction
+
+title Application Views - State and Structure
+
+package "Fluxion::Application::Views" {
+
+package "Core Views" {
+    struct BaseView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+    }
+    
+    struct MainMenuView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+    }
+}
+
+package "Dev View" {
+    struct DevView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+        + is_active : bool
+    }
+    DevView --|> "TSoftCloseableView<AppState, EFluxionAction>" : inherits
+}
+
+package "Filters View" {
+    enum EFilterActionType {
+        + None
+        + ApplyFilters
+        + DisableFilters
+        + NextLog
+        + PrevLog
+        + AddTab
+        + RemoveTab
+        + DuplicateTab
+        + AddFilter
+        + RemoveFilter
+        + DuplicateFilter
+        + AddCondition
+        + RemoveCondition
+    }
+    
+    struct FiltersDataModify {
+        + tab_id : optional<UniqueID>
+        + filter_id : optional<UniqueID>
+        + condition_id : optional<UniqueID>
+    }
+    
+    struct SearchLog {
+        + filter_id : UniqueID
+    }
+    
+    struct FiltersView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+        + is_active : bool
+    }
+    FiltersView --|> "TSoftCloseableView<AppState, EFluxionAction>" : inherits
+    FiltersView --|> "TDispatcher<FiltersView, FilterAction, FiltersViewActionPayload>" : implements
+}
+
+package "LogsView View" {
+    enum ELogsViewActionViewType {
+        + None
+        + UpdateVisibleLogs
+    }
+    
+    struct LogsTableViewActionPayload {
+        + type : ELogsViewActionViewType
+        + visible_logs_indices : vector<Range>
+    }
+    
+    struct LogsTableView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+        + is_active : bool
+    }
+    LogsTableView --|> "TSoftCloseableView<AppState, EFluxionAction>" : inherits
+    LogsTableView --|> "TDispatcher<LogsTableView, LogsTableViewAction, LogsTableViewActionPayload>" : implements
+}
+
+}
+
+BaseView --|> "TView<AppState, EFluxionAction>" : inherits
+MainMenuView --|> "TView<AppState, EFluxionAction>" : inherits
+
+@enduml

@@ -14,8 +14,8 @@ package "Application" {
         + Run(): void
         + GetApplicationState(): AppState&
         + PushAction(type, payload): void
-        + AddLayer<LayerImpl>(args...): UniqueID const&
-        + ForEachLayer<LayerType>(func): void
+        + AddView<ViewImpl>(args...): UniqueID const&
+        + ForEachView<ViewType>(func): void
 
         - <protected> TGraphiteApplication(config, state)
 
@@ -23,17 +23,17 @@ package "Application" {
         - Init(): void
         - Render(): void
         - WorkerLoop(): void
-        - IterateLayers(): void
-        - RenderLayers(): void
+        - IterateViews(): void
+        - RenderViews(): void
     }
 }
 
-package "Layers" {
-    class "TLayer<AppState, ActionEnum>" as TL {
+package "Views" {
+    class "TView<AppState, ActionEnum>" as TL {
         + IsActive(): bool
         + SetIsActive(bool): void
         + GetID(): UniqueID
-        + GetZIndex(): ZIndex
+        + GetRenderPriority(): RenderPriority
         + GetApplication(): ApplicationPtr
 
         #GetName(): string_view
@@ -44,7 +44,7 @@ package "Layers" {
         #OnAction(action): void
     }
     
-    class "TSoftCloseableLayer<AppState, ActionEnum>" as TSL {
+    class "TSoftCloseableView<AppState, ActionEnum>" as TSL {
         + GetDisplayName(): string_view
         + IsActive(): bool
         + SetIsActive(bool): void

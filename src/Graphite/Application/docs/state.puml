@@ -17,13 +17,13 @@ package "Application" {
     struct TGraphiteApplication<AppState, ActionEnum> {
         + m_renderer : Renderer::Ptr
         + m_app_state : AppState
-        + m_layers : vector<Layer::Ptr>
+        + m_views : vector<View::Ptr>
         + m_action_queue : TThreadSafeQueue<TAppAction<ActionEnum>>
         + m_worker_thread : thread
         + m_window_configuration : WindowConfiguration
     }
     TGraphiteApplication --> WindowConfiguration : configures window
-    TGraphiteApplication --> TLayer : manages layers
+    TGraphiteApplication --> TView : manages views
     TGraphiteApplication --> IRenderer : uses renderer
     TGraphiteApplication --|> IRenderable : implements
 }
@@ -40,7 +40,7 @@ package "Renderer" {
     }
 }
 
-TLayer --> TGraphiteApplication : references application
+TView --> TGraphiteApplication : references application
 
 }
 

@@ -1,0 +1,48 @@
+@startuml DevView Workflow
+
+!theme crt-amber
+
+title DevView - Code Flow and Actions
+
+participant "Application" as app
+participant "DevView" as dev
+participant "AppState" as state
+
+== Initialization ==
+app -> dev: AddView<DevView>(app, render_priority)
+dev -> dev: OnAdd()
+dev -> state: SetIsActive(dev_view, true)
+dev --> app: View added
+
+== Render Loop ==
+app -> dev: OnIterate()
+dev -> state: Get application state
+state --> dev: State reference
+dev --> app: Iteration done
+
+app -> dev: OnRender()
+alt is_active == true
+  dev -> dev: RenderLogger()
+  note right of dev
+    Renders logger configuration
+    Scope and level controls
+    Log output viewer
+  end note
+  dev --> app: Debug UI rendered
+else is_active == false
+  dev --> app: View hidden
+end
+
+== Toggle Visibility ==
+app -> dev: SetIsActive(false)
+dev -> state: Mark dev view inactive
+state --> dev: State updated
+
+app -> dev: IsActive()
+dev --> app: Return current state
+
+== Cleanup ==
+app -> dev: OnRemove()
+dev --> app: Cleanup complete
+
+@enduml

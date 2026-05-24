@@ -1,0 +1,23 @@
+@startuml DevView Interface
+
+!theme crt-amber
+
+title DevView - Interface and Methods
+
+package "Fluxion::Application::Views" {
+    class DevView {
+        + <static>GetViewName(): string_view
+        +GetName(): string_view override
+        +IsActive(): bool override
+        +SetIsActive(bool): void override
+        +GetDisplayName(): string_view override
+        +DevView(application, render_priority)
+        +OnAdd(): void override
+        +OnIterate(): void override
+        +OnRender(): void override
+        +OnRemove(): void override
+        - RenderLogger(): void
+    }
+}
+
+@enduml

@@ -1,0 +1,98 @@
+@startuml Application Views Interface
+
+!theme crt-amber
+left to right direction
+
+title Application Views - Interfaces and Methods
+
+package "Fluxion::Application::Views" {
+
+package "Core Views" {
+    class BaseView {
+        + <static> GetViewName(): string_view
+        + GetName(): string_view override
+        + BaseView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+    }
+    
+    class MainMenuView {
+        + <static> GetViewName(): string_view
+        + GetName(): string_view override
+        + MainMenuView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderMenu(): void
+    }
+}
+
+package "Dev View" {
+    class DevView {
+        + <static> GetViewName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + DevView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderLogger(): void
+    }
+}
+
+package "Filters View" {
+    class FiltersView {
+        + <static> GetViewName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + FiltersView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - MarkFiltersMetadataDirty(): void
+        - RenderToolbar(): void
+        - RenderTabs(): void
+        - RenderTab(tab_ptr): void
+        - RenderFilter(owning_tab_id, filter): void
+        - RenderCondition(owning_tab_id, owning_filter_id, condition): void
+    }
+}
+
+package "LogsView View" {
+    class LogsTableView {
+        + <static> GetViewName(): string_view
+        + GetName(): string_view override
+        + IsActive(): bool override
+        + SetIsActive(bool): void override
+        + GetDisplayName(): string_view override
+        + LogsTableView(application, render_priority)
+        + OnAdd(): void override
+        + OnIterate(): void override
+        + OnRender(): void override
+        + OnRemove(): void override
+        - RenderLogsTable(): void
+    }
+}
+
+package "Action Handlers" {
+    class "Actions::FiltersView" {
+        {static} HandleFiltersViewAction(state, action): void
+    }
+    
+    class "Actions::LogsTableView" {
+        {static} HandleLogsTableViewsViewAction(state, action): void
+    }
+}
+
+}
+
+@enduml

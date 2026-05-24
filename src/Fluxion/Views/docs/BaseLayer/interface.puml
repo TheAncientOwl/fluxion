@@ -1,0 +1,19 @@
+@startuml BaseView Interface
+
+!theme crt-amber
+
+title BaseView - Interface and Methods
+
+package "Fluxion::Application::Views" {
+    class BaseView {
+        + <static>GetViewName(): string_view
+        +GetName(): string_view override
+        +BaseView(application, render_priority)
+        +OnAdd(): void override
+        +OnIterate(): void override
+        +OnRender(): void override
+        +OnRemove(): void override
+    }
+}
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml FiltersView State Diagram
+
+!theme crt-amber
+
+title FiltersView - State and Structure
+
+package "Fluxion::Application::Views" {
+
+package "Actions" {
+    enum EFilterActionType {
+        + None
+        + ApplyFilters
+        + DisableFilters
+        + NextLog
+        + PrevLog
+        + AddTab
+        + RemoveTab
+        + DuplicateTab
+        + MoveFilter
+        + AddFilter
+        + RemoveFilter
+        + DuplicateFilter
+        + AddCondition
+        + RemoveCondition
+        + MoveCondition
+    }
+    
+    struct FiltersDataModify {
+        + tab_id : optional<UniqueID>
+        + filter_id : optional<UniqueID>
+        + condition_id : optional<UniqueID>
+    }
+    
+    struct SearchLog {
+        + filter_id : UniqueID
+    }
+}
+
+package "View" {
+    struct FiltersView {
+        + application : Ptr
+        + render_priority : RenderPriority
+        + view_id : UniqueID
+        + is_active : bool
+    }
+    FiltersView --|> "TSoftCloseableView<AppState, EFluxionAction>" : inherits
+    FiltersView --|> "TDispatcher<FiltersView, FilterAction, FiltersViewActionPayload>" : implements
+}
+
+}
+
+@enduml

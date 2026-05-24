@@ -25,7 +25,7 @@
 #include "Graphite/Common/DataStructures/TThreadSafeQueue.hpp"
 #include "Graphite/Common/Utility/TAppAction.hpp"
 #include "Graphite/Renderer/Renderer.hpp"
-#include "Layers/TLayer.hpp"
+#include "Views/TView.hpp"
 #include "WindowConfiguration.hpp"
 
 DEFINE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
@@ -68,51 +68,50 @@ public: // Public API
         m_action_queue.Push({type, std::move(payload)});
     }
 
-    template <typename LayerImpl, typename... Args>
-        requires std::derived_from<LayerImpl, Layers::TLayer<ApplicationState, ActionEnum>> &&
-                 requires {
-                     { LayerImpl::GetLayerName() } -> std::convertible_to<std::string_view>;
-                 }
-    Graphite::Common::Utility::UniqueID const& AddLayer(Args&&... args)
+    template <typename ViewImpl, typename... Args>
+        requires std::derived_from<ViewImpl, Views::TView<ApplicationState, ActionEnum>> && requires {
+            { ViewImpl::GetViewName() } -> std::convertible_to<std::string_view>;
+        }
+    Graphite::Common::Utility::UniqueID const& AddView(Args&&... args)
     {
         USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
-        LOG_SCOPE("::AddLayer(): {}", LayerImpl::GetLayerName().data());
-        auto layer = std::make_unique<LayerImpl>(std::forward<Args>(args)...);
+        LOG_SCOPE("::AddView(): {}", ViewImpl::GetViewName().data());
+        auto view = std::make_unique<ViewImpl>(std::forward<Args>(args)...);
 
         GRAPHITE_ASSERT(
             std::find_if(
-                m_layers.cbegin(),
-                m_layers.cend(),
-                [&id = layer->GetID()](auto const& layer_ptr) { return layer_ptr->GetID() == id; }) ==
-                m_layers.cend(),
-            "Trying to add layer with same ID");
+                m_views.cbegin(),
+                m_views.cend(),
+                [&id = view->GetID()](auto const& view_ptr) { return view_ptr->GetID() == id; }) ==
+                m_views.cend(),
+            "Trying to add view with same ID");
 
-        layer->OnAdd();
+        view->OnAdd();
 
-        auto const& layer_id{layer->GetID()};
-        m_layers.push_back(std::move(layer));
+        auto const& view_id{view->GetID()};
+        m_views.push_back(std::move(view));
 
-        std::sort(m_layers.begin(), m_layers.end(), [](auto const& a, auto const& b) {
-            return a->GetZIndex() < b->GetZIndex();
+        std::sort(m_views.begin(), m_views.end(), [](auto const& a, auto const& b) {
+            return a->GetRenderPriority() < b->GetRenderPriority();
         });
 
-        return layer_id;
+        return view_id;
     }
 
-    template <typename LayerType>
-        requires std::is_class_v<LayerType> &&
-                 std::derived_from<LayerType, Layers::TLayer<ApplicationState, ActionEnum>>
-    void ForEachLayer(std::function<void(LayerType&, bool const)> func)
+    template <typename ViewType>
+        requires std::is_class_v<ViewType> &&
+                 std::derived_from<ViewType, Views::TView<ApplicationState, ActionEnum>>
+    void ForEachView(std::function<void(ViewType&, bool const)> func)
     {
         USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
-        LOG_SCOPE("::ForEachLayer()");
-        for (std::size_t idx = 0; idx < m_layers.size(); ++idx)
+        LOG_SCOPE("::ForEachView()");
+        for (std::size_t idx = 0; idx < m_views.size(); ++idx)
         {
-            auto& layer{m_layers[idx]};
-            if (auto* casted = dynamic_cast<LayerType*>(layer.get()))
+            auto& view{m_views[idx]};
+            if (auto* casted = dynamic_cast<ViewType*>(view.get()))
             {
-                LOG_TRACE("Applied to layer ID {}", layer->GetID());
-                func(*casted, idx + 1 == m_layers.size());
+                LOG_TRACE("Applied to view ID {}", view->GetID());
+                func(*casted, idx + 1 == m_views.size());
             }
         }
     }
@@ -146,8 +145,8 @@ private: // Private API
     {
         USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
         LOG_SCOPE("::Render()");
-        IterateLayers();
-        RenderLayers();
+        IterateViews();
+        RenderViews();
     }
 
     void Shutdown()
@@ -157,11 +156,11 @@ private: // Private API
 
         OnShutdown();
 
-        // 1. Cleanup Layers
-        while (!m_layers.empty())
+        // 1. Cleanup Views
+        while (!m_views.empty())
         {
-            m_layers.back()->OnRemove();
-            m_layers.pop_back();
+            m_views.back()->OnRemove();
+            m_views.pop_back();
         }
 
         // 1. Stop the worker thread gracefully
@@ -178,46 +177,44 @@ private: // Private API
 
     virtual void OnProcessAction(Graphite::Common::Utility::TAppAction<ActionEnum> const& action) = 0;
 
-    void IterateLayers()
+    void IterateViews()
     {
         USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
-        LOG_SCOPE("::IterateLayers()");
-        std::for_each(m_layers.begin(), m_layers.end(), [](auto& layer_ptr) {
-            if (layer_ptr->IsActive())
+        LOG_SCOPE("::IterateViews()");
+        std::for_each(m_views.begin(), m_views.end(), [](auto& view_ptr) {
+            if (view_ptr->IsActive())
             {
-                layer_ptr->OnIterate();
+                view_ptr->OnIterate();
             }
         });
     }
 
-    void RenderLayers()
+    void RenderViews()
     {
         USE_LOG_SCOPE(Graphite::Application::TGraphiteApplication);
-        LOG_SCOPE("::RenderLayers()");
-        m_removed_layers.clear();
+        LOG_SCOPE("::RenderViews()");
+        m_removed_views.clear();
         std::for_each(
-            m_layers.begin(),
-            m_layers.end(),
-            [](Layers::TLayer<ApplicationState, ActionEnum>::Ptr& layer_ptr) {
-                if (layer_ptr->IsActive())
+            m_views.begin(), m_views.end(), [](Views::TView<ApplicationState, ActionEnum>::Ptr& view_ptr) {
+                if (view_ptr->IsActive())
                 {
-                    layer_ptr->OnRender();
+                    view_ptr->OnRender();
                 }
             });
 
-        m_layers.erase(
+        m_views.erase(
             std::remove_if(
-                m_layers.begin(),
-                m_layers.end(),
-                [&](auto& layer_ptr) {
-                    if (m_removed_layers.contains(layer_ptr->GetID()))
+                m_views.begin(),
+                m_views.end(),
+                [&](auto& view_ptr) {
+                    if (m_removed_views.contains(view_ptr->GetID()))
                     {
-                        layer_ptr->OnRemove();
+                        view_ptr->OnRemove();
                         return true;
                     }
                     return false;
                 }),
-            m_layers.end());
+            m_views.end());
     }
 
     void WorkerLoop()
@@ -241,9 +238,9 @@ protected: // Shared state
     ApplicationState m_app_state{};
 
 private: // Internal state
-    std::vector<typename Layers::TLayer<ApplicationState, ActionEnum>::Ptr> m_layers{};
+    std::vector<typename Views::TView<ApplicationState, ActionEnum>::Ptr> m_views{};
     std::unordered_set<Graphite::Common::Utility::UniqueID, Graphite::Common::Utility::UniqueID::Hash>
-        m_removed_layers{};
+        m_removed_views{};
     std::unique_ptr<Graphite::Application::Renderer::IRenderer> m_renderer{nullptr};
 
 private: // Threading conditions

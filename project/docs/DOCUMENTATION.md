@@ -43,7 +43,7 @@ This documentation provides comprehensive architectural documentation for the Fl
 
 ## Module Documentation
 
-### 1. API Layer
+### 1. API View
 
 📁 `src/API/`
 
@@ -63,7 +63,7 @@ This documentation provides comprehensive architectural documentation for the Fl
 
 ---
 
-### 2. Application Data Layer
+### 2. Application Data View
 
 📁 `src/Application/Data/`
 
@@ -84,71 +84,71 @@ This documentation provides comprehensive architectural documentation for the Fl
 
 ---
 
-### 3. Application Layers
+### 3. Application Views
 
-📁 `src/Application/Layers/`
+📁 `src/Application/Views/`
 
-**Purpose**: UI layer system for rendering different application views (menu, filters, logs, debug).
+**Purpose**: UI view system for rendering different application views (menu, filters, logs, debug).
 
-Each layer has its own documentation directory with state, interface, and code flow diagrams.
+Each view has its own documentation directory with state, interface, and code flow diagrams.
 
-#### BaseLayer
+#### BaseView
 
-📁 `src/Application/Layers/docs/BaseLayer/`
+📁 `src/Application/Views/docs/BaseView/`
 
-**Purpose**: Core base layer for common UI elements.
+**Purpose**: Core base view for common UI elements.
 
 **Key Methods**:
 
-- `OnAdd()` - Initialize layer
+- `OnAdd()` - Initialize view
 - `OnIterate()` - Update state
 - `OnRender()` - Render UI
 - `OnRemove()` - Cleanup
 
 ---
 
-#### MainMenuLayer
+#### MainMenuView
 
-📁 `src/Application/Layers/docs/MainMenuLayer/`
+📁 `src/Application/Views/docs/MainMenuView/`
 
 **Purpose**: Main application menu bar rendering.
 
 **Key Methods**:
 
 - `RenderMenu()` - Renders menu items (File, Edit, View, etc.)
-- `OnAdd()`, `OnIterate()`, `OnRender()`, `OnRemove()` - Layer lifecycle
+- `OnAdd()`, `OnIterate()`, `OnRender()`, `OnRemove()` - View lifecycle
 
 ---
 
-#### DevLayer
+#### DevView
 
-📁 `src/Application/Layers/DevLayer/docs/`
+📁 `src/Application/Views/DevView/docs/`
 
 **Purpose**: Debug and development utilities (toggleable).
 
 **Key Features**:
 
-- Extends `TSoftCloseableLayer` - Can be toggled visible/hidden
+- Extends `TSoftCloseableView` - Can be toggled visible/hidden
 - `RenderLogger()` - Logger configuration UI (scopes, levels, output)
 - `IsActive()` / `SetIsActive()` - Toggle visibility
 - `GetDisplayName()` - Display name in UI
 
 **Key Methods**:
 
-- `OnAdd()`, `OnIterate()`, `OnRender()`, `OnRemove()` - Layer lifecycle
+- `OnAdd()`, `OnIterate()`, `OnRender()`, `OnRemove()` - View lifecycle
 
 ---
 
-#### FiltersLayer
+#### FiltersView
 
-📁 `src/Application/Layers/FiltersLayer/docs/`
+📁 `src/Application/Views/FiltersView/docs/`
 
 **Purpose**: Filter creation and management UI with drag & drop reordering and persistent storage.
 
 **Key Features**:
 
-- Extends `TSoftCloseableLayer` - Can be toggled visible/hidden
-- Implements `TDispatcher<FiltersLayer, FilterAction, FiltersLayerActionPayload>` - Action queue
+- Extends `TSoftCloseableView` - Can be toggled visible/hidden
+- Implements `TDispatcher<FiltersView, FilterAction, FiltersViewActionPayload>` - Action queue
 - Drag & drop reordering for filters and conditions with visual previews
 - Persistent storage - Filters saved to/loaded from `data/filters/filters.txt`
 - Renders tabs, filters, and conditions
@@ -183,20 +183,20 @@ Each layer has its own documentation directory with state, interface, and code f
 
 ---
 
-#### LogsViewLayer
+#### LogsTableView
 
-📁 `src/Application/Layers/LogsViewLayer/docs/`
+📁 `src/Application/Views/LogsTableView/docs/`
 
 **Purpose**: Logs table display with dispatcher-based action handling.
 
 **Key Features**:
 
-- Extends `TSoftCloseableLayer` - Can be toggled visible/hidden
-- Implements `TDispatcher<LogsViewLayer, LogsViewLayerAction, LogsViewLayerActionPayload>` - Action queue
+- Extends `TSoftCloseableView` - Can be toggled visible/hidden
+- Implements `TDispatcher<LogsTableView, LogsTableViewAction, LogsTableViewActionPayload>` - Action queue
 - Lazy-loads log rows based on visible range
 - Displays colors from active filters
 
-**Action Types** (ELogsViewActionLayerType):
+**Action Types** (ELogsViewActionViewType):
 
 - `UpdateVisibleLogs` - Update visible log range (with Range indices)
 
@@ -265,19 +265,19 @@ Each layer has its own documentation directory with state, interface, and code f
 
 📁 `src/Graphite/Application/`
 
-**Purpose**: Main application framework and layer system.
+**Purpose**: Main application framework and view system.
 
 **Diagrams**:
 
-- `state.uml` - TGraphiteApplication, TLayer, and window configuration
-- `interface.uml` - Application lifecycle methods and layer management
-- `code.uml` - Application initialization, render loop, and layer iteration
+- `state.uml` - TGraphiteApplication, TView, and window configuration
+- `interface.uml` - Application lifecycle methods and view management
+- `code.uml` - Application initialization, render loop, and view iteration
 
 **Key Components**:
 
 - `TGraphiteApplication<AppState, ActionEnum>` - Template-based main application
-- `TLayer<AppState, ActionEnum>` - Base layer class with lifecycle
-- `TSoftCloseableLayer` - Layer that can be toggled on/off
+- `TView<AppState, ActionEnum>` - Base view class with lifecycle
+- `TSoftCloseableView` - View that can be toggled on/off
 - `WindowConfiguration` - Window setup parameters
 
 ---
@@ -362,7 +362,7 @@ plantuml src/API/docs/state.uml -o output/
 ### Template-Based Generics
 
 - `TGraphiteApplication<AppState, ActionEnum>` - Customizable application state and actions
-- `TLayer<AppState, ActionEnum>` - Type-safe layer implementation
+- `TView<AppState, ActionEnum>` - Type-safe view implementation
 - `TDoubleBuffer<T, Policy>` - Flexible synchronization strategies
 
 ### Singleton Pattern
@@ -387,7 +387,7 @@ plantuml src/API/docs/state.uml -o output/
 ┌─────────────────────────────────────────────────────────┐
 │         TGraphiteApplication (Main Framework)           │
 ├─────────────────────────────────────────────────────────┤
-│  ├─ TLayer* → Application/Data (State Management)       │
+│  ├─ TView* → Application/Data (State Management)       │
 │  ├─ IRenderer* (Graphite/Renderer)                      │
 │  └─ TThreadSafeQueue (Action Queue)                     │
 ├─────────────────────────────────────────────────────────┤

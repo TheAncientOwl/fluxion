@@ -35,9 +35,9 @@ app -> state: SetFlag(IsActive) on Filter
 state -> filters: Update filter status
 filters --> state: Status updated
 
-== Layer Visibility ==
-app -> state: SetLayerActive(logs_view, true)
-state --> app: Layer state updated
+== View Visibility ==
+app -> state: SetViewActive(logs_view, true)
+state --> app: View state updated
 
 == Search Operation ==
 app -> state: Search for log index

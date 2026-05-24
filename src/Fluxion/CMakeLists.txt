@@ -5,21 +5,21 @@ add_subdirectory(Data)
 add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Fluxion.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/DevLayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/DevLayer/Modules/Logger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Dev/DevView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Dev/Modules/Logger.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/BaseLayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/MainMenuLayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/BaseView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/MainMenuView.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/SettingsLayer/SettingsLayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/SettingsLayer/Modules/Theme.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/SettingsLayer/Modules/LogsPlugin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/SettingsView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/Modules/Theme.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/Modules/LogsPlugin.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer/LogsViewLayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/LogsViewLayer/LogsViewLayerActions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/LogsTable/LogsTableView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/LogsTable/LogsTableViewActions.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer/FiltersLayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Layers/FiltersLayer/FiltersLayerActions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Filters/FiltersView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Filters/FiltersViewActions.cpp
 )
 
 target_compile_definitions(fluxion_app PRIVATE GRAPHITE_LOGGER_BUILD)
