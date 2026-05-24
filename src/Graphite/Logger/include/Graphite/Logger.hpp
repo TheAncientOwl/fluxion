@@ -227,7 +227,7 @@ private:
         __COUNTER__) = ::Graphite::Logger::GetLogger().DefineLogScope(#name); \
     }
 
-#define USE_LOG_SCOPE(scope) auto const __graphite_log_scope = #scope
+#define USE_LOG_SCOPE(scope) [[maybe_unused]] auto const __graphite_log_scope = #scope
 
 #define LOG_TRACE(fmt, ...)              \
     ::Graphite::Logger::GetLogger().Log( \

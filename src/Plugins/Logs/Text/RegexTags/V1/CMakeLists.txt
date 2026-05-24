@@ -7,8 +7,17 @@ target_include_directories(fluxion_logs_plugin__text__regex_tags__v1_interface I
 
 # --- 2. Implementation ---
 add_library(fluxion_logs_plugin__text__regex_tags__v1 SHARED
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Lifecycle.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Logs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CSV/Wrapper/Wrapper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ApplyFilters.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DisableFilters.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GetLogs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GetNextLog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GetPrevLog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GetTableHeader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GetTotalLogs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ImportLogs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/OnEnable.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/OnDisable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RegexTags.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RenderMenu.cpp
 )

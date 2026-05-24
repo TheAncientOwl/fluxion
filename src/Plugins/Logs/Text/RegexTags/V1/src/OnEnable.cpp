@@ -3,10 +3,10 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file Lifecycle.cpp
+/// @file OnEnable.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
-/// @brief Use regex to split log txt line to columns. Store data to flat files
+/// @version 0.6
+/// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <string>
@@ -31,12 +31,6 @@ void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& dat
     auto tags{LoadRegexTags()};
     if (tags.empty())
     {
-        //{ auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
-        // new_tag->display_name = "New Tag";
-        // new_tag->regex_data = ".*";
-        // new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
-        // new_tag->visible = true;}
-
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "Timestamp";
@@ -93,17 +87,6 @@ void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& dat
         UpdateImportedLogsHeader(back_tags);
         SaveRegexTags(back_tags);
     });
-}
-
-void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
-{
-    LOG_SCOPE("::OnDisable()");
-    LOG_TRACE("::OnDisable()");
-
-    SaveRegexTags(m_regex_tags.GetFront());
-    auto config{GetConfig()};
-    config.set("total_logs", 0);
-    config.Save();
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

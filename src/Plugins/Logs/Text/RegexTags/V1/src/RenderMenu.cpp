@@ -5,8 +5,8 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
-/// @brief Use regex to split log txt line to columns. Store data to flat files
+/// @version 0.3
+/// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <string>
