@@ -13,18 +13,16 @@
 
 #include "IconsCodicons.h"
 
-#include "Fluxion/Plugins/Logs/RegexTextV1/RegexTextV1LogsPlugin.hpp"
+#include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
-namespace Fluxion::Plugins::Logs::RegexTextV1 {
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
-
-void RegexTextV1LogsPlugin::RenderMenu()
+void RegexTags::RenderMenu()
 {
     LOG_SCOPE("::RenderMenu()");
 
@@ -53,7 +51,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
 
         ImGui::TableNextColumn();
         Graphite::Common::UI::IconButton(ICON_CI_ADD, "Add", [&]() {
-            m_regex_tags.UpdateBackBufferCopy([&tags_dirty](RegexTags& back_tags) {
+            m_regex_tags.UpdateBackBufferCopy([&tags_dirty](Data::RegexTags& back_tags) {
                 LOG_INFO("::RenderMenu(): Add Tag.");
                 tags_dirty = true;
                 auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
@@ -92,7 +90,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
 
             Graphite::Common::UI::IconButton(ICON_CI_TRASH, "Delete", [&]() {
                 tags_dirty = true;
-                m_regex_tags.UpdateBackBufferCopy([idx](RegexTags& back_tags) {
+                m_regex_tags.UpdateBackBufferCopy([idx](Data::RegexTags& back_tags) {
                     if (idx < back_tags.size())
                     {
                         LOG_INFO(
@@ -100,7 +98,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
                             back_tags.back()->id,
                             back_tags.back()->display_name);
                         back_tags.erase(
-                            back_tags.begin() + static_cast<RegexTags::difference_type>(idx));
+                            back_tags.begin() + static_cast<Data::RegexTags::difference_type>(idx));
                     }
                     else
                     {
@@ -115,7 +113,7 @@ void RegexTextV1LogsPlugin::RenderMenu()
                 tag.visible ? "Toggle Visible: OFF" : "Toggle Visible: ON",
                 [&]() {
                     tags_dirty = true;
-                    m_regex_tags.UpdateBackBufferCopy([idx](RegexTags& back_tags) {
+                    m_regex_tags.UpdateBackBufferCopy([idx](Data::RegexTags& back_tags) {
                         if (idx < back_tags.size())
                         {
                             LOG_INFO(
@@ -154,4 +152,4 @@ void RegexTextV1LogsPlugin::RenderMenu()
     }
 }
 
-} // namespace Fluxion::Plugins::Logs::RegexTextV1
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

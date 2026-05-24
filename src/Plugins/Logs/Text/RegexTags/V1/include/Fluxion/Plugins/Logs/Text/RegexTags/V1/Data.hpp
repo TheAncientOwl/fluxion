@@ -13,7 +13,7 @@
 
 #include "Graphite/Common/Utility/UniqueID.hpp"
 
-namespace Fluxion::Plugins::Logs::RegexTextV1::Data {
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V1::Data {
 
 struct RegexTag
 {
@@ -23,4 +23,6 @@ struct RegexTag
     bool visible{};
 };
 
-} // namespace Fluxion::Plugins::Logs::RegexTextV1::Data
+using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
+
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1::Data

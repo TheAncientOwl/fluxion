@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file RegexTextV1LogsPlugin.cpp
+/// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
 /// @version 0.10
 /// @brief Use regex to split log txt line to columns. Store data to flat files
@@ -11,42 +11,38 @@
 
 #include <string>
 
-#include "Fluxion/Plugins/Logs/RegexTextV1/RegexTextV1LogsPlugin.hpp"
+#include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
-namespace Fluxion::Plugins::Logs::RegexTextV1 {
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
-
-std::string_view RegexTextV1LogsPlugin::GetDisplayName() const
+std::string_view RegexTags::GetDisplayName() const
 {
-    return "RegexTextV1";
+    return "Text::RegexTags::V1";
 }
 
-std::filesystem::path RegexTextV1LogsPlugin::MakeConvertedLogsPath(
-    std::filesystem::path const& raw_logs_path) const
+std::filesystem::path RegexTags::MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const
 {
     auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".converted.csv")};
     return output_path;
 }
 
-std::filesystem::path RegexTextV1LogsPlugin::MakeFilteredLogsPath(
-    std::filesystem::path const& raw_logs_path) const
+std::filesystem::path RegexTags::MakeFilteredLogsPath(std::filesystem::path const& raw_logs_path) const
 {
     auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".filtered.csv")};
     return output_path;
 }
 
-Graphite::Settings::PersistentSettings RegexTextV1LogsPlugin::GetConfig() const
+Graphite::Settings::PersistentSettings RegexTags::GetConfig() const
 {
     return Graphite::Settings::PersistentSettings{m_home_path, "config"};
 }
 
-void RegexTextV1LogsPlugin::SaveRegexTags(std::vector<std::shared_ptr<Data::RegexTag>> const& tags) const
+void RegexTags::SaveRegexTags(std::vector<std::shared_ptr<Data::RegexTag>> const& tags) const
 {
     LOG_TRACE("::SaveRegexTags()");
     LOG_INFO("::SaveRegexTags(): size == {}", tags.size());
@@ -67,7 +63,7 @@ void RegexTextV1LogsPlugin::SaveRegexTags(std::vector<std::shared_ptr<Data::Rege
     config.Save();
 }
 
-std::vector<std::shared_ptr<Data::RegexTag>> RegexTextV1LogsPlugin::LoadRegexTags() const
+std::vector<std::shared_ptr<Data::RegexTag>> RegexTags::LoadRegexTags() const
 {
     LOG_TRACE("::LoadRegexTags()");
     auto config{GetConfig()};
@@ -79,7 +75,7 @@ std::vector<std::shared_ptr<Data::RegexTag>> RegexTextV1LogsPlugin::LoadRegexTag
         return {};
     }
 
-    RegexTags loaded_tags;
+    Data::RegexTags loaded_tags;
 
     for (const auto& tag_obj : tags_json_opt.value())
     {
@@ -103,8 +99,7 @@ std::vector<std::shared_ptr<Data::RegexTag>> RegexTextV1LogsPlugin::LoadRegexTag
     return loaded_tags;
 }
 
-void RegexTextV1LogsPlugin::UpdateImportedLogsHeader(
-    std::vector<std::shared_ptr<Data::RegexTag>> const& tags)
+void RegexTags::UpdateImportedLogsHeader(std::vector<std::shared_ptr<Data::RegexTag>> const& tags)
 {
     LOG_TRACE("::UpdateImportedLogsHeader():");
     LOG_INFO("::UpdateImportedLogsHeader(): tags size == {}", tags.size());
@@ -119,9 +114,9 @@ void RegexTextV1LogsPlugin::UpdateImportedLogsHeader(
     }
 }
 
-} // namespace Fluxion::Plugins::Logs::RegexTextV1
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1
 
 extern "C" GRAPHITE_EXPORT Fluxion::API::LogsPlugin::IFluxionLogsPlugin* CreateFluxionLogsPlugin()
 {
-    return new Fluxion::Plugins::Logs::RegexTextV1::RegexTextV1LogsPlugin();
+    return new Fluxion::Plugins::Logs::Text::RegexTags::V1::RegexTags();
 }

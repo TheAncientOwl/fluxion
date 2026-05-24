@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file RegexTextV1LogsPlugin.hpp
+/// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.6
 /// @brief Use regex to split log txt line to columns. Store data to flat files
@@ -19,9 +19,9 @@
 
 #include "Data.hpp"
 
-namespace Fluxion::Plugins::Logs::RegexTextV1 {
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-class RegexTextV1LogsPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
+class RegexTags : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
     std::string_view GetDisplayName() const override;
@@ -67,7 +67,7 @@ private:
     std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
 };
 
-} // namespace Fluxion::Plugins::Logs::RegexTextV1
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1
 
 extern "C" GRAPHITE_EXPORT Fluxion::API::LogsPlugin::IFluxionLogsPlugin* CreateFluxionLogsPlugin();
 typedef Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*CreateFluxionLogsPluginFactory)();

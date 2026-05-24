@@ -17,14 +17,14 @@
 #include "miocsv.h"
 #include "stdcsv.h"
 
-#include "Fluxion/Plugins/Logs/RegexTextV1/RegexTextV1LogsPlugin.hpp"
+#include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
-namespace Fluxion::Plugins::Logs::RegexTextV1 {
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
 namespace FilterImpl {
 
@@ -87,7 +87,7 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
 
 }; // namespace FilterImpl
 
-void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("::ImportLogs()");
     LOG_INFO("Importing {}", path.c_str());
@@ -190,32 +190,30 @@ void RegexTextV1LogsPlugin::ImportLogs(std::filesystem::path const& path)
     settings.Save();
 }
 
-std::optional<std::size_t> RegexTextV1LogsPlugin::GetNextLog(
-    Graphite::Common::Utility::UniqueID const& /*filter_id*/)
+std::optional<std::size_t> RegexTags::GetNextLog(Graphite::Common::Utility::UniqueID const& /*filter_id*/)
 {
     LOG_SCOPE("::GetNextLog()");
     return std::nullopt;
 }
 
-std::optional<std::size_t> RegexTextV1LogsPlugin::GetPrevLog(
-    Graphite::Common::Utility::UniqueID const& /*filter_id*/)
+std::optional<std::size_t> RegexTags::GetPrevLog(Graphite::Common::Utility::UniqueID const& /*filter_id*/)
 {
     LOG_SCOPE("::GetPrevLog()");
     return std::nullopt;
 }
 
-std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> RegexTextV1LogsPlugin::GetTableHeader() const
+std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> RegexTags::GetTableHeader() const
 {
     return m_imported_logs_header;
 }
 
-std::size_t RegexTextV1LogsPlugin::GetTotalLogs() const
+std::size_t RegexTags::GetTotalLogs() const
 {
     auto const total_logs_opt{GetConfig().get<std::size_t>("total_logs")};
     return static_cast<bool>(total_logs_opt) ? *total_logs_opt : 0;
 }
 
-void RegexTextV1LogsPlugin::GetLogs(
+void RegexTags::GetLogs(
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
     Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const
 {
@@ -285,7 +283,7 @@ void RegexTextV1LogsPlugin::GetLogs(
     }
 }
 
-void RegexTextV1LogsPlugin::ApplyFilters(
+void RegexTags::ApplyFilters(
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
     std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
 {
@@ -381,7 +379,7 @@ void RegexTextV1LogsPlugin::ApplyFilters(
     settings.Save();
 }
 
-void RegexTextV1LogsPlugin::DisableFilters()
+void RegexTags::DisableFilters()
 {
     LOG_SCOPE("::DisableFilters()");
     if (static_cast<bool>(m_last_imported_logs_path))
@@ -394,4 +392,4 @@ void RegexTextV1LogsPlugin::DisableFilters()
     }
 }
 
-} // namespace Fluxion::Plugins::Logs::RegexTextV1
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

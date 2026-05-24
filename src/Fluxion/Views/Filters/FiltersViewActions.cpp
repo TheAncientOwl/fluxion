@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.16
+/// @version 0.17
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -962,7 +962,7 @@ void LoadPluginPathFromFile(AppState& application_state)
         }
         else
         {
-            LOG_INFO("::LoadPluginPathFromFile(): No saved plugin configuration found");
+            LOG_ERROR("::LoadPluginPathFromFile(): No saved plugin configuration found");
         }
     }
     catch (std::exception const& e)

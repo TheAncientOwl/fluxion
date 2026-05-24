@@ -11,15 +11,15 @@
 
 #include <string>
 
-#include "Fluxion/Plugins/Logs/RegexTextV1/RegexTextV1LogsPlugin.hpp"
+#include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::RegexTextV1);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
-namespace Fluxion::Plugins::Logs::RegexTextV1 {
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-void RegexTextV1LogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data)
+void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data)
 {
     using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
 
@@ -95,7 +95,7 @@ void RegexTextV1LogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableDat
     });
 }
 
-void RegexTextV1LogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
+void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
 {
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");
@@ -106,4 +106,4 @@ void RegexTextV1LogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableD
     config.Save();
 }
 
-} // namespace Fluxion::Plugins::Logs::RegexTextV1
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

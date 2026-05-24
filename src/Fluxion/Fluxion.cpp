@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.15
+/// @version 0.16
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -15,6 +15,7 @@
 #include "imgui.h"
 
 #include "Fluxion.hpp"
+#include "Fluxion/SentinelPlugins/Logs/SentinelLogsPlugin.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Logger.hpp"
 #include "Views/BaseView.hpp"
@@ -65,7 +66,6 @@ void FluxionApplication::OnInit()
     Views::Actions::FiltersView::LoadPluginPathFromFile(m_app_state);
 
     // Try to load the saved plugin, fall back to DummyPlugin if not available
-    bool plugin_loaded = false;
     if (!m_app_state.selected_logs_plugin_path.empty() &&
         std::filesystem::exists(m_app_state.selected_logs_plugin_path))
     {
@@ -111,7 +111,6 @@ void FluxionApplication::OnInit()
                     std::filesystem::create_directories(enable_data.plugin_home_path);
 
                     m_app_state.logs_plugin->OnEnable(enable_data);
-                    plugin_loaded = true;
                 }
             }
         }
@@ -121,17 +120,15 @@ void FluxionApplication::OnInit()
         }
     }
 
-    // Fall back to DummyPlugin if no plugin was loaded
-    if (!plugin_loaded)
+    // Fallback to sentinel logs plugin if no plugin was loaded
+    if (m_app_state.logs_plugin == nullptr)
     {
-        LOG_INFO("::AppInit(): No plugin loaded");
+        LOG_INFO("::AppInit(): No plugin loaded, setting sentinel");
+        m_app_state.logs_plugin = Fluxion::SentinelPlugins::Logs::Create();
         m_app_state.selected_logs_plugin_path.clear();
     }
-    else
-    {
-        // Set the table header from the loaded plugin
-        m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
-    }
+
+    m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
 
     // Load filters from disk after logger is initialized
     Views::Actions::FiltersView::LoadFiltersFromFile(m_app_state);

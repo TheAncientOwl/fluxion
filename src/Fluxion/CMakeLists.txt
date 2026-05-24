@@ -1,5 +1,6 @@
 add_subdirectory(API)
 add_subdirectory(Data)
+add_subdirectory(SentinelPlugins)
 
 # --- 1. Implementation ---
 add_library(fluxion_app STATIC
@@ -42,6 +43,8 @@ target_link_libraries(fluxion_app PUBLIC
     fluxion_api_impl
     fluxion_application_data_interface
     fluxion_application_data_impl
+    fluxion_sentinel_plugins_interface
+    fluxion_sentinel_plugins
 )
 
 target_include_directories(fluxion_app PRIVATE
