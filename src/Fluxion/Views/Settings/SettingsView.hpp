@@ -18,8 +18,7 @@
 
 namespace Fluxion::Application::Views {
 
-class SettingsView
-    : public Graphite::Application::Views::TSoftMenuCloseableView<AppState, EFluxionAction>
+class SettingsView : public Graphite::Application::Views::TSoftCloseableView<AppState, EFluxionAction>
 {
 public:
     static std::string_view GetViewName() noexcept;

@@ -191,7 +191,7 @@ std::string_view FiltersView::GetName() const noexcept
 FiltersView::FiltersView(
     FluxionApplication::FluxionApplication::Ptr application,
     Graphite::Application::Views::RenderPriority const render_priority)
-    : TSoftMenuCloseableView{std::move(application), render_priority}
+    : TSoftCloseableView{std::move(application), render_priority}
 {
     LOG_SCOPE("::FiltersView()");
 }

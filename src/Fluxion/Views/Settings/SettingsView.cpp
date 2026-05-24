@@ -42,7 +42,7 @@ std::string_view SettingsView::GetDisplayName() const noexcept
 SettingsView::SettingsView(
     FluxionApplication::FluxionApplication::Ptr application,
     Graphite::Application::Views::RenderPriority const render_priority)
-    : TSoftMenuCloseableView{std::move(application), render_priority}
+    : TSoftCloseableView{std::move(application), render_priority}
 {
     LOG_SCOPE("::SettingsView()");
 }

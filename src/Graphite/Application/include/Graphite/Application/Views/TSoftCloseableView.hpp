@@ -3,7 +3,7 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file TSoftMenuCloseableView.hpp
+/// @file TSoftCloseableView.hpp
 /// @author Alexandru Delegeanu
 /// @version 0.2
 /// @brief View that is removed / added on close / open.
@@ -16,7 +16,7 @@
 namespace Graphite::Application::Views {
 
 template <typename ApplicationState, typename ActionEnum>
-class TSoftMenuCloseableView : public TView<ApplicationState, ActionEnum>
+class TSoftCloseableView : public TView<ApplicationState, ActionEnum>
 {
 public:
     virtual inline std::string_view GetDisplayName() const noexcept = 0;
@@ -24,14 +24,14 @@ public:
     virtual bool IsActive() const noexcept = 0;
     virtual void SetIsActive(bool active) = 0;
 
-    TSoftMenuCloseableView(
+    TSoftCloseableView(
         std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         RenderPriority const render_priority)
         : TView<ApplicationState, ActionEnum>(std::move(application), render_priority)
     {
     }
 
-    TSoftMenuCloseableView(
+    TSoftCloseableView(
         std::shared_ptr<Graphite::Application::TGraphiteApplication<ApplicationState, ActionEnum>> application,
         RenderPriority const render_priority,
         Graphite::Common::Utility::UniqueID id)

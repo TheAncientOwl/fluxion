@@ -101,9 +101,8 @@ void MainMenuView::RenderMenu()
 
         if (ImGui::BeginMenu(ICON_CI_SQUIRREL " Views"))
         {
-            m_application->ForEachView<
-                Graphite::Application::Views::TSoftMenuCloseableView<AppState, EFluxionAction>>(
-                [](Graphite::Application::Views::TSoftMenuCloseableView<AppState, EFluxionAction>& menu_item,
+            m_application->ForEachView<Graphite::Application::Views::TSoftCloseableView<AppState, EFluxionAction>>(
+                [](Graphite::Application::Views::TSoftCloseableView<AppState, EFluxionAction>& menu_item,
                    bool const is_last) {
                     static char display_name_buffer[64];
 

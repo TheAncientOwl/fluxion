@@ -20,7 +20,7 @@
 namespace Fluxion::Application::Views {
 
 class LogsTableView
-    : public Graphite::Application::Views::TSoftMenuCloseableView<AppState, EFluxionAction>
+    : public Graphite::Application::Views::TSoftCloseableView<AppState, EFluxionAction>
     , public Graphite::Application::Views::Utility::
           TDispatcher<LogsTableView, EFluxionAction::LogsTableViewAction, Actions::LogsTableView::LogsTableViewActionPayload>
 {

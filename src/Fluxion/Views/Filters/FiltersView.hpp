@@ -20,7 +20,7 @@
 namespace Fluxion::Application::Views {
 
 class FiltersView
-    : public Graphite::Application::Views::TSoftMenuCloseableView<AppState, EFluxionAction>
+    : public Graphite::Application::Views::TSoftCloseableView<AppState, EFluxionAction>
     , public Graphite::Application::Views::Utility::
           TDispatcher<FiltersView, EFluxionAction::FilterAction, Actions::FiltersView::FilterActionPayload>
 {
