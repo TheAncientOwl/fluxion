@@ -5,8 +5,8 @@
 ///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
-/// @brief Use regex to split log txt line to columns. Store data to flat files
+/// @version 0.8
+/// @brief Implementation of @see DummyLogsPlugin.hpp
 ///
 
 #include <algorithm>
@@ -15,7 +15,6 @@
 #include <regex>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -148,8 +147,6 @@ void DummyLogsPlugin::ApplyFilters(
     LOG_SCOPE("::ApplyFilters()");
     using namespace Fluxion::API::LogsPlugin::Data;
 
-    m_filter_to_search_log_index.clear();
-
     auto const filters = DummyImpl::Convert(std::move(_filters));
     auto const highlight_only = DummyImpl::Convert(std::move(_highlight_only));
     LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
@@ -237,8 +234,6 @@ void DummyLogsPlugin::ApplyFilters(
 
 void DummyLogsPlugin::DisableFilters()
 {
-    m_filter_to_search_log_index.clear();
-
     m_filtered_logs.clear();
     for (auto const& log : m_logs)
     {
@@ -303,22 +298,22 @@ void DummyLogsPlugin::GetLogs(
     }
 }
 
-std::optional<std::size_t> DummyLogsPlugin::GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id)
+std::optional<std::size_t> DummyLogsPlugin::GetNextLog(
+    Graphite::Common::Utility::UniqueID const& filter_id,
+    std::size_t const current_index)
 {
     LOG_SCOPE("::GetNextLog()");
-    auto& index = m_filter_to_search_log_index[filter_id];
 
     if (m_filtered_logs.empty())
     {
         LOG_INFO("::GetNextLog(): No logs to filter");
-        index = std::nullopt;
         return std::nullopt;
     }
 
-    std::size_t start = 0;
-    if (static_cast<bool>(index) && *index + 1 < m_filtered_logs.size())
+    std::size_t start = current_index + 1;
+    if (start >= m_filtered_logs.size())
     {
-        start = *index + 1;
+        start = 0; // Wrap around
     }
 
     for (std::size_t log_idx = start; log_idx < m_filtered_logs.size(); ++log_idx)
@@ -326,7 +321,6 @@ std::optional<std::size_t> DummyLogsPlugin::GetNextLog(Graphite::Common::Utility
         if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
             m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
         {
-            index = log_idx;
             return log_idx;
         }
     }
@@ -337,31 +331,29 @@ std::optional<std::size_t> DummyLogsPlugin::GetNextLog(Graphite::Common::Utility
         if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
             m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
         {
-            index = log_idx;
             return log_idx;
         }
     }
 
-    index = std::nullopt;
     return std::nullopt;
 }
 
-std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id)
+std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(
+    Graphite::Common::Utility::UniqueID const& filter_id,
+    std::size_t const current_index)
 {
     LOG_SCOPE("::GetPrevLog()");
-    auto& index = m_filter_to_search_log_index[filter_id];
 
     if (m_filtered_logs.empty())
     {
         LOG_INFO("::GetPrevLog(): No logs to filter");
-        index = std::nullopt;
         return std::nullopt;
     }
 
     std::size_t start;
-    if (index.has_value() && *index > 0)
+    if (current_index > 0)
     {
-        start = *index - 1;
+        start = current_index - 1;
     }
     else
     {
@@ -374,7 +366,6 @@ std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(Graphite::Common::Utility
         if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
             m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
         {
-            index = log_idx;
             return log_idx;
         }
     }
@@ -387,13 +378,11 @@ std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(Graphite::Common::Utility
             if (m_filtered_logs[log_idx].metadata.filter_id == filter_id ||
                 m_filtered_logs[log_idx].metadata.highlight_id == filter_id)
             {
-                index = log_idx;
                 return log_idx;
             }
         }
     }
 
-    index = std::nullopt;
     return std::nullopt;
 }
 

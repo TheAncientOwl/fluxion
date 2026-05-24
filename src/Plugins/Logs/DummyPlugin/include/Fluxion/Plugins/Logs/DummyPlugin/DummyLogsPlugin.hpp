@@ -5,8 +5,8 @@
 ///
 /// @file DummyLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
-/// @brief Use regex to split log txt line to columns. Store data to flat files
+/// @version 0.7
+/// @brief Dummy implementation of a LogsPlugin
 ///
 
 #include <vector>
@@ -32,8 +32,12 @@ public:
 
     void ImportLogs(std::filesystem::path const& path) override;
 
-    std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) override;
-    std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) override;
+    std::optional<std::size_t> GetNextLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index = 0) override;
+    std::optional<std::size_t> GetPrevLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index = 0) override;
 
     void ApplyFilters(
         std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,
@@ -51,9 +55,6 @@ public:
 private:
     std::vector<std::vector<std::string>> m_logs;
     std::vector<Fluxion::API::LogsPlugin::Data::LogRow> m_filtered_logs;
-
-    std::unordered_map<Graphite::Common::Utility::UniqueID, std::optional<std::size_t>>
-        m_filter_to_search_log_index{};
 };
 
 } // namespace Fluxion::Plugins::Logs::DummyLogsPlugin

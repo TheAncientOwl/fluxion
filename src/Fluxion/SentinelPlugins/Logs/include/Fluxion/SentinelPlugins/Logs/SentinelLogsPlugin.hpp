@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Do nothing...
 ///
 
@@ -32,8 +32,12 @@ public:
 
     void ImportLogs(std::filesystem::path const& path) override;
 
-    std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) override;
-    std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) override;
+    std::optional<std::size_t> GetNextLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index = 0) override;
+    std::optional<std::size_t> GetPrevLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index = 0) override;
 
     void ApplyFilters(
         std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,

@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -37,8 +37,25 @@ public:
 
     virtual void ImportLogs(std::filesystem::path const& path) = 0;
 
-    virtual std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) = 0;
-    virtual std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) = 0;
+    /**
+     * @brief Get the next log index relative to current item.
+     *
+     * @param filter_id the filter to search within.
+     * @param current_index current selected log index (0 if no item selected).
+     */
+    virtual std::optional<std::size_t> GetNextLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index = 0) = 0;
+
+    /**
+     * @brief Get the previous log index relative to current item.
+     *
+     * @param filter_id the filter to search within.
+     * @param current_index current selected log index (0 if no item selected).
+     */
+    virtual std::optional<std::size_t> GetPrevLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index = 0) = 0;
 
     /**
      * @brief Apply given filters.

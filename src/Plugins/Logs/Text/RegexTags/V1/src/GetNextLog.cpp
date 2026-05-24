@@ -5,7 +5,7 @@
 ///
 /// @file GetNextLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,7 +18,9 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-std::optional<std::size_t> RegexTags::GetNextLog(Graphite::Common::Utility::UniqueID const& /*filter_id*/)
+std::optional<std::size_t> RegexTags::GetNextLog(
+    Graphite::Common::Utility::UniqueID const& /*filter_id*/,
+    std::size_t const /*current_index*/)
 {
     LOG_SCOPE("::GetNextLog()");
     return std::nullopt;

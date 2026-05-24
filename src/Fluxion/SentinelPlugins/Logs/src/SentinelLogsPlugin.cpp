@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Do nothing...
 ///
 
@@ -84,14 +84,16 @@ void SentinelLogsPlugin::GetLogs(
 }
 
 std::optional<std::size_t> SentinelLogsPlugin::GetNextLog(
-    Graphite::Common::Utility::UniqueID const& /*filter_id*/)
+    Graphite::Common::Utility::UniqueID const& /*filter_id*/,
+    std::size_t const /*current_index*/)
 {
     LOG_SCOPE("::GetNextLog()");
     return std::nullopt;
 }
 
 std::optional<std::size_t> SentinelLogsPlugin::GetPrevLog(
-    Graphite::Common::Utility::UniqueID const& /*filter_id*/)
+    Graphite::Common::Utility::UniqueID const& /*filter_id*/,
+    std::size_t const /*current_index*/)
 {
     LOG_SCOPE("::GetPrevLog()");
     return std::nullopt;

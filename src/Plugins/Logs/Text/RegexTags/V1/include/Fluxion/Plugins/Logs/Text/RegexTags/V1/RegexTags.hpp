@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -33,8 +33,12 @@ public:
 
     void ImportLogs(std::filesystem::path const& path) override;
 
-    std::optional<std::size_t> GetNextLog(Graphite::Common::Utility::UniqueID const& filter_id) override;
-    std::optional<std::size_t> GetPrevLog(Graphite::Common::Utility::UniqueID const& filter_id) override;
+    std::optional<std::size_t> GetNextLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index) override;
+    std::optional<std::size_t> GetPrevLog(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index) override;
 
     void ApplyFilters(
         std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,

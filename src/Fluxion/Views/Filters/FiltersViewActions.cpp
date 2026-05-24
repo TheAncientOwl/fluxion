@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.17
+/// @version 0.18
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -554,7 +554,9 @@ void handle<EFilterActionType::NextLog>(AppState& application_state, Payloads::S
     LOG_SCOPE("::handle<NextLog>()");
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [&](Data::Logs::SearchedLog& searched_log) {
-            searched_log.index = application_state.logs_plugin->GetNextLog(payload.filter_id);
+            std::size_t current_index = searched_log.index.value_or(0);
+            searched_log.index =
+                application_state.logs_plugin->GetNextLog(payload.filter_id, current_index);
             LOG_INFO("::handle<NextLog>(): log index == {}", searched_log.index);
         });
 }
@@ -565,7 +567,9 @@ void handle<EFilterActionType::PrevLog>(AppState& application_state, Payloads::S
     LOG_SCOPE("::handle<PrevLog>()");
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [&](Data::Logs::SearchedLog& searched_log) {
-            searched_log.index = application_state.logs_plugin->GetPrevLog(payload.filter_id);
+            std::size_t current_index = searched_log.index.value_or(0);
+            searched_log.index =
+                application_state.logs_plugin->GetPrevLog(payload.filter_id, current_index);
             LOG_INFO("::handle<PrevLog>(): log index == {}", searched_log.index);
         });
 }
