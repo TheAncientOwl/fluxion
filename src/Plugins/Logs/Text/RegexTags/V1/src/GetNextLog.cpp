@@ -5,7 +5,7 @@
 ///
 /// @file GetNextLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -59,7 +59,6 @@ std::optional<std::size_t> RegexTags::GetNextLog(
         // Wrap around: search from beginning to current_index
         {
             auto reader = CSV::Reader{filtered_path};
-            std::optional<std::size_t> found_idx;
             for (auto row : reader)
             {
                 if (row.empty())
@@ -76,10 +75,9 @@ std::optional<std::size_t> RegexTags::GetNextLog(
 
                 if (row[0] == filter_id_str || row[1] == filter_id_str)
                 {
-                    found_idx = row_num;
+                    return row_num;
                 }
             }
-            return found_idx;
         }
     }
     catch (std::exception const& e)

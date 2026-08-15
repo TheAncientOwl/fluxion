@@ -59,3 +59,5 @@ add_custom_target(install_regex_text_v1_plugin ALL
     DEPENDS fluxion_logs_plugin__text__regex_tags__v1
     COMMENT "Installing logs plugin to ~/.fluxion/plugins/logs"
 )
+
+add_subdirectory(test)
