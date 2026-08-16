@@ -1,3 +1,14 @@
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file PluginTest.cpp
+/// @author Alexandru Delegeanu
+/// @version 0.2
+/// @brief Logs::Text::RegexTags::V1 Plugin test
+///
+
 #include <fstream>
 #include <memory>
 #include <thread>
@@ -156,11 +167,11 @@ int main()
     auto logs_plugin_tester{LogsPluginTester(
         std::make_unique<LogsPluginWrapper>(), TestConfiguration{.logs_count = 200})};
 
-    auto results = logs_plugin_tester.RunTests();
+    logs_plugin_tester.RunTests();
 
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(2s);
-    std::println("Final results: passed {}/{}", results.passed, results.total);
+    logs_plugin_tester.PrintTestResults();
 
-    return 0;
+    return logs_plugin_tester.AllPassed();
 }

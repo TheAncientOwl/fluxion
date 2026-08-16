@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -111,14 +111,9 @@ struct TestResult
 {
     ETestState state{ETestState::Init};
     std::string message{};
-};
+    std::string name{"not-set"};
 
-struct TestResults
-{
-    std::size_t passed{0};
-    std::size_t total{0};
-
-    TestResults& operator+=(TestResult const& res);
+    TestResult& setName(std::string_view const test_name);
 };
 
 class LogsPluginTester
@@ -129,7 +124,9 @@ public:
         TestConfiguration config);
 
 public:
-    TestResults RunTests();
+    void RunTests();
+    void PrintTestResults() const;
+    bool AllPassed() const;
 
 private: // Testing API
     template <typename TestCallable>
@@ -144,7 +141,7 @@ private: // Testing API
         m_logs_plugin_test_wrapper->GetLogsPlugin().ImportLogs(
             m_logs_plugin_test_wrapper->GetImportLogsFilePath());
 
-        test_callable();
+        m_results.push_back(test_callable());
 
         m_logs_plugin_test_wrapper->Teardown();
         TeardownLogsData();
@@ -171,6 +168,7 @@ private:
     std::unique_ptr<ILogsPluginTestWrapper> m_logs_plugin_test_wrapper{};
     TestConfiguration m_config{};
     std::vector<LogEntry::Data> m_generated_logs{};
+    std::vector<TestResult> m_results{};
 };
 
 } // namespace Fluxion::API::Testing::LogsPluginTestingKit

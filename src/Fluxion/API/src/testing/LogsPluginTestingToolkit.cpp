@@ -5,10 +5,11 @@
 ///
 /// @file LogsPluginTestingToolkit.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
+#include <algorithm>
 #include <initializer_list>
 #include <print>
 #include <random>
@@ -60,38 +61,59 @@ void LogsPluginTester::TeardownLogsData()
     m_generated_logs.clear();
 }
 
-TestResults& TestResults::operator+=(TestResult const& res)
+bool LogsPluginTester::AllPassed() const
 {
-    ++total;
-    passed += (res.state == ETestState::Passed ? 1 : 0);
+    return m_results.size() == static_cast<std::size_t>(std::count_if(
+                                   m_results.begin(), m_results.end(), [](auto const& result) {
+                                       return result.state == ETestState::Passed;
+                                   }));
+};
+
+TestResult& TestResult::setName(std::string_view const test_name)
+{
+    this->name = test_name;
     return *this;
 }
 
-TestResults LogsPluginTester::RunTests()
+void LogsPluginTester::RunTests()
 {
-    auto results{TestResults{}};
+    RunTest([this]() { return TestIO().setName("TestIO"); });
+    RunTest([this]() { return TestOutOfBoundsQuery().setName("TestOutOfBoundsQuery"); });
+    RunTest([this]() {
+        return TestEmptyAndOverlappingRanges().setName("TestEmptyAndOverlappingRanges");
+    });
+    RunTest([this]() { return TestMetadataAndHeader().setName("TestMetadataAndHeader"); });
+    RunTest([this]() { return TestNavigationAPI().setName("TestNavigationAPI"); });
+    RunTest([this]() { return TestFilterLifecycle().setName("TestFilterLifecycle"); });
+    RunTest([this]() { return TestEnableDisableLifecycle().setName("TestEnableDisableLifecycle"); });
+}
 
-    auto const execute_test = [&](auto&& test_fn, std::string_view test_name) {
-        RunTest([&]() {
-            auto const res = test_fn();
-            results += res;
-            if (res.state != ETestState::Passed)
-            {
-                std::println("[FAIL] {}: {}", test_name, res.message);
-            }
-        });
-    };
+std::string_view toString(ETestState const state)
+{
+    switch (state)
+    {
+    case ETestState::Passed:
+        return "Passed";
+    case ETestState::Failed:
+        return "Failed";
+    case ETestState::Init:
+        return "Init";
+    default:
+        return "Unknown";
+    }
+}
 
-    execute_test([this]() { return TestIO(); }, "TestIO");
-    execute_test([this]() { return TestOutOfBoundsQuery(); }, "TestOutOfBoundsQuery");
-    execute_test(
-        [this]() { return TestEmptyAndOverlappingRanges(); }, "TestEmptyAndOverlappingRanges");
-    execute_test([this]() { return TestMetadataAndHeader(); }, "TestMetadataAndHeader");
-    execute_test([this]() { return TestNavigationAPI(); }, "TestNavigationAPI");
-    execute_test([this]() { return TestFilterLifecycle(); }, "TestFilterLifecycle");
-    execute_test([this]() { return TestEnableDisableLifecycle(); }, "TestEnableDisableLifecycle");
-
-    return results;
+void LogsPluginTester::PrintTestResults() const
+{
+    auto const passed{std::count_if(m_results.begin(), m_results.end(), [](auto const& result) {
+        return result.state == ETestState::Passed;
+    })};
+    std::println(">> Test Results");
+    std::println(">> Passed: {}/{}", passed, m_results.size());
+    for (auto const& result : m_results)
+    {
+        std::println("* {} ~ [{}] ~ {}", toString(result.state), result.name, result.message);
+    }
 }
 
 TestResult LogsPluginTester::TestIO()
