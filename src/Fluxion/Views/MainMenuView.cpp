@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -59,7 +59,13 @@ void MainMenuView::OnAdd()
             m_last_file_dialog_path = result.path.parent_path();
 
             m_application->As<Fluxion::Application::FluxionApplication>()->ResetImportedLogsData();
-            m_application->GetApplicationState().logs_progress.operation = ELogsOperation::Import;
+            auto& app_state{m_application->GetApplicationState()};
+
+            app_state.logs_progress.operation = ELogsOperation::Import;
+            app_state.filters.metadata.UpdateBackBufferCopyLocking(
+                [](Data::Filters::FiltersGeneralMetadata& metadata) {
+                    metadata[Data::Filters::EFiltersMetadataFlag::Applied] = false;
+                });
 
             auto worker = std::thread{[this, file_path = std::move(result.path)]() {
                 LOG_INFO("Importing Selected log file: \"{}\"", file_path.string());
