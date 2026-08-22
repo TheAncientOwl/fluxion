@@ -5,12 +5,14 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
-#include <regex>
+#include <memory>
+#include <re2/re2.h>
 #include <string>
+#include <variant>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V2/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -29,7 +31,7 @@ struct ComputedCondition
     : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
 {
     std::size_t column_index{};
-    std::variant<std::regex, std::string> condition{};
+    std::variant<std::unique_ptr<re2::RE2>, std::string> condition{};
 };
 
 struct ActiveFilter
@@ -66,9 +68,12 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
             out_condition[EConditionFlag::IsCaseSensitive] =
                 condition[EConditionFlag::IsCaseSensitive];
 
+            re2::RE2::Options options;
+            options.set_case_sensitive(condition[EConditionFlag::IsCaseSensitive]);
+
             if (condition[EConditionFlag::IsRegex])
             {
-                out_condition.condition = std::regex{condition.data};
+                out_condition.condition = std::make_unique<re2::RE2>(condition.data, options);
             }
             else
             {
@@ -121,10 +126,12 @@ void RegexTags::ApplyFilters(
             {
                 auto const& target{row[condition.column_index]};
 
-                bool const equals{
+                bool const equals =
                     condition[EConditionFlag::IsRegex]
-                        ? std::regex_match(target, std::get<std::regex>(condition.condition))
-                        : target == std::get<std::string>(condition.condition)};
+                        ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
+                           re2::RE2::FullMatch(
+                               target, *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
+                        : (target == std::get<std::string>(condition.condition));
 
                 if (condition[EConditionFlag::IsEquals] != equals)
                 {
@@ -146,10 +153,13 @@ void RegexTags::ApplyFilters(
                     {
                         auto const& target{row[condition.column_index]};
 
-                        bool const equals{
+                        bool const equals =
                             condition[EConditionFlag::IsRegex]
-                                ? std::regex_match(target, std::get<std::regex>(condition.condition))
-                                : target == std::get<std::string>(condition.condition)};
+                                ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
+                                   re2::RE2::FullMatch(
+                                       target,
+                                       *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
+                                : (target == std::get<std::string>(condition.condition));
 
                         if (condition[EConditionFlag::IsEquals] != equals)
                         {

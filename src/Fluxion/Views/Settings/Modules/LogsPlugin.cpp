@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -73,8 +73,6 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
 
                     LOG_INFO("Disabling current plugin");
                     app_state.logs_plugin->OnDisable({});
-                    LOG_INFO("Disable old filters");
-                    app_state.logs_plugin->DisableFilters();
 
                     LOG_INFO("Clearing table header");
                     app_state.logs.table_header.clear();

@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -13,8 +13,10 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <regex>
+#include <memory>
+#include <re2/re2.h>
 #include <string>
+#include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V2/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -83,14 +85,10 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     UpdateImportedLogsHeader(tags);
     LOG_INFO("::ImportLogs(): Full regex pattern: {}", full_pattern);
 
-    std::regex line_regex{};
-    try
+    auto line_regex = std::make_unique<re2::RE2>(full_pattern);
+    if (!line_regex->ok())
     {
-        line_regex = std::regex(full_pattern);
-    }
-    catch (std::exception const& e)
-    {
-        LOG_WARN("Invalid regex: {}", e.what());
+        LOG_WARN("Invalid regex: {}", line_regex->error());
         return;
     }
 
@@ -129,10 +127,28 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     filtered_row[0] = default_filter_id;
     filtered_row[1] = default_filter_id;
+
+    int const num_captures_int = line_regex->NumberOfCapturingGroups();
+    std::size_t const num_captures = static_cast<std::size_t>(num_captures_int);
+
+    std::vector<std::string> capture_results(num_captures);
+    std::vector<re2::RE2::Arg> re2_args;
+    std::vector<re2::RE2::Arg*> re2_arg_ptrs;
+    re2_args.reserve(num_captures);
+    re2_arg_ptrs.reserve(num_captures);
+
+    for (std::size_t i = 0; i < num_captures; ++i)
+    {
+        re2_args.emplace_back(&capture_results[i]);
+        re2_arg_ptrs.push_back(&re2_args.back());
+    }
+
     while (std::getline(raw_logs_file, line))
     {
-        std::smatch matches;
-        if (std::regex_match(line, matches, line_regex))
+        bool const matched =
+            re2::RE2::FullMatchN(line, *line_regex, re2_arg_ptrs.data(), num_captures_int);
+
+        if (matched)
         {
             ++m_logs_progress;
             if (m_logs_progress % 1000 == 0)
@@ -140,15 +156,10 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                 LOG_INFO("Read another 1000 chunk, total: {}", m_logs_progress);
             }
 
-            // matches[0] is full match, start from 1
-            for (std::size_t match_idx = 1; match_idx < matches.size(); ++match_idx)
+            for (std::size_t i = 0; i < num_captures && i < row.size(); ++i)
             {
-                if (matches[match_idx].matched)
-                {
-                    auto match{matches[match_idx].str()};
-                    row[match_idx - 1] = match;
-                    filtered_row[match_idx + 1] = std::move(match);
-                }
+                row[i] = std::move(capture_results[i]);
+                filtered_row[i + 2] = row[i];
             }
             converted_writer.write_row(row);
             filtered_writer.write_row(filtered_row);
