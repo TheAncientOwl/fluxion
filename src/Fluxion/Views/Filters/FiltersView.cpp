@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.38
+/// @version 0.39
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -310,6 +310,9 @@ void FiltersView::RenderToolbar()
     ImGui::EndDisabled();
 
     UIHelpers::Styles::PushRedButton<UIHelpers::Styles::ERedButtonType::TabItemButton>();
+    ImGui::BeginDisabled(
+        m_application->GetApplicationState().logs_progress.operation !=
+        Fluxion::Application::ELogsOperation::None);
     Graphite::Common::UI::TabItemIconButton(ICON_CI_MUTE, "Disable Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::DisableFilters,
@@ -317,6 +320,7 @@ void FiltersView::RenderToolbar()
                  m_application->As<Fluxion::Application::FluxionApplication>()->ResetImportedLogsData();
              }}});
     });
+    ImGui::EndDisabled();
     UIHelpers::Styles::PopRedButton();
 }
 
@@ -514,17 +518,25 @@ void FiltersView::RenderFilter(Graphite::Common::Utility::UniqueID const& owning
     Graphite::Common::UI::ItemHoverTooltip("Filter Priority");
 
     ImGui::SameLine();
+    ImGui::BeginDisabled(
+        m_application->GetApplicationState().logs_progress.operation !=
+        Fluxion::Application::ELogsOperation::None);
     Graphite::Common::UI::IconButton(ICON_CI_CHEVRON_LEFT, "Prev", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::PrevLog,
              .data = Actions::FiltersView::Payloads::SearchLog{.filter_id = filter.id}});
     });
+    ImGui::EndDisabled();
     ImGui::SameLine();
+    ImGui::BeginDisabled(
+        m_application->GetApplicationState().logs_progress.operation !=
+        Fluxion::Application::ELogsOperation::None);
     Graphite::Common::UI::IconButton(ICON_CI_CHEVRON_RIGHT, "Next", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::NextLog,
              .data = Actions::FiltersView::Payloads::SearchLog{.filter_id = filter.id}});
     });
+    ImGui::EndDisabled();
 
     ImGui::SameLine();
     Graphite::Common::UI::VerticalSeparator();
