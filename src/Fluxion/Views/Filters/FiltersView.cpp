@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.37
+/// @version 0.38
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -297,7 +297,9 @@ void FiltersView::RenderToolbar()
         MarkFiltersMetadataDirty();
     });
 
-    ImGui::BeginDisabled(app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::Applied]);
+    ImGui::BeginDisabled(
+        app_state.filters.metadata.GetFront()[Filters::EFiltersMetadataFlag::Applied] ||
+        app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None);
     Graphite::Common::UI::TabItemIconButton(ICON_CI_WAND, "Apply Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::ApplyFilters,
