@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.15
+/// @version 0.16
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -112,7 +112,7 @@ void MainMenuView::RenderMenu()
             if (ImGui::MenuItem(ICON_CI_ROCKET " Import Logs"))
             {
                 m_file_dialog.Open(
-                    "Select Log File to Import",
+                    ICON_CI_ROCKET " Select Logs File to Import",
                     Graphite::Common::UI::EFileDialogMode::OpenFile,
                     m_last_file_dialog_path);
             }

@@ -5,7 +5,7 @@
 ///
 /// @file FileDialog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see Graphite/Common/UI/FileDialog.hpp
 ///
 
@@ -136,7 +136,7 @@ void FileDialog::Close()
 
 void FileDialog::RenderPathBar()
 {
-    ImGui::Text("Location: ");
+    ImGui::Text(ICON_CI_LOCATION " Location: ");
     ImGui::SameLine();
 
     char path_buffer[512];
