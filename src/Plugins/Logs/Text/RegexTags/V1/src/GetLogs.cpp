@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 1.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 

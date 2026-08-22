@@ -6,7 +6,7 @@
 ///
 /// @file Wrapper.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 2.0
 /// @brief CSV wrapper for miocsv Reader and Writer
 ///
 

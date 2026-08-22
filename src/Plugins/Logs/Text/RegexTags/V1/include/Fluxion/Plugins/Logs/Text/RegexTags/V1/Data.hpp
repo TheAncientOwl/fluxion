@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 1.0
 /// @brief Data structs
 ///
 

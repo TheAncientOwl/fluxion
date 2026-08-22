@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 2.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 

@@ -5,7 +5,7 @@
 ///
 /// @file GetPrevLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 

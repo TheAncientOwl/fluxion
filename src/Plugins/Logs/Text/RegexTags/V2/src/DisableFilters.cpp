@@ -5,7 +5,7 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 2.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 

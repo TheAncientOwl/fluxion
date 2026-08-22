@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 3.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 

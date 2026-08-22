@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 1.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 

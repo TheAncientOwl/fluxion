@@ -5,7 +5,7 @@
 ///
 /// @file OnDisable.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 2.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 

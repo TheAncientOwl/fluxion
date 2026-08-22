@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 1.0
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 

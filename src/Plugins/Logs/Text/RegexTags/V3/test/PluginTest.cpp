@@ -5,7 +5,7 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 3.0
 /// @brief Logs::Text::RegexTags::V3 Plugin test
 ///
 
