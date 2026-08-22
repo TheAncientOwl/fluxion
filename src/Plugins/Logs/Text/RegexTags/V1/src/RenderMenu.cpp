@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -22,6 +22,22 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
+namespace Utility {
+
+std::string ConcatRegex(Data::RegexTags const& tags)
+{
+    std::string out{};
+
+    for (auto const& tag : tags)
+    {
+        out += tag->regex_data;
+    }
+
+    return out;
+}
+
+} // namespace Utility
+
 void RegexTags::RenderMenu()
 {
     LOG_SCOPE("::RenderMenu()");
@@ -35,10 +51,14 @@ void RegexTags::RenderMenu()
     Graphite::Common::UI::IconButton(ICON_CI_REPO_PULL, "Import", []() {});
     ImGui::SameLine();
     Graphite::Common::UI::IconButton(ICON_CI_REPO_PUSH, "Export", []() {});
-    static char s_full_regex[]{"TODO: Compute/Concat the full regex"};
+    auto const full_regex{Utility::ConcatRegex(m_regex_tags.GetFront())};
     ImGui::SameLine();
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputText("##full-regex", s_full_regex, sizeof(s_full_regex), ImGuiInputTextFlags_ReadOnly);
+    ImGui::InputText(
+        "##full-regex",
+        const_cast<char*>(full_regex.data()),
+        full_regex.size() + 1,
+        ImGuiInputTextFlags_ReadOnly);
 
     if (ImGui::BeginTable(
             "##regex-configurator", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX))
