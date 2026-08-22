@@ -5,12 +5,13 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.16
+/// @version 0.17
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
 #include "MainMenuView.hpp"
 #include "Graphite/Application/Views/TSoftCloseableView.hpp"
+#include "Graphite/Common/Utility/Time.hpp"
 #include "Graphite/Logger.hpp"
 
 #include <filesystem>
@@ -62,6 +63,9 @@ void MainMenuView::OnAdd()
             auto& app_state{m_application->GetApplicationState()};
 
             app_state.logs_progress.operation = ELogsOperation::Import;
+            app_state.logs_progress.start_time = std::chrono::steady_clock::now();
+            app_state.logs_progress.end_time = std::nullopt;
+
             app_state.filters.metadata.UpdateBackBufferCopyLocking(
                 [](Data::Filters::FiltersGeneralMetadata& metadata) {
                     metadata[Data::Filters::EFiltersMetadataFlag::Applied] = false;
@@ -75,6 +79,7 @@ void MainMenuView::OnAdd()
                 app_state.logs_plugin->ImportLogs(file_path);
                 app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
                 app_state.logs_progress.operation = ELogsOperation::None;
+                app_state.logs_progress.end_time = std::chrono::steady_clock::now();
 
                 LOG_INFO("Import finished!");
             }};
@@ -155,12 +160,37 @@ void MainMenuView::RenderMenu()
         snprintf(
             fps_text, sizeof(fps_text), "%.1f FPS", static_cast<double>(ImGui::GetIO().Framerate));
 
-        auto const text_width = ImGui::CalcTextSize(fps_text).x;
+        auto const& app_state{m_application->GetApplicationState()};
+        if (static_cast<bool>(app_state.logs_progress.start_time))
+        {
+            auto const end_time{
+                static_cast<bool>(app_state.logs_progress.end_time)
+                    ? *app_state.logs_progress.end_time
+                    : std::chrono::steady_clock::now()};
+            auto const duration_text =
+                std::string(ICON_CI_CLOCKFACE) +
+                (static_cast<bool>(app_state.logs_progress.end_time) ? " Took " : " Elapsed ") +
+                Graphite::Common::Utility::Time::FormatDuration(
+                    *app_state.logs_progress.start_time, end_time);
 
-        // 2. Set the cursor to the far right (minus the text width and some padding)
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - text_width - ImGui::GetStyle().ItemSpacing.x);
+            auto const spacing = ImGui::GetStyle().ItemSpacing.x * 2.0f;
+            auto const fps_width = ImGui::CalcTextSize(fps_text).x;
+            auto const duration_width = ImGui::CalcTextSize(duration_text.data()).x;
+            auto const total_width = duration_width + fps_width + spacing;
 
-        // 3. Display it (use a color to make it stand out, maybe your leafGreen?)
+            ImGui::SetCursorPosX(
+                ImGui::GetWindowWidth() - total_width - ImGui::GetStyle().ItemSpacing.x);
+
+            ImGui::TextDisabled("%s", duration_text.data());
+            ImGui::SameLine();
+        }
+        else
+        {
+            auto const fps_width = ImGui::CalcTextSize(fps_text).x;
+
+            ImGui::SetCursorPosX(ImGui::GetWindowWidth() - fps_width - ImGui::GetStyle().ItemSpacing.x);
+        }
+
         ImGui::TextColored(ImVec4(0.15f, 0.55f, 0.38f, 1.00f), "%s", fps_text);
 
         ImGui::EndMainMenuBar();

@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.19
+/// @version 0.20
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -535,12 +535,15 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
 
     payload.reset_imported_logs_data();
     application_state.logs_progress.operation = ELogsOperation::Filter;
+    application_state.logs_progress.start_time = std::chrono::steady_clock::now();
+    application_state.logs_progress.end_time = std::nullopt;
 
     auto worker{std::thread{[&application_state,
                              filters = std::move(filters),
                              highlight_only = std::move(highlight_only)]() {
         application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
         application_state.logs_progress.operation = ELogsOperation::None;
+        application_state.logs_progress.end_time = std::chrono::steady_clock::now();
     }}};
     worker.detach();
 
@@ -556,9 +559,13 @@ void handle<EFilterActionType::DisableFilters>(
     LOG_SCOPE("::handle<DisableFilters>()");
     payload.reset_imported_logs_data();
     application_state.logs_progress.operation = Fluxion::Application::ELogsOperation::DisableFilter;
+    application_state.logs_progress.start_time = std::chrono::steady_clock::now();
+    application_state.logs_progress.end_time = std::nullopt;
+
     auto worker{std::thread{[&application_state]() {
         application_state.logs_plugin->DisableFilters();
         application_state.logs_progress.operation = Fluxion::Application::ELogsOperation::None;
+        application_state.logs_progress.end_time = std::chrono::steady_clock::now();
     }}};
     worker.detach();
 

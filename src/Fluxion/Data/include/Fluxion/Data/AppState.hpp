@@ -5,12 +5,13 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.19
+/// @version 0.20
 /// @brief Application state.
 ///
 
 #pragma once
 
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <unordered_map>
@@ -77,6 +78,8 @@ struct AppState
     struct
     {
         ELogsOperation operation{ELogsOperation::None};
+        std::optional<std::chrono::steady_clock::time_point> start_time{};
+        std::optional<std::chrono::steady_clock::time_point> end_time{};
     } logs_progress{};
 };
 
