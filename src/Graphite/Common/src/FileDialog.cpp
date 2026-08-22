@@ -5,7 +5,7 @@
 ///
 /// @file FileDialog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see Graphite/Common/UI/FileDialog.hpp
 ///
 
@@ -13,12 +13,42 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
+#include <system_error>
 
 #include "IconsCodicons.h"
 #include "imgui.h"
 
 namespace Graphite::Common::UI {
+
+namespace Utility {
+
+std::string FormatFileSize(std::uintmax_t bytes)
+{
+    const char* suffixes[] = {"B", "KB", "MB", "GB", "TB"};
+    int i = 0;
+    double dblBytes = static_cast<double>(bytes);
+
+    while (dblBytes >= 1024.0 && i < 4)
+    {
+        dblBytes /= 1024.0;
+        i++;
+    }
+
+    char buffer[32];
+    if (i == 0)
+    {
+        std::snprintf(buffer, sizeof(buffer), "%zu %s", static_cast<std::size_t>(bytes), suffixes[i]);
+    }
+    else
+    {
+        std::snprintf(buffer, sizeof(buffer), "%.1f %s", static_cast<double>(dblBytes), suffixes[i]);
+    }
+    return std::string(buffer);
+}
+
+} // namespace Utility
 
 FileDialog::FileDialog() = default;
 
@@ -137,85 +167,111 @@ void FileDialog::RenderFileList()
             return;
         }
 
-        // Display parent directory
-        if (m_state.current_path != m_state.current_path.root_path())
+        // Use a 2-column table: Column 0 for Name, Column 1 for Size (right-aligned)
+        if (ImGui::BeginTable("FileTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY))
         {
-            if (ImGui::Selectable(
-                    ICON_CI_ARROW_UP " ..",
-                    false,
-                    ImGuiSelectableFlags_None,
-                    ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+
+            // Display parent directory row first
+            if (m_state.current_path != m_state.current_path.root_path())
             {
-                m_state.current_path = m_state.current_path.parent_path();
-                m_state.selected_paths.clear();
-            }
-        }
-
-        // Display all entries
-        std::vector<std::filesystem::directory_entry> entries;
-        for (const auto& entry : std::filesystem::directory_iterator(m_state.current_path))
-        {
-            entries.push_back(entry);
-        }
-
-        // Sort entries: directories first, then alphabetically
-        std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
-            if (a.is_directory() != b.is_directory())
-                return a.is_directory() > b.is_directory();
-            return a.path().filename().string() < b.path().filename().string();
-        });
-
-        for (const auto& entry : entries)
-        {
-            const auto& path = entry.path();
-            std::string display_name = path.filename().string();
-
-            if (entry.is_directory())
-            {
-                display_name = std::string(ICON_CI_FOLDER) + " " + display_name;
-            }
-            else
-            {
-                display_name = std::string(ICON_CI_FILE) + " " + display_name;
-            }
-
-            bool should_show = true;
-            if (entry.is_regular_file() && !m_state.filters.empty())
-            {
-                should_show = PathMatchesFilter(path);
-            }
-
-            if (should_show)
-            {
-                // Check if this entry is currently selected
-                bool is_selected =
-                    !m_state.selected_paths.empty() && m_state.selected_paths.front() == path;
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
 
                 if (ImGui::Selectable(
-                        display_name.c_str(),
-                        is_selected,
-                        ImGuiSelectableFlags_None,
-                        ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+                        ICON_CI_ARROW_UP " ..", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, 0)))
                 {
-                    if (entry.is_directory())
+                    m_state.current_path = m_state.current_path.parent_path();
+                    m_state.selected_paths.clear();
+                }
+            }
+
+            // Gather and sort entries
+            std::vector<std::filesystem::directory_entry> entries;
+            for (const auto& entry : std::filesystem::directory_iterator(m_state.current_path))
+            {
+                entries.push_back(entry);
+            }
+
+            std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+                if (a.is_directory() != b.is_directory())
+                    return a.is_directory() > b.is_directory();
+                return a.path().filename().string() < b.path().filename().string();
+            });
+
+            for (const auto& entry : entries)
+            {
+                const auto& path = entry.path();
+                std::string display_name = path.filename().string();
+
+                if (entry.is_directory())
+                {
+                    display_name = std::string(ICON_CI_FOLDER) + " " + display_name;
+                }
+                else
+                {
+                    display_name = std::string(ICON_CI_FILE) + " " + display_name;
+                }
+
+                bool should_show = true;
+                if (entry.is_regular_file() && !m_state.filters.empty())
+                {
+                    should_show = PathMatchesFilter(path);
+                }
+
+                if (should_show)
+                {
+                    bool is_selected =
+                        !m_state.selected_paths.empty() && m_state.selected_paths.front() == path;
+
+                    ImGui::TableNextRow();
+
+                    // Column 0: File/Folder Name
+                    ImGui::TableSetColumnIndex(0);
+                    if (ImGui::Selectable(
+                            display_name.c_str(),
+                            is_selected,
+                            ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick,
+                            ImVec2(0, 0)))
+                    {
+                        if (entry.is_directory())
+                        {
+                            if (ImGui::IsMouseDoubleClicked(0))
+                            {
+                                m_state.current_path = path;
+                                m_state.selected_paths.clear();
+                            }
+                        }
+                        else
+                        {
+                            m_state.selected_paths.clear();
+                            m_state.selected_paths.push_back(path);
+                        }
+                    }
+
+                    if (entry.is_directory() && ImGui::IsItemHovered() &&
+                        ImGui::IsMouseDoubleClicked(0))
                     {
                         m_state.current_path = path;
                         m_state.selected_paths.clear();
                     }
-                    else
+
+                    // Column 1: File Size
+                    ImGui::TableSetColumnIndex(1);
+                    if (entry.is_regular_file())
                     {
-                        m_state.selected_paths.clear();
-                        m_state.selected_paths.push_back(path);
+                        std::error_code ec;
+                        auto file_size = entry.file_size(ec);
+                        if (!ec)
+                        {
+                            ImGui::TextDisabled("%s", Utility::FormatFileSize(file_size).c_str());
+                        }
                     }
                 }
-
-                // Allow double-click on directories to navigate
-                if (entry.is_directory() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-                {
-                    m_state.current_path = path;
-                    m_state.selected_paths.clear();
-                }
             }
+
+            ImGui::EndTable();
         }
     }
     catch (const std::exception& e)
