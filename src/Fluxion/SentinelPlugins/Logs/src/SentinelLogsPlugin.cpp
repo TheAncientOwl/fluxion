@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Do nothing...
 ///
 
@@ -97,6 +97,16 @@ std::optional<std::size_t> SentinelLogsPlugin::GetPrevLog(
 {
     LOG_SCOPE("::GetPrevLog()");
     return std::nullopt;
+}
+
+std::size_t SentinelLogsPlugin::GetTotalEstimatedImportLogs() const
+{
+    return 0;
+}
+
+std::size_t SentinelLogsPlugin::GetProcessedLogsProgress() const
+{
+    return 0;
 }
 
 std::unique_ptr<Fluxion::API::LogsPlugin::IFluxionLogsPlugin> Create()

@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -22,6 +22,13 @@ public:
     using Ptr = Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>::Ptr;
 
     ~FluxionApplication();
+
+public:
+    /**
+     * @brief Used to reset every data log related.
+     * @note Generally whenever logs plugin requests for import/filter are invoked.
+     */
+    void ResetImportedLogsData();
 
 private:
     friend class Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>;

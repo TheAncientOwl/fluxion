@@ -1,6 +1,7 @@
 add_subdirectory(API)
 add_subdirectory(Data)
 add_subdirectory(SentinelPlugins)
+add_subdirectory(Common)
 
 # --- 1. Implementation ---
 add_library(fluxion_app STATIC
@@ -21,6 +22,8 @@ add_library(fluxion_app STATIC
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Filters/FiltersView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Filters/FiltersViewActions.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/LogsProgress/LogsProgressView.cpp
 )
 
 target_compile_definitions(fluxion_app PRIVATE GRAPHITE_LOGGER_BUILD)
@@ -41,6 +44,8 @@ target_link_libraries(fluxion_app PUBLIC
     graphite_impl
     fluxion_api_interface
     fluxion_api_impl
+    fluxion_common_interface
+    fluxion_common_impl
     fluxion_application_data_interface
     fluxion_application_data_impl
     fluxion_sentinel_plugins_interface

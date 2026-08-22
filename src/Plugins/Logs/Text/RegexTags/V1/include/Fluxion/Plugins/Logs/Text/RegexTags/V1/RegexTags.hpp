@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -24,34 +24,37 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 class RegexTags : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
-    std::string_view GetDisplayName() const override;
+    std::string_view GetDisplayName() const override final;
 
-    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override;
-    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override;
+    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override final;
+    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override final;
 
-    void RenderMenu() override;
+    void RenderMenu() override final;
 
-    void ImportLogs(std::filesystem::path const& path) override;
+    void ImportLogs(std::filesystem::path const& path) override final;
 
     std::optional<std::size_t> GetNextLog(
         Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index) override;
+        std::size_t const current_index) override final;
     std::optional<std::size_t> GetPrevLog(
         Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index) override;
+        std::size_t const current_index) override final;
 
     void ApplyFilters(
         std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only) override;
-    void DisableFilters() override;
+        std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only) override final;
+    void DisableFilters() override final;
 
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const override;
+    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const override final;
 
-    std::size_t GetTotalLogs() const override;
+    std::size_t GetTotalLogs() const override final;
 
     void GetLogs(
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override;
+        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override final;
+
+    std::size_t GetTotalEstimatedImportLogs() const override final;
+    std::size_t GetProcessedLogsProgress() const override final;
 
 private:
     std::filesystem::path MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const;
@@ -69,6 +72,8 @@ private:
     std::filesystem::path m_home_path{};
     std::optional<std::filesystem::path> m_last_imported_logs_path{};
     std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
+    std::size_t m_logs_progress{0};
+    std::size_t m_total_import_logs{0};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

@@ -5,10 +5,13 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation @see RegexTags.hpp
 ///
 
+#include <cstdio>
+#include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <regex>
 #include <string>
@@ -23,6 +26,38 @@ DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
+
+namespace Utility {
+
+size_t CountLines(const std::filesystem::path& filepath)
+{
+    std::FILE* file = std::fopen(filepath.string().c_str(), "rb");
+    if (!file)
+        return 0;
+
+    size_t lines = 0;
+    constexpr size_t buffer_size = 65536; // 64 KB buffer
+    char buffer[buffer_size];
+
+    size_t bytes_read = 0;
+    while ((bytes_read = std::fread(buffer, 1, buffer_size, file)) > 0)
+    {
+        const char* ptr = buffer;
+        const char* buffer_end = buffer + bytes_read;
+
+        while ((ptr = static_cast<const char*>(
+                    std::memchr(ptr, '\n', static_cast<size_t>(buffer_end - ptr)))) != nullptr)
+        {
+            ++lines;
+            ++ptr; // Move past the newline character
+        }
+    }
+
+    std::fclose(file);
+    return lines;
+}
+
+} // namespace Utility
 
 void RegexTags::ImportLogs(std::filesystem::path const& path)
 {
@@ -78,7 +113,8 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     std::string line{};
     line.reserve(1024);
-    std::size_t total_logs{0};
+    m_logs_progress = 0;
+    m_total_import_logs = Utility::CountLines(path);
 
     std::vector<std::string> row{};
     std::vector<std::string> filtered_row{default_filter_id, default_filter_id};
@@ -98,10 +134,10 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         std::smatch matches;
         if (std::regex_match(line, matches, line_regex))
         {
-            ++total_logs;
-            if (total_logs % 1000 == 0)
+            ++m_logs_progress;
+            if (m_logs_progress % 1000 == 0)
             {
-                LOG_INFO("Read another 1000 chunk, total: {}", total_logs);
+                LOG_INFO("Read another 1000 chunk, total: {}", m_logs_progress);
             }
 
             // matches[0] is full match, start from 1
@@ -123,10 +159,14 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
     }
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
+    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_progress);
     auto settings{GetConfig()};
-    settings.set("total_logs", total_logs);
+    settings.set("total_logs", m_logs_progress);
+    settings.set("total_logs_imported", m_logs_progress);
     settings.Save();
+
+    m_total_import_logs = 0;
+    m_logs_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

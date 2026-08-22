@@ -3,9 +3,9 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file DisableFilters.cpp
+/// @file Progress.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,24 +18,14 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-void RegexTags::DisableFilters()
+std::size_t RegexTags::GetTotalEstimatedImportLogs() const
 {
-    LOG_SCOPE("::DisableFilters()");
-    auto settings{GetConfig()};
-    auto const total_logs_imported_opt{settings.get<std::size_t>("total_logs_imported")};
-    settings.set(
-        "total_logs", static_cast<bool>(total_logs_imported_opt) ? *total_logs_imported_opt : 0);
-    settings.Save();
+    return m_total_import_logs;
+}
 
-    if (static_cast<bool>(m_last_imported_logs_path))
-    {
-        ImportLogs(*m_last_imported_logs_path);
-    }
-    else
-    {
-        LOG_INFO("::DisableFilters(): No logs imported before, nothing to disable");
-    }
-    m_logs_progress = 0;
+std::size_t RegexTags::GetProcessedLogsProgress() const
+{
+    return m_logs_progress;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

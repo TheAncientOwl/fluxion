@@ -5,12 +5,13 @@
 ///
 /// @file FiltersView.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Main view responsible for rendering logs table.
 ///
 
 #pragma once
 
+#include <functional>
 #include <variant>
 
 #include "Fluxion/Data/AppState.hpp"
@@ -72,12 +73,28 @@ struct MoveCondition
         Graphite::Common::Utility::UniqueID::Default()};
 };
 
+struct ApplyFilters
+{
+    std::function<void()> reset_imported_logs_data;
+};
+
+struct DisableFilters
+{
+    std::function<void()> reset_imported_logs_data;
+};
+
 }; // namespace Payloads
 
 struct FilterActionPayload
 {
     EFilterActionType type{EFilterActionType::None};
-    std::variant<Payloads::FiltersDataModify, Payloads::SearchLog, Payloads::MoveFilter, Payloads::MoveCondition>
+    std::variant<
+        Payloads::FiltersDataModify,
+        Payloads::SearchLog,
+        Payloads::MoveFilter,
+        Payloads::MoveCondition,
+        Payloads::ApplyFilters,
+        Payloads::DisableFilters>
         data{};
 };
 

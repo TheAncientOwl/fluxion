@@ -20,6 +20,7 @@ add_library(fluxion_logs_plugin__text__regex_tags__v1 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/OnDisable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RegexTags.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RenderMenu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Progress.cpp
 )
 
 set_target_properties(fluxion_logs_plugin__text__regex_tags__v1 PROPERTIES

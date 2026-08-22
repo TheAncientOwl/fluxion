@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.18
+/// @version 0.19
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -429,7 +429,7 @@ void handle<EFilterActionType::RemoveCondition>(
 }
 
 template <>
-void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int const& /* no-payload */)
+void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloads::ApplyFilters const& payload)
 {
     LOG_SCOPE("::handle<ApplyFilters>()");
 
@@ -533,17 +533,35 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, int co
     LOG_INFO("::handle<ApplyFilters>(): Active filters size: {}", filters.size());
     LOG_INFO("::handle<ApplyFilters>(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
-    application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
+    payload.reset_imported_logs_data();
+    application_state.logs_progress.operation = ELogsOperation::Filter;
+
+    auto worker{std::thread{[&application_state,
+                             filters = std::move(filters),
+                             highlight_only = std::move(highlight_only)]() {
+        application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
+        application_state.logs_progress.operation = ELogsOperation::None;
+    }}};
+    worker.detach();
 
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [](Data::Logs::SearchedLog& searched_log) { searched_log.index = std::nullopt; });
 }
 
 template <>
-void handle<EFilterActionType::DisableFilters>(AppState& application_state, int const& /* no-payload */)
+void handle<EFilterActionType::DisableFilters>(
+    AppState& application_state,
+    Payloads::DisableFilters const& payload)
 {
     LOG_SCOPE("::handle<DisableFilters>()");
-    application_state.logs_plugin->DisableFilters();
+    payload.reset_imported_logs_data();
+    application_state.logs_progress.operation = Fluxion::Application::ELogsOperation::DisableFilter;
+    auto worker{std::thread{[&application_state]() {
+        application_state.logs_plugin->DisableFilters();
+        application_state.logs_progress.operation = Fluxion::Application::ELogsOperation::None;
+    }}};
+    worker.detach();
+
     application_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [](Data::Logs::SearchedLog& searched_log) { searched_log.index = std::nullopt; });
 }
@@ -977,8 +995,6 @@ void LoadPluginPathFromFile(AppState& application_state)
 
 void HandleFiltersViewAction(AppState& application_state, FilterActionPayload const& payload)
 {
-    static auto constexpr c_no_payload{0};
-
     if (payload.type == EFilterActionType::None)
     {
         return;
@@ -989,13 +1005,15 @@ void HandleFiltersViewAction(AppState& application_state, FilterActionPayload co
     switch (payload.type)
     {
     case EFilterActionType::ApplyFilters: {
-        handle<EFilterActionType::ApplyFilters>(application_state, c_no_payload);
+        handle<EFilterActionType::ApplyFilters>(
+            application_state, std::get<Payloads::ApplyFilters>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) { metadata[EFiltersMetadataFlag::Applied] = true; });
         break;
     }
     case EFilterActionType::DisableFilters: {
-        handle<EFilterActionType::DisableFilters>(application_state, c_no_payload);
+        handle<EFilterActionType::DisableFilters>(
+            application_state, std::get<Payloads::DisableFilters>(payload.data));
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](FiltersGeneralMetadata& metadata) { metadata[EFiltersMetadataFlag::Applied] = false; });
         break;

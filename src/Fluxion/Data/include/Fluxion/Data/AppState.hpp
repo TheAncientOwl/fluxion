@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.18
+/// @version 0.19
 /// @brief Application state.
 ///
 
@@ -27,6 +27,15 @@ enum class EFluxionAction : std::uint8_t
     None = 0,
     FilterAction = 1,
     LogsTableViewAction = 2
+};
+
+enum class ELogsOperation : std::uint8_t
+{
+    None = 0,
+    Import = 1,
+    Filter = 2,
+    DisableFilter = 3,
+    Search = 4
 };
 
 struct AppState
@@ -64,6 +73,11 @@ struct AppState
 
         Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Data::Logs::SearchedLog> searched_log{};
     } logs{};
+
+    struct
+    {
+        ELogsOperation operation{ELogsOperation::None};
+    } logs_progress{};
 };
 
 namespace DefaultState {

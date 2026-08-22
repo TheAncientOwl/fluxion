@@ -5,7 +5,7 @@
 ///
 /// @file TGraphiteApplication.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.9
+/// @version 1.10
 /// @brief Main application.
 ///
 
@@ -114,6 +114,18 @@ public: // Public API
                 func(*casted, idx + 1 == m_views.size());
             }
         }
+    }
+
+    template <typename ApplicationImpl>
+    std::shared_ptr<ApplicationImpl> As()
+    {
+        return std::static_pointer_cast<ApplicationImpl>(this->shared_from_this());
+    }
+
+    template <typename ApplicationImpl>
+    std::shared_ptr<const ApplicationImpl> As() const
+    {
+        return std::static_pointer_cast<const ApplicationImpl>(this->shared_from_this());
     }
 
 protected: // Shared API

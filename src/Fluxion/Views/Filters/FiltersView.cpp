@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.36
+/// @version 0.37
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -301,11 +301,9 @@ void FiltersView::RenderToolbar()
     Graphite::Common::UI::TabItemIconButton(ICON_CI_WAND, "Apply Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::ApplyFilters,
-             .data = Actions::FiltersView::Payloads::FiltersDataModify{
-                 .tab_id = std::nullopt,
-                 .filter_id = std::nullopt,
-                 .condition_id = std::nullopt,
-             }});
+             .data = Actions::FiltersView::Payloads::ApplyFilters{.reset_imported_logs_data = [this]() {
+                 m_application->As<Fluxion::Application::FluxionApplication>()->ResetImportedLogsData();
+             }}});
     });
     ImGui::EndDisabled();
 
@@ -313,11 +311,9 @@ void FiltersView::RenderToolbar()
     Graphite::Common::UI::TabItemIconButton(ICON_CI_MUTE, "Disable Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::DisableFilters,
-             .data = Actions::FiltersView::Payloads::FiltersDataModify{
-                 .tab_id = std::nullopt,
-                 .filter_id = std::nullopt,
-                 .condition_id = std::nullopt,
-             }});
+             .data = Actions::FiltersView::Payloads::DisableFilters{.reset_imported_logs_data = [this]() {
+                 m_application->As<Fluxion::Application::FluxionApplication>()->ResetImportedLogsData();
+             }}});
     });
     UIHelpers::Styles::PopRedButton();
 }

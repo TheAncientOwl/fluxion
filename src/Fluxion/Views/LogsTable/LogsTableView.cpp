@@ -5,11 +5,12 @@
 ///
 /// @file LogsTableView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.22
+/// @version 0.23
 /// @brief Implementation of @see LogsTableView.hpp.
 ///
 
 #include "LogsTableView.hpp"
+#include "Fluxion/Common/Utility/Math.hpp"
 #include "Fluxion/Data/Formatters.hpp" // IWYU pragma: keep
 #include "Graphite/Logger.hpp"
 
@@ -65,8 +66,11 @@ void LogsTableView::OnIterate()
     LOG_SCOPE("::OnIterate()");
     auto& app_state{m_application->GetApplicationState()};
 
-    app_state.logs.visible.SyncFrontBufferSwap();
-    app_state.logs.searched_log.SyncFrontBufferCopy();
+    if (app_state.logs_progress.operation == Fluxion::Application::ELogsOperation::None)
+    {
+        app_state.logs.visible.SyncFrontBufferSwap();
+        app_state.logs.searched_log.SyncFrontBufferCopy();
+    }
 }
 
 void LogsTableView::OnRender()
@@ -77,13 +81,27 @@ void LogsTableView::OnRender()
 
     ImGui::Begin(ICON_CI_OUTPUT " Logs", &app_state.views_active.logs_view);
 
-    if (m_application->GetApplicationState().logs_plugin->GetTotalLogs())
+    if (app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None)
+    {
+        auto const processed{app_state.logs_plugin->GetProcessedLogsProgress()};
+        auto const total{
+            app_state.logs_progress.operation == Fluxion::Application::ELogsOperation::Import
+                ? app_state.logs_plugin->GetTotalEstimatedImportLogs()
+                : app_state.logs_plugin->GetTotalLogs()};
+
+        ImGui::Text(
+            ICON_CI_COFFEE " Operation in progress... %zu/%zu logs (%.1f%%)",
+            processed,
+            total,
+            static_cast<double>(Fluxion::Common::Utility::Math::Percentage(processed, total)));
+    }
+    else if (app_state.logs_plugin->GetTotalLogs())
     {
         RenderLogsTable();
     }
     else
     {
-        ImGui::TextUnformatted("No logs loaded...");
+        ImGui::TextUnformatted(ICON_CI_THINKING " No logs loaded...");
     }
 
     ImGui::End();

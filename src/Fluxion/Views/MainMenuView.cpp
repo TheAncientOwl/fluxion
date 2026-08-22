@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -54,11 +54,25 @@ void MainMenuView::OnAdd()
     m_file_dialog.SetSelectionCallback([this](const Graphite::Common::UI::FileDialogResult& result) {
         if (result.was_selected)
         {
-            LOG_INFO("Selected log file: {}", result.path.string());
+            LOG_INFO("Selected log file: \"{}\"", result.path.string());
+
             m_last_file_dialog_path = result.path.parent_path();
-            auto& app_state{m_application->GetApplicationState()};
-            app_state.logs_plugin->ImportLogs(result.path);
-            app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
+
+            m_application->As<Fluxion::Application::FluxionApplication>()->ResetImportedLogsData();
+            m_application->GetApplicationState().logs_progress.operation = ELogsOperation::Import;
+
+            auto worker = std::thread{[this, file_path = std::move(result.path)]() {
+                LOG_INFO("Importing Selected log file: \"{}\"", file_path.string());
+
+                auto& app_state{m_application->GetApplicationState()};
+
+                app_state.logs_plugin->ImportLogs(file_path);
+                app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
+                app_state.logs_progress.operation = ELogsOperation::None;
+
+                LOG_INFO("Import finished!");
+            }};
+            worker.detach();
         }
     });
 }

@@ -5,9 +5,12 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation @see RegexTags.hpp
 ///
+
+#include <filesystem>
+#include <system_error>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -54,6 +57,15 @@ void RegexTags::GetLogs(
         }
         return last_idx;
     }()};
+
+    std::error_code ec;
+    if (std::filesystem::file_size(*m_last_imported_logs_path, ec) == 0 || ec)
+    {
+        LOG_WARN(
+            "::GetLogs(): File {} is currently 0 bytes or locked. Skipping read.",
+            m_last_imported_logs_path->string());
+        return;
+    }
 
     auto reader = CSV::Reader{MakeFilteredLogsPath(*m_last_imported_logs_path)};
     for (auto row : reader)

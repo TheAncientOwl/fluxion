@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.16
+/// @version 0.17
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -22,6 +22,7 @@
 #include "Views/Dev/DevView.hpp"
 #include "Views/Filters/FiltersView.hpp"
 #include "Views/Filters/FiltersViewActions.hpp"
+#include "Views/LogsProgress/LogsProgressView.hpp"
 #include "Views/LogsTable/LogsTableView.hpp"
 #include "Views/MainMenuView.hpp"
 #include "Views/Settings/SettingsView.hpp"
@@ -140,6 +141,7 @@ void FluxionApplication::OnInit()
     AddView<Views::SettingsView>(shared_from_this(), 2);
     AddView<Views::LogsTableView>(shared_from_this(), 10);
     AddView<Views::FiltersView>(shared_from_this(), 20);
+    AddView<Views::LogsProgressView>(shared_from_this(), 100);
 }
 
 void FluxionApplication::OnShutdown()
@@ -192,6 +194,19 @@ void FluxionApplication::OnProcessAction(Graphite::Common::Utility::TAppAction<E
                 std::to_string(static_cast<std::uint32_t>(action.type)));
     }
     }
+}
+
+void FluxionApplication::ResetImportedLogsData()
+{
+    LOG_SCOPE("::ResetImportedLogsData()");
+    m_app_state.logs_progress.operation = Fluxion::Application::ELogsOperation::None;
+    m_app_state.logs.searched_log.UpdateBackBufferCopyLocking(
+        [](Fluxion::Application::Data::Logs::SearchedLog& searched_log) {
+            searched_log.index = std::nullopt;
+        });
+    m_app_state.logs.visible.UpdateBackBufferSwap(
+        [](Fluxion::Application::Data::Logs::VisibleLogs& back) { back.logs.clear(); },
+        [](Fluxion::Application::Data::Logs::VisibleLogs& /*back*/) {});
 }
 
 } // namespace Fluxion::Application

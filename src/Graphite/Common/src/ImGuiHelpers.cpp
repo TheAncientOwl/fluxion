@@ -5,9 +5,11 @@
 ///
 /// @file ImGuiHelpers.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Implementation of @see Graphite/Common/UI/ImGuiHelpers.hpp
 ///
+
+#include <algorithm>
 
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 
@@ -35,6 +37,17 @@ void VerticalSeparator(float height, float thickness, float reserved_width)
     // reserve the width for layout
     ImGui::Dummy(ImVec2(reserved_width, frame_height));
     ImGui::SameLine();
+}
+
+void ProgressBar(float const current_percent)
+{
+    auto const percent = std::clamp(current_percent, 0.0f, 100.0f);
+    auto const fraction = percent / 100.0f;
+
+    char overlay_buf[32];
+    std::snprintf(overlay_buf, sizeof(overlay_buf), "%.1f%%", static_cast<double>(percent));
+
+    ImGui::ProgressBar(fraction, ImVec2(-1.0f, 0.0f), overlay_buf);
 }
 
 } // namespace Graphite::Common::UI
