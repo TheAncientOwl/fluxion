@@ -5,7 +5,7 @@
 ///
 /// @file MetalRenderer.mm
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Implementation of @see MetalRenderer.hpp.
 ///
 
@@ -64,8 +64,8 @@ void MetalRenderer::Init(Graphite::Application::WindowConfiguration const& windo
         ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     m_state->window = glfwCreateWindow(
-        static_cast<int>(window_configuration.width * main_scale),
-        static_cast<int>(window_configuration.height * main_scale),
+        static_cast<int>(static_cast<float>( window_configuration.width) * main_scale),
+        static_cast<int>(static_cast<float>(window_configuration.height) * main_scale),
         window_configuration.title.data(),
         nullptr,
         nullptr);
