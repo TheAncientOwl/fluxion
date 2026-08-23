@@ -5,22 +5,21 @@
 ///
 /// @file BufferedFilteredLogsWriter.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Wrapper for buffered writes to the filtered_logs table
 ///
 
 #pragma once
 
-#include <filesystem>
-#include <sqlite3.h>
+#include <cstddef>
 #include <string>
 #include <vector>
 
-#include "OpenCloseManager.hpp"
+#include "Wrapper/DatabaseRef.hpp"
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
-class BufferedFilteredLogsWriter : public OpenCloseManager
+class BufferedFilteredLogsWriter
 {
 public:
     struct FilteredRow
@@ -31,8 +30,14 @@ public:
     };
 
 public: // Lifecycle
-    BufferedFilteredLogsWriter(std::filesystem::path db_path, std::size_t const batch_size);
+    BufferedFilteredLogsWriter(DatabaseRef db, std::size_t const batch_size);
     ~BufferedFilteredLogsWriter();
+
+    BufferedFilteredLogsWriter(BufferedFilteredLogsWriter const&) = delete;
+    BufferedFilteredLogsWriter& operator=(BufferedFilteredLogsWriter const&) = delete;
+
+    BufferedFilteredLogsWriter(BufferedFilteredLogsWriter&&) noexcept = default;
+    BufferedFilteredLogsWriter& operator=(BufferedFilteredLogsWriter&&) noexcept = default;
 
 public: // Public API
     /**
@@ -48,6 +53,7 @@ private: // Private API
     bool ExecuteFlush();
 
 private:
+    DatabaseRef m_database;
     std::vector<FilteredRow> m_buffer{};
     std::size_t m_batch_size{0};
     std::size_t m_current_index{0};

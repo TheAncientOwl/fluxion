@@ -5,13 +5,13 @@
 ///
 /// @file FilteredLogsReader.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation of @see FilteredLogsReader.hpp
 ///
 
 #include "FilteredLogsReader.hpp"
-#include "Graphite/Common/Utility/UniqueID.hpp"
 
+#include "Graphite/Common/Utility/UniqueID.hpp"
 #include "Graphite/Logger.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::FilteredLogsReader);
@@ -19,27 +19,21 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::FilteredLogsR
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
-FilteredLogsReader::FilteredLogsReader(std::filesystem::path db_path)
-    : OpenCloseManager{std::move(db_path)}
+FilteredLogsReader::FilteredLogsReader(DatabaseRef db) : m_database{db}
 {
     LOG_SCOPE("::Reader()");
 }
 
-QueryHandle FilteredLogsReader::PrepareGetRangesQuery(
+Statement FilteredLogsReader::PrepareGetRangesQuery(
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
     std::vector<std::string> const& fields)
 {
     LOG_SCOPE("::PrepareGetRangesQuery()");
-    if (!m_db)
-    {
-        LOG_ERROR("::PrepareGetRangesQuery(): Database is not open!");
-        return QueryHandle{};
-    }
 
     if (ranges.empty())
     {
         LOG_WARN("::PrepareGetRangesQuery(): Ranges vector is empty.");
-        return QueryHandle{};
+        return Statement{};
     }
 
     // Build fields list prefixed with table alias 'l.'
@@ -71,36 +65,35 @@ QueryHandle FilteredLogsReader::PrepareGetRangesQuery(
 
     LOG_INFO("::PrepareGetRangesQuery(): query == {}", query_str);
 
-    sqlite3_stmt* stmt = nullptr;
-    auto const rc = sqlite3_prepare_v2(m_db.get(), query_str.c_str(), -1, &stmt, nullptr);
-
-    if (rc != SQLITE_OK)
+    Statement statement = m_database.Prepare(query_str);
+    if (!statement.IsValid())
     {
         LOG_ERROR(
-            "::PrepareGetRangesQuery(): Failed to prepare statement: {}", sqlite3_errmsg(m_db.get()));
-        return QueryHandle{};
+            "::PrepareGetRangesQuery(): Failed to prepare statement: {}",
+            m_database.GetLastErrorMessage());
+        return Statement{};
     }
 
-    return QueryHandle{stmt};
+    return statement;
 }
 
 bool FilteredLogsReader::NextFilteredRow(
-    QueryHandle& query,
+    Statement& statement,
     std::vector<std::string>& out_fields,
     std::string& out_filter_id,
     std::string& out_highlight_id,
     std::size_t& out_view_index)
 {
-    if (!query)
+    if (!statement.IsValid())
     {
         return false;
     }
 
-    int const rc = sqlite3_step(query.Get());
+    EStepResult const result = statement.Step();
 
-    if (rc == SQLITE_ROW)
+    if (result == EStepResult::Row)
     {
-        auto const col_count = static_cast<std::size_t>(sqlite3_column_count(query.Get()));
+        auto const col_count = static_cast<std::size_t>(statement.GetColumnCount());
 
         if (col_count < 3)
         {
@@ -115,9 +108,7 @@ bool FilteredLogsReader::NextFilteredRow(
 
         for (std::size_t idx = 0; idx < num_fields; ++idx)
         {
-            char const* text =
-                reinterpret_cast<char const*>(sqlite3_column_text(query.Get(), static_cast<int>(idx)));
-            out_fields[idx] = text ? text : "";
+            out_fields[idx] = statement.GetColumnText(static_cast<int>(idx));
         }
 
         int const filter_col_idx = static_cast<int>(col_count - 3);
@@ -127,42 +118,25 @@ bool FilteredLogsReader::NextFilteredRow(
         auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
         // If filter_id is NULL in DB, fallback to default Graphite ID
-        char const* filter_text =
-            reinterpret_cast<char const*>(sqlite3_column_text(query.Get(), filter_col_idx));
+        const char* filter_text = statement.GetColumnText(filter_col_idx);
         out_filter_id = filter_text ? filter_text : default_filter_id;
 
         // If highlight_filter_id is NULL in DB, fallback to default Graphite ID
-        char const* highlight_text =
-            reinterpret_cast<char const*>(sqlite3_column_text(query.Get(), highlight_col_idx));
+        const char* highlight_text = statement.GetColumnText(highlight_col_idx);
         out_highlight_id = highlight_text ? highlight_text : default_filter_id;
 
-        out_view_index =
-            static_cast<std::size_t>(sqlite3_column_int64(query.Get(), view_index_col_idx)) - 1;
+        out_view_index = static_cast<std::size_t>(statement.GetColumnInt64(view_index_col_idx)) - 1;
 
         return true;
     }
-    else if (rc == SQLITE_DONE)
+    else if (result == EStepResult::Done)
     {
         return false;
     }
     else
     {
-        LOG_ERROR("::NextFilteredRow(): Execution error: {}", sqlite3_errmsg(m_db.get()));
+        LOG_ERROR("::NextFilteredRow(): Execution error: {}", m_database.GetLastErrorMessage());
         return false;
-    }
-}
-
-void FilteredLogsReader::ChangeDatabase(std::filesystem::path new_db_path)
-{
-    LOG_SCOPE("::ChangeDatabase()");
-
-    m_db_path = std::move(new_db_path);
-
-    m_db.reset();
-
-    if (!OpenDatabase())
-    {
-        LOG_ERROR("::ChangeDatabase(): Failed to open new database at {}", m_db_path.string());
     }
 }
 
@@ -185,7 +159,6 @@ std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
         // If it's the default filter, adjust the WHERE clause to check for NULL
         if (is_default_filter)
         {
-            // Replace the filter_id check with an IS NULL check
             if (try_forward)
             {
                 sql =
@@ -202,38 +175,35 @@ std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
             }
         }
 
-        sqlite3_stmt* stmt{nullptr};
-        if (sqlite3_prepare_v2(m_db.get(), sql.data(), -1, &stmt, nullptr) != SQLITE_OK)
+        Statement stmt = m_database.Prepare(sql);
+        if (!stmt.IsValid())
         {
             LOG_ERROR(
                 "::GetNextFilteredIndex(): Failed to prepare statement: {}",
-                sqlite3_errmsg(m_db.get()));
+                m_database.GetLastErrorMessage());
             return std::nullopt;
         }
-
-        QueryHandle query{stmt};
 
         if (is_default_filter)
         {
             if (try_forward)
             {
-                sqlite3_bind_int64(query.Get(), 1, static_cast<sqlite3_int64>(target_idx + 1));
+                stmt.BindInt64(1, static_cast<std::int64_t>(target_idx + 1));
             }
         }
         else
         {
-            sqlite3_bind_text(query.Get(), 1, filter_id_str.data(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(query.Get(), 2, filter_id_str.data(), -1, SQLITE_TRANSIENT);
+            stmt.BindText(1, std::string{filter_id_str});
+            stmt.BindText(2, std::string{filter_id_str});
             if (try_forward)
             {
-                sqlite3_bind_int64(query.Get(), 3, static_cast<sqlite3_int64>(target_idx + 1));
+                stmt.BindInt64(3, static_cast<std::int64_t>(target_idx + 1));
             }
         }
 
-        int const rc = sqlite3_step(query.Get());
-        if (rc == SQLITE_ROW)
+        if (stmt.Step() == EStepResult::Row)
         {
-            return static_cast<std::size_t>(sqlite3_column_int64(query.Get(), 0)) - 1;
+            return static_cast<std::size_t>(stmt.GetColumnInt64(0)) - 1;
         }
         return std::nullopt;
     };
@@ -262,11 +232,6 @@ std::optional<std::size_t> FilteredLogsReader::GetPrevFilteredIndex(
     std::size_t current_index)
 {
     LOG_SCOPE("::GetPrevFilteredIndex()");
-    if (!m_db)
-    {
-        LOG_ERROR("::GetPrevFilteredIndex(): Database is not open!");
-        return std::nullopt;
-    }
 
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
     bool const is_default_filter = (filter_id_str == default_filter_id || filter_id_str.empty());
@@ -296,38 +261,35 @@ std::optional<std::size_t> FilteredLogsReader::GetPrevFilteredIndex(
             }
         }
 
-        sqlite3_stmt* stmt{nullptr};
-        if (sqlite3_prepare_v2(m_db.get(), sql.data(), -1, &stmt, nullptr) != SQLITE_OK)
+        Statement statement = m_database.Prepare(sql);
+        if (!statement.IsValid())
         {
             LOG_ERROR(
                 "::GetPrevFilteredIndex(): Failed to prepare statement: {}",
-                sqlite3_errmsg(m_db.get()));
+                m_database.GetLastErrorMessage());
             return std::nullopt;
         }
-
-        QueryHandle query{stmt};
 
         if (is_default_filter)
         {
             if (try_backward)
             {
-                sqlite3_bind_int64(query.Get(), 1, static_cast<sqlite3_int64>(target_idx + 1));
+                statement.BindInt64(1, static_cast<std::int64_t>(target_idx + 1));
             }
         }
         else
         {
-            sqlite3_bind_text(query.Get(), 1, filter_id_str.data(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(query.Get(), 2, filter_id_str.data(), -1, SQLITE_TRANSIENT);
+            statement.BindText(1, std::string{filter_id_str});
+            statement.BindText(2, std::string{filter_id_str});
             if (try_backward)
             {
-                sqlite3_bind_int64(query.Get(), 3, static_cast<sqlite3_int64>(target_idx + 1));
+                statement.BindInt64(3, static_cast<std::int64_t>(target_idx + 1));
             }
         }
 
-        int const rc = sqlite3_step(query.Get());
-        if (rc == SQLITE_ROW)
+        if (statement.Step() == EStepResult::Row)
         {
-            return static_cast<std::size_t>(sqlite3_column_int64(query.Get(), 0)) - 1;
+            return static_cast<std::size_t>(statement.GetColumnInt64(0)) - 1;
         }
         return std::nullopt;
     };

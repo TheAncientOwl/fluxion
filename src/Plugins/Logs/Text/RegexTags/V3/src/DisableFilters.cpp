@@ -5,14 +5,13 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V3/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
-#include "SQLite/QueryExecutor.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
@@ -40,30 +39,38 @@ void RegexTags::DisableFilters()
     }
 
     std::error_code ec;
-    auto const db_path = MakeDatabasePath(*m_last_imported_logs_path);
-    if (std::filesystem::file_size(db_path, ec) == 0 || ec)
+    auto const database_path = MakeDatabasePath(*m_last_imported_logs_path);
+    if (std::filesystem::file_size(database_path, ec) == 0 || ec)
     {
-        LOG_WARN("::DisableFilters(): Database file {} is 0 bytes or locked.", db_path.string());
+        LOG_WARN("::DisableFilters(): Database file {} is 0 bytes or locked.", database_path.string());
         return;
     }
 
-    SQLite::QueryExecutor executor{db_path};
-
-    if (!executor.OpenDatabase())
+    if (!m_sqlite_connection.IsOpen() &&
+        !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
+        LOG_WARN("::DisableFilters(): SQLite connection is closed and could not be opened");
         return;
     }
+
+    auto database_ref{m_sqlite_connection.GetDatabaseRef()};
 
     m_logs_progress = 0;
 
-    executor.AddProgressHandler(1000, [this, &executor]() {
-        m_logs_progress = executor.GetFilteredLogsCount();
+    SQLite::DatabaseRef::ProgressCallback progress_cb = [this, database_ref]() -> int {
+        m_logs_progress += 1000; // Increment progress based on processed opcodes
+        if (auto stmt = database_ref.Prepare("SELECT COUNT(*) FROM filtered_logs;");
+            stmt.IsValid() && stmt.Step() == SQLite::EStepResult::Row)
+        {
+            m_logs_progress = static_cast<std::size_t>(stmt.GetColumnInt64(0));
+        }
         return 0;
-    });
+    };
+    database_ref.SetProgressHandler(1000, progress_cb);
 
-    auto const success = executor.ExecuteTransaction([&executor]() {
-        return executor.Execute("DROP TABLE IF EXISTS filtered_logs;") &&
-               executor.Execute(
+    auto const success = database_ref.ExecuteTransaction([&database_ref]() {
+        return database_ref.Execute("DROP TABLE IF EXISTS filtered_logs;") &&
+               database_ref.Execute(
                    "CREATE TABLE filtered_logs ("
                    "    view_index INTEGER PRIMARY KEY AUTOINCREMENT,"
                    "    log_id INTEGER NOT NULL,"
@@ -71,12 +78,12 @@ void RegexTags::DisableFilters()
                    "    highlight_filter_id TEXT,"
                    "    FOREIGN KEY(log_id) REFERENCES logs(id)"
                    ");") &&
-               executor.Execute(
+               database_ref.Execute(
                    "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) "
                    "SELECT ID, ID, NULL, NULL FROM logs;");
     });
 
-    executor.RemoveProgressHandler();
+    database_ref.ClearProgressHandler();
 
     if (!success)
     {

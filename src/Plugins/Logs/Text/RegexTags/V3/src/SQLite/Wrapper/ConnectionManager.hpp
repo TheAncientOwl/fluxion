@@ -1,10 +1,9 @@
-
 /// --------------------------------------------------------------------------
 ///                     Copyright (c) by Fluxion 2026
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file OpenCloseManager.hpp
+/// @file ConnectionManager.hpp
 /// @author Alexandru Delegeanu
 /// @version 3.0
 /// @brief Wrapper for SQLite open/close operations
@@ -12,8 +11,12 @@
 
 #pragma once
 
+#include "DatabaseRef.hpp"
+
 #include <filesystem>
-#include <sqlite3.h>
+#include <memory>
+
+struct sqlite3;
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
@@ -26,29 +29,33 @@ struct SQLiteDeleter
 
 } // namespace Utility
 
-class OpenCloseManager
+class ConnectionManager
 {
 public: // Lifecycle
-    OpenCloseManager(std::filesystem::path db_path);
-    ~OpenCloseManager();
+    ConnectionManager();
+    ~ConnectionManager();
 
-    OpenCloseManager(OpenCloseManager const&) = delete;
-    OpenCloseManager& operator=(OpenCloseManager const&) = delete;
+    ConnectionManager(ConnectionManager const&) = delete;
+    ConnectionManager& operator=(ConnectionManager const&) = delete;
 
-    OpenCloseManager(OpenCloseManager&&) = delete;
-    OpenCloseManager& operator=(OpenCloseManager&&) = delete;
+    ConnectionManager(ConnectionManager&&) = delete;
+    ConnectionManager& operator=(ConnectionManager&&) = delete;
 
-public: // public API
+public: // Public API
     /**
      * @brief Opens database
      *
-     * @return true if opened successfuly, false otherwise
+     * @param path Path to the SQLite database file
+     * @return true if opened successfully, false otherwise
      */
-    bool OpenDatabase();
+    [[nodiscard]] bool OpenDatabase(std::filesystem::path const& path);
+
+    [[nodiscard]] bool IsOpen() const;
+
+    [[nodiscard]] DatabaseRef GetDatabaseRef() const;
 
 protected: // Fields
     std::unique_ptr<sqlite3, Utility::SQLiteDeleter> m_db{nullptr};
-    std::filesystem::path m_db_path{};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite

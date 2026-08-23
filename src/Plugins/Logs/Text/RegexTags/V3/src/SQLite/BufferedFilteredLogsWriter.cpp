@@ -5,20 +5,23 @@
 ///
 /// @file BufferedFilteredLogsWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation of @see BufferedFilteredLogsWriter.hpp
 ///
 
+#include <stdexcept>
+
 #include "BufferedFilteredLogsWriter.hpp"
 #include "Graphite/Logger.hpp"
+#include "Wrapper/Transaction.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::BufferedFilteredLogsWriter);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::BufferedFilteredLogsWriter);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
-BufferedFilteredLogsWriter::BufferedFilteredLogsWriter(std::filesystem::path db_path, std::size_t const batch_size)
-    : OpenCloseManager{std::move(db_path)}, m_batch_size{batch_size}
+BufferedFilteredLogsWriter::BufferedFilteredLogsWriter(DatabaseRef db, std::size_t const batch_size)
+    : m_database{db}, m_batch_size{batch_size}
 {
     LOG_SCOPE("::BufferedFilteredLogsWriter()");
     m_buffer.resize(m_batch_size);
@@ -31,8 +34,8 @@ BufferedFilteredLogsWriter::~BufferedFilteredLogsWriter()
 
 bool BufferedFilteredLogsWriter::ClearTable()
 {
-    char* err_msg = nullptr;
-    const char* filtered_logs_table_sql =
+    std::string err_msg{};
+    char const* filtered_logs_table_sql =
         "DROP TABLE IF EXISTS filtered_logs;"
         "CREATE TABLE filtered_logs ("
         "    view_index INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -42,15 +45,11 @@ bool BufferedFilteredLogsWriter::ClearTable()
         "    FOREIGN KEY(log_id) REFERENCES logs(id)"
         ");";
 
-    if (sqlite3_exec(m_db.get(), filtered_logs_table_sql, nullptr, nullptr, &err_msg) != SQLITE_OK)
+    if (!m_database.Execute(filtered_logs_table_sql, &err_msg))
     {
         LOG_ERROR(
             "::BufferedFilteredLogsWriter(): Failed to drop/create filtered_logs table: {}",
-            err_msg ? err_msg : "unknown error");
-        if (err_msg)
-        {
-            sqlite3_free(err_msg);
-        }
+            err_msg.empty() ? "unknown error" : err_msg);
         return false;
     }
     return true;
@@ -82,32 +81,24 @@ bool BufferedFilteredLogsWriter::Flush()
 bool BufferedFilteredLogsWriter::ExecuteFlush()
 {
     LOG_SCOPE("::ExecuteFlush()");
-    if (!m_db)
+
+    Transaction transaction{m_database};
+    if (!transaction.IsActive())
     {
-        LOG_ERROR("::ExecuteFlush(): Database is not open!");
+        LOG_ERROR(
+            "::ExecuteFlush(): Failed to begin transaction: {}", m_database.GetLastErrorMessage());
         return false;
     }
 
-    char* err_msg = nullptr;
-    if (sqlite3_exec(m_db.get(), "BEGIN TRANSACTION;", nullptr, nullptr, &err_msg) != SQLITE_OK)
-    {
-        LOG_ERROR("::ExecuteFlush(): Failed to begin transaction: {}", err_msg ? err_msg : "unknown");
-        if (err_msg)
-        {
-            sqlite3_free(err_msg);
-        }
-        return false;
-    }
-
-    const char* insert_sql =
+    char const* insert_sql =
         "INSERT INTO filtered_logs (log_id, filter_id, highlight_filter_id) VALUES (?, ?, ?);";
-    sqlite3_stmt* stmt = nullptr;
-    if (sqlite3_prepare_v2(m_db.get(), insert_sql, -1, &stmt, nullptr) != SQLITE_OK)
+
+    Statement statement = m_database.Prepare(insert_sql);
+    if (!statement.IsValid())
     {
         LOG_ERROR(
             "::ExecuteFlush(): Failed to prepare filtered_logs statement: {}",
-            sqlite3_errmsg(m_db.get()));
-        sqlite3_exec(m_db.get(), "ROLLBACK;", nullptr, nullptr, nullptr);
+            m_database.GetLastErrorMessage());
         return false;
     }
 
@@ -115,30 +106,24 @@ bool BufferedFilteredLogsWriter::ExecuteFlush()
     {
         auto const& row = m_buffer[i];
 
-        sqlite3_bind_int64(stmt, 1, static_cast<sqlite3_int64>(row.log_id));
-        sqlite3_bind_text(stmt, 2, row.filter_id.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, row.highlight_filter_id.c_str(), -1, SQLITE_TRANSIENT);
+        statement.BindInt64(1, static_cast<std::int64_t>(row.log_id));
+        statement.BindText(2, row.filter_id);
+        statement.BindText(3, row.highlight_filter_id);
 
-        if (sqlite3_step(stmt) != SQLITE_DONE)
+        if (statement.Step() != EStepResult::Done)
         {
             LOG_ERROR(
                 "::ExecuteFlush(): Failed to insert into filtered_logs: {}",
-                sqlite3_errmsg(m_db.get()));
+                m_database.GetLastErrorMessage());
         }
 
-        sqlite3_reset(stmt);
+        statement.Reset();
     }
 
-    sqlite3_finalize(stmt);
-
-    if (sqlite3_exec(m_db.get(), "COMMIT;", nullptr, nullptr, &err_msg) != SQLITE_OK)
+    if (!transaction.Commit())
     {
-        LOG_ERROR("::ExecuteFlush(): Failed to commit transaction: {}", err_msg ? err_msg : "unknown");
-        if (err_msg)
-        {
-            sqlite3_free(err_msg);
-        }
-        sqlite3_exec(m_db.get(), "ROLLBACK;", nullptr, nullptr, nullptr);
+        LOG_ERROR(
+            "::ExecuteFlush(): Failed to commit transaction: {}", m_database.GetLastErrorMessage());
         m_current_index = 0;
         return false;
     }

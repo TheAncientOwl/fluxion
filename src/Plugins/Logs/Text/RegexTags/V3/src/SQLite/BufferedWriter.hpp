@@ -1,4 +1,3 @@
-
 /// --------------------------------------------------------------------------
 ///                     Copyright (c) by Fluxion 2026
 /// --------------------------------------------------------------------------
@@ -6,28 +5,31 @@
 ///
 /// @file BufferedWriter.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Wrapper for SQLite write operations
 ///
 
 #pragma once
 
-#include <sqlite3.h>
+#include <cstddef>
 #include <string>
 #include <vector>
 
-#include "OpenCloseManager.hpp"
+#include "Wrapper/DatabaseRef.hpp"
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
-class BufferedWriter : public OpenCloseManager
+class BufferedWriter
 {
 public: // Lifecycle
-    BufferedWriter(
-        std::filesystem::path db_path,
-        std::size_t const batch_size,
-        std::vector<std::string> const& fields);
+    BufferedWriter(DatabaseRef db, std::size_t const batch_size, std::vector<std::string> const& fields);
     ~BufferedWriter();
+
+    BufferedWriter(BufferedWriter const&) = delete;
+    BufferedWriter& operator=(BufferedWriter const&) = delete;
+
+    BufferedWriter(BufferedWriter&&) noexcept = default;
+    BufferedWriter& operator=(BufferedWriter&&) noexcept = default;
 
 public: // Public API
     std::vector<std::string>& NextFrame();
@@ -37,6 +39,7 @@ private: // Private API
     bool ExecuteFlush();
 
 private:
+    DatabaseRef m_database;
     std::vector<std::vector<std::string>> m_buffer{};
     std::size_t m_batch_size{0};
     std::size_t m_current_index{0};

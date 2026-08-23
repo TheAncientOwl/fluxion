@@ -5,7 +5,7 @@
 ///
 /// @file LogsReader.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation of @see LogsReader.hpp
 ///
 
@@ -17,24 +17,19 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::LogsReader);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
-LogsReader::LogsReader(std::filesystem::path db_path) : OpenCloseManager{std::move(db_path)}
+LogsReader::LogsReader(DatabaseRef db) : m_database{db}
 {
     LOG_SCOPE("::LogsReader()");
 }
 
-QueryHandle LogsReader::PrepareGetAllLogsQuery(std::vector<std::string> const& fields)
+Statement LogsReader::PrepareGetAllLogsQuery(std::vector<std::string> const& fields)
 {
     LOG_SCOPE("::PrepareGetAllLogsQuery()");
-    if (!m_db)
-    {
-        LOG_ERROR("::PrepareGetAllLogsQuery(): Database is not open!");
-        return QueryHandle{};
-    }
 
     if (fields.empty())
     {
         LOG_WARN("::PrepareGetAllLogsQuery(): Fields vector is empty.");
-        return QueryHandle{};
+        return Statement{};
     }
 
     std::string fields_sql_str{"id"};
@@ -46,31 +41,30 @@ QueryHandle LogsReader::PrepareGetAllLogsQuery(std::vector<std::string> const& f
     std::string const query_str = "SELECT " + fields_sql_str + " FROM logs ORDER BY id ASC;";
     LOG_INFO("::PrepareGetAllLogsQuery(): query == {}", query_str);
 
-    sqlite3_stmt* stmt = nullptr;
-    auto const rc = sqlite3_prepare_v2(m_db.get(), query_str.c_str(), -1, &stmt, nullptr);
-
-    if (rc != SQLITE_OK)
+    Statement statement = m_database.Prepare(query_str);
+    if (!statement.IsValid())
     {
         LOG_ERROR(
-            "::PrepareGetAllLogsQuery(): Failed to prepare statement: {}", sqlite3_errmsg(m_db.get()));
-        return QueryHandle{};
+            "::PrepareGetAllLogsQuery(): Failed to prepare statement: {}",
+            m_database.GetLastErrorMessage());
+        return Statement{};
     }
 
-    return QueryHandle{stmt};
+    return statement;
 }
 
-bool LogsReader::NextRow(QueryHandle& query, std::size_t& out_log_id, std::vector<std::string>& out_fields)
+bool LogsReader::NextRow(Statement& statement, std::size_t& out_log_id, std::vector<std::string>& out_fields)
 {
-    if (!query)
+    if (!statement.IsValid())
     {
         return false;
     }
 
-    int const rc = sqlite3_step(query.Get());
+    EStepResult const result = statement.Step();
 
-    if (rc == SQLITE_ROW)
+    if (result == EStepResult::Row)
     {
-        auto const col_count = static_cast<std::size_t>(sqlite3_column_count(query.Get()));
+        auto const col_count = statement.GetColumnCount();
         if (col_count < 2)
         {
             LOG_ERROR("::NextRow(): Column count is unexpectedly less than 2 (total: {}).", col_count);
@@ -78,7 +72,7 @@ bool LogsReader::NextRow(QueryHandle& query, std::size_t& out_log_id, std::vecto
         }
 
         // Column 0 is logs.id
-        out_log_id = static_cast<std::size_t>(sqlite3_column_int64(query.Get(), 0));
+        out_log_id = static_cast<std::size_t>(statement.GetColumnInt64(0));
 
         // Remaining columns are fields (1 .. col_count - 1)
         std::size_t const num_fields = col_count - 1;
@@ -86,20 +80,19 @@ bool LogsReader::NextRow(QueryHandle& query, std::size_t& out_log_id, std::vecto
 
         for (std::size_t idx = 0; idx < num_fields; ++idx)
         {
-            char const* text = reinterpret_cast<char const*>(
-                sqlite3_column_text(query.Get(), static_cast<int>(idx + 1)));
+            char const* text = statement.GetColumnText(static_cast<int>(idx + 1));
             out_fields[idx] = text ? text : "";
         }
 
         return true;
     }
-    else if (rc == SQLITE_DONE)
+    else if (result == EStepResult::Done)
     {
         return false;
     }
     else
     {
-        LOG_ERROR("::NextRow(): Execution error: {}", sqlite3_errmsg(m_db.get()));
+        LOG_ERROR("::NextRow(): Execution error: {}", m_database.GetLastErrorMessage());
         return false;
     }
 }

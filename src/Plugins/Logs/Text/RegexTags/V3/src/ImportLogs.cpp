@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -69,6 +69,9 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     LOG_SCOPE("::ImportLogs()");
     LOG_INFO("Importing {}", path.c_str());
 
+    m_logs_progress = 0;
+    m_total_import_logs = Utility::CountLines(path);
+
     m_regex_tags.SyncFrontBufferCopy();
     auto const& tags{m_regex_tags.GetFront()};
 
@@ -103,27 +106,24 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    auto const database_path{MakeDatabasePath(path)};
-    auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
-    {
-        auto sqlite_creator{SQLite::Creator{database_path}};
-        if (!sqlite_creator.OpenDatabase() || !sqlite_creator.CreateTable(fields_ids))
-        {
-            return;
-        }
-    }
-    auto sqlite_writer{SQLite::BufferedWriter{database_path, 500, fields_ids}};
-    if (!sqlite_writer.OpenDatabase())
+    if (!m_sqlite_connection.OpenDatabase(MakeDatabasePath(path)))
     {
         return;
     }
+
+    auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
+
+    if (!SQLite::Creator{m_sqlite_connection.GetDatabaseRef()}.CreateTables(fields_ids))
+    {
+        return;
+    }
+
+    auto sqlite_writer{SQLite::BufferedWriter{m_sqlite_connection.GetDatabaseRef(), 500, fields_ids}};
 
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
     std::string line{};
     line.reserve(1024);
-    m_logs_progress = 0;
-    m_total_import_logs = Utility::CountLines(path);
 
     std::vector<std::string> row{};
     std::vector<std::string> filtered_row{default_filter_id, default_filter_id};
@@ -189,19 +189,6 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     m_total_import_logs = 0;
     m_logs_progress = 0;
-
-    if (!static_cast<bool>(m_db_reader))
-    {
-        m_db_reader.emplace(database_path);
-        if (!m_db_reader->OpenDatabase())
-        {
-            m_db_reader.reset();
-        }
-    }
-    else
-    {
-        m_db_reader->ChangeDatabase(database_path);
-    }
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

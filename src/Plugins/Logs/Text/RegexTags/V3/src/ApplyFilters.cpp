@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -109,22 +109,24 @@ void RegexTags::ApplyFilters(
         return;
     }
 
-    auto const database_path{MakeDatabasePath(*m_last_imported_logs_path)};
-
-    auto logs_reader{SQLite::LogsReader{database_path}};
-    if (!logs_reader.OpenDatabase())
+    if (!m_sqlite_connection.IsOpen() &&
+        !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
-        return;
-    }
-    auto const fields_ids{SQLite::Utility::MakeFieldsIDs(m_imported_logs_header)};
-    auto query_handle = logs_reader.PrepareGetAllLogsQuery(fields_ids);
-    if (!query_handle)
-    {
+        LOG_WARN("::ApplyFilters(): SQLite connection is closed and could not be opened");
         return;
     }
 
-    auto filtered_logs_writer{SQLite::BufferedFilteredLogsWriter{database_path, 5000}};
-    if (!filtered_logs_writer.OpenDatabase() || !filtered_logs_writer.ClearTable())
+    auto logs_reader{SQLite::LogsReader{m_sqlite_connection.GetDatabaseRef()}};
+    auto statement =
+        logs_reader.PrepareGetAllLogsQuery(SQLite::Utility::MakeFieldsIDs(m_imported_logs_header));
+    if (!statement.IsValid())
+    {
+        return;
+    }
+
+    auto filtered_logs_writer{
+        SQLite::BufferedFilteredLogsWriter{m_sqlite_connection.GetDatabaseRef(), 5000}};
+    if (!filtered_logs_writer.ClearTable())
     {
         return;
     }
@@ -134,7 +136,7 @@ void RegexTags::ApplyFilters(
 
     std::size_t total_filtered_logs{0};
     m_logs_progress = 0;
-    while (logs_reader.NextRow(query_handle, log_id, row))
+    while (logs_reader.NextRow(statement, log_id, row))
     {
         ++m_logs_progress;
         for (auto const& filter : filters)
@@ -196,12 +198,6 @@ void RegexTags::ApplyFilters(
                 frame.log_id = log_id;
                 frame.filter_id = filter.id.ToString();
                 frame.highlight_filter_id = highlight_id.ToString();
-                LOG_DEBUG(
-                    "::ApplyFilters(): log_id {} | filter_id {} | highlight_filter_id {} | data {}",
-                    frame.log_id,
-                    frame.filter_id,
-                    frame.highlight_filter_id,
-                    row);
                 break;
             }
         }

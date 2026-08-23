@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -15,9 +15,8 @@
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V3/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
-#include "SQLite/Utility.hpp"
-
 #include "SQLite/FilteredLogsReader.hpp"
+#include "SQLite/Utility.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
@@ -30,9 +29,10 @@ void RegexTags::GetLogs(
 {
     LOG_SCOPE("::GetLogs()");
 
-    if (!static_cast<bool>(m_db_reader))
+    if (!m_sqlite_connection.IsOpen() &&
+        !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
-        LOG_WARN("::GetLogs(): DB reader was not initialized");
+        LOG_WARN("::GetLogs(): SQLite connection is closed and could not be opened");
         return;
     }
 
@@ -72,10 +72,10 @@ void RegexTags::GetLogs(
         return;
     }
 
-    auto& reader{*m_db_reader};
+    auto reader{SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}};
     auto query_handle{reader.PrepareGetRangesQuery(
         ranges, SQLite::Utility::MakeFieldsIDs(m_imported_logs_header))};
-    if (!query_handle)
+    if (!query_handle.IsValid())
     {
         LOG_ERROR("::GetLogs(): Failed to prepare ranges query.");
         return;

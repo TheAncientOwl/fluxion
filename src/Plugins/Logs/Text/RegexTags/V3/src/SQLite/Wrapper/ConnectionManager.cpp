@@ -3,18 +3,20 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file OpenCloseManager.cpp
+/// @file ConnectionManager.cpp
 /// @author Alexandru Delegeanu
 /// @version 3.0
-/// @brief Implementation of @see OpenCloseManager.hpp
+/// @brief Implementation of @see ConnectionManager.hpp
 ///
 
-#include "OpenCloseManager.hpp"
+#include "ConnectionManager.hpp"
 
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::OpenCloseManager);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::OpenCloseManager);
+#include <sqlite3.h>
+
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::ConnectionManager);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::ConnectionManager);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
@@ -30,35 +32,35 @@ void SQLiteDeleter::operator()(sqlite3* db) const
 
 } // namespace Utility
 
-OpenCloseManager::OpenCloseManager(std::filesystem::path db_path)
-    : m_db{nullptr}, m_db_path{std::move(db_path)}
+ConnectionManager::ConnectionManager() : m_db{nullptr}
 {
 }
 
-OpenCloseManager::~OpenCloseManager()
-{
-}
+ConnectionManager::~ConnectionManager() = default;
 
-bool OpenCloseManager::OpenDatabase()
+bool ConnectionManager::OpenDatabase(std::filesystem::path const& path)
 {
     LOG_SCOPE("::OpenDatabase()");
+
+    m_db.reset();
+
     sqlite3* raw_db = nullptr;
+    auto return_code = SQLITE_OK;
 
 #if defined(_WIN32)
-    auto const db_path = m_db_path.u8string();
+    return_code = sqlite3_open16(path.c_str(), &raw_db);
 #else
-    auto const db_path = m_db_path.string();
-#endif
-
-    auto const return_code = sqlite3_open_v2(
+    auto const db_path = path.string();
+    return_code = sqlite3_open_v2(
         db_path.c_str(), &raw_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+#endif
 
     if (return_code != SQLITE_OK)
     {
         char const* err_msg = raw_db ? sqlite3_errmsg(raw_db) : "unknown error";
         LOG_ERROR(
             "::OpenDatabase(): Failed to open db at \"{}\", error code {}, message: {}",
-            db_path,
+            path.string(),
             return_code,
             err_msg);
 
@@ -68,9 +70,19 @@ bool OpenCloseManager::OpenDatabase()
         }
         return false;
     }
-    m_db.reset(raw_db);
 
+    m_db.reset(raw_db);
     return true;
+}
+
+DatabaseRef ConnectionManager::GetDatabaseRef() const
+{
+    return DatabaseRef{m_db.get()};
+}
+
+bool ConnectionManager::IsOpen() const
+{
+    return m_db != nullptr;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite
