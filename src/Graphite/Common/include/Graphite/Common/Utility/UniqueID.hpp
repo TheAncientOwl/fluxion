@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.8
+/// @version 1.9
 /// @brief UniqueID abstraction.
 ///
 
@@ -50,6 +50,13 @@ public: // public API
     /// @return ID in format OOOOOOOO-OOOO-OOOO-OOOO-OOOOOOOOOOOO
     ///
     [[nodiscard]] std::string ToString() const;
+
+    ///
+    /// @brief Formats internals like @see ToString() without the '-' characters
+    /// @return ID in format 8f674453a0654138969d10b6b83b94cc
+    /// @return ID in format OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    ///
+    [[nodiscard]] std::string ToRawString() const;
 
     ///
     /// @brief Dumps hex representation into char array, '\0' terminated.

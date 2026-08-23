@@ -5,9 +5,11 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Data structs
 ///
+
+#pragma once
 
 #include <string>
 

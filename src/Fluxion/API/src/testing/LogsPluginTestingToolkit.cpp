@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -119,7 +119,7 @@ void LogsPluginTester::PrintTestResults() const
 TestResult LogsPluginTester::TestIO()
 {
     using namespace std::string_literals;
-    auto const& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
+    auto& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
 
     if (logs_plugin.GetTotalLogs() != m_generated_logs.size())
     {
@@ -176,7 +176,7 @@ TestResult LogsPluginTester::TestIO()
 TestResult LogsPluginTester::TestOutOfBoundsQuery()
 {
     using namespace std::string_literals;
-    auto const& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
+    auto& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
 
     const std::size_t total_logs = logs_plugin.GetTotalLogs();
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{total_logs + 10, total_logs + 20}};
@@ -200,7 +200,7 @@ TestResult LogsPluginTester::TestOutOfBoundsQuery()
 TestResult LogsPluginTester::TestEmptyAndOverlappingRanges()
 {
     using namespace std::string_literals;
-    auto const& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
+    auto& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
 
     // Overlapping ranges: [1, 4] and [3, 5] -> expected indices: 1, 2, 3, 4
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{1, 4}, {3, 5}, {10, 10}};
@@ -233,7 +233,7 @@ TestResult LogsPluginTester::TestEmptyAndOverlappingRanges()
 TestResult LogsPluginTester::TestMetadataAndHeader()
 {
     using namespace std::string_literals;
-    auto const& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
+    auto& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
 
     if (logs_plugin.GetDisplayName().empty())
     {

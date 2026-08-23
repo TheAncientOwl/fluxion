@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Do nothing...
 ///
 
@@ -50,7 +50,7 @@ public:
 
     void GetLogs(
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override final;
+        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
 
     std::size_t GetTotalEstimatedImportLogs() const override final;
     std::size_t GetProcessedLogsProgress() const override final;

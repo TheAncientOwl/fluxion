@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.23
+/// @version 0.24
 /// @brief Implementation of @see LogsTableView.hpp.
 ///
 
@@ -126,9 +126,17 @@ void LogsTableView::RenderLogsTable()
 {
     LOG_SCOPE("::RenderLogsTable()");
     auto& app_state{m_application->GetApplicationState()};
-    auto const& headers{app_state.logs_plugin->GetTableHeader()};
+    auto table_header{app_state.logs_plugin->GetTableHeader()};
+    static Graphite::Common::Utility::UniqueID s_index_id{
+        Graphite::Common::Utility::UniqueID::Generate()};
+    if (app_state.app_options.show_logs_table_idx)
+    {
+        table_header.insert(
+            table_header.begin(),
+            API::LogsPlugin::Data::ColumnDetails{.id = s_index_id, .display_name = "Index"});
+    }
 
-    if (headers.empty())
+    if (table_header.empty())
     {
         LOG_TRACE("::RenderLogsTable(): Received empty header");
         return;
@@ -137,15 +145,15 @@ void LogsTableView::RenderLogsTable()
     ImGui::BeginChild("LogsTableRegion");
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 5));
     if (ImGui::BeginTable(
-            "LogsTable",
-            static_cast<int>(headers.size()),
+            app_state.app_options.show_logs_table_idx ? "LogsTable_+index" : "LogsTable_-index",
+            static_cast<int>(table_header.size()),
             ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable |
                 ImGuiTableFlags_SizingFixedFit,
             ImVec2(0.0f, 0.0f)))
     {
         // 1. Render Table Header
-        for (auto const& header : headers)
+        for (auto const& header : table_header)
         {
             ImGui::TableSetupColumn(header.display_name.c_str());
         }
@@ -154,6 +162,7 @@ void LogsTableView::RenderLogsTable()
 
         // 2. Render Logs Rows
         ImGuiListClipper clipper{};
+        LOG_DEBUG("::RenderLogsTable(): clipper.Begin({})", app_state.logs_plugin->GetTotalLogs());
         clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()));
 
         auto& searched_log_state = app_state.logs.searched_log.GetFront();
@@ -172,20 +181,12 @@ void LogsTableView::RenderLogsTable()
         std::vector<Fluxion::API::LogsPlugin::Data::Range> ranges{};
         while (clipper.Step())
         {
-            auto const is_first_render_row{clipper.DisplayStart == 0 && clipper.DisplayEnd == 1};
-            if (!is_first_render_row)
-            {
-                static auto constexpr margin{25};
-                ranges.emplace_back(
-                    static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
-                    static_cast<std::size_t>(std::min(
-                        static_cast<int>(app_state.logs_plugin->GetTotalLogs()),
-                        clipper.DisplayEnd + margin)));
-            }
-            else
-            {
-                ranges.emplace_back(0, 1);
-            }
+            static auto constexpr margin{25};
+            ranges.emplace_back(
+                static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
+                static_cast<std::size_t>(std::min(
+                    static_cast<int>(app_state.logs_plugin->GetTotalLogs()),
+                    clipper.DisplayEnd + margin)));
 
             auto const& front_buffer = app_state.logs.visible.GetFront();
 
@@ -197,15 +198,17 @@ void LogsTableView::RenderLogsTable()
                 searched_log_state.index,
                 ImGui::GetScrollY());
 
-            if (search_index_changed && !is_first_render_row &&
-                static_cast<bool>(searched_log_state.index) &&
-                (static_cast<int>(*searched_log_state.index) <= clipper.DisplayStart ||
-                 static_cast<int>(*searched_log_state.index) >= clipper.DisplayEnd - 2))
+            if (search_index_changed && static_cast<bool>(searched_log_state.index))
             {
-                search_index_changed = false;
-                auto const searched_scroll =
-                    clipper.ItemsHeight * static_cast<float>(*searched_log_state.index);
-                ImGui::SetScrollY(searched_scroll);
+                auto const target_idx = static_cast<int>(*searched_log_state.index);
+                if ((clipper.DisplayStart != 0 && clipper.DisplayEnd != 1) &&
+                    (target_idx < clipper.DisplayStart || target_idx >= clipper.DisplayEnd))
+                {
+                    search_index_changed = false;
+                    float const row_height = clipper.ItemsHeight > 0.0f ? clipper.ItemsHeight : 20.0f;
+                    auto const searched_scroll = row_height * static_cast<float>(target_idx);
+                    ImGui::SetScrollY(searched_scroll);
+                }
             }
 
             for (auto row_idx = clipper.DisplayStart; row_idx < clipper.DisplayEnd; ++row_idx)
@@ -233,7 +236,15 @@ void LogsTableView::RenderLogsTable()
                         ImGui::PushStyleColor(ImGuiCol_Text, highlight.colors.foreground);
                     }
 
-                    GRAPHITE_ASSERT(row.data.size() == headers.size(), "Row size != header size");
+                    GRAPHITE_ASSERT(
+                        row.data.size() + (app_state.app_options.show_logs_table_idx ? 1 : 0) ==
+                            table_header.size(),
+                        "Row size != header size");
+                    if (app_state.app_options.show_logs_table_idx)
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%d", row_idx);
+                    }
                     for (auto const& field : row.data)
                     {
                         ImGui::TableNextColumn();
@@ -252,7 +263,7 @@ void LogsTableView::RenderLogsTable()
                 else
                 {
                     // Placeholder for the "Sync Gap" frame / Missing data
-                    for (auto _ = 0u; _ < headers.size(); ++_)
+                    for (auto _ = 0u; _ < table_header.size(); ++_)
                     {
                         ImGui::TableNextColumn();
                         ImGui::TextUnformatted("...");

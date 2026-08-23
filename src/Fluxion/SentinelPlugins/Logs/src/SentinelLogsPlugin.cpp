@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Do nothing...
 ///
 
@@ -78,7 +78,7 @@ std::size_t SentinelLogsPlugin::GetTotalLogs() const
 
 void SentinelLogsPlugin::GetLogs(
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const& /*ranges*/,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter /*out_logs*/) const
+    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter /*out_logs*/)
 {
     LOG_SCOPE("::GetLogs()");
 }

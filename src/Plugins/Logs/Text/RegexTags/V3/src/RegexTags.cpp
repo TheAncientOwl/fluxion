@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -25,15 +25,9 @@ std::string_view RegexTags::GetDisplayName() const
     return "Text::RegexTags::V3";
 }
 
-std::filesystem::path RegexTags::MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const
+std::filesystem::path RegexTags::MakeDatabasePath(std::filesystem::path const& raw_logs_path) const
 {
-    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".converted.csv")};
-    return output_path;
-}
-
-std::filesystem::path RegexTags::MakeFilteredLogsPath(std::filesystem::path const& raw_logs_path) const
-{
-    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".filtered.csv")};
+    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".sqlite")};
     return output_path;
 }
 

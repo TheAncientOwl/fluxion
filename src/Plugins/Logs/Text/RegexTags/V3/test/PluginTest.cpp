@@ -5,7 +5,7 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Logs::Text::RegexTags::V3 Plugin test
 ///
 
@@ -147,7 +147,7 @@ public:
     }
 
     /**
-     * @brief Get the path to the raw format log file ~ .txt / .csv / .whatever ~ for import
+     * @brief Get the path to the raw format log file ~ .txt
      *
      * @return std::filesystem::path
      */

@@ -1,0 +1,42 @@
+
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file Utilityy.hpp
+/// @author Alexandru Delegeanu
+/// @version 3.0
+/// @brief Utilities
+///
+
+#include "Utility.hpp"
+
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::Utility {
+
+[[nodiscard]] std::vector<std::string> MakeFieldsIDs(
+    std::vector<std::shared_ptr<Data::RegexTag>> const& tags)
+{
+    std::vector<std::string> fields_ids{};
+    for (auto const& tag : tags)
+    {
+        if (tag->visible)
+        {
+            fields_ids.push_back("field_" + tag->id.ToRawString());
+        }
+    }
+    return fields_ids;
+}
+
+[[nodiscard]] std::vector<std::string> MakeFieldsIDs(
+    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> const& columns)
+{
+    std::vector<std::string> fields_ids{};
+    for (auto const& column : columns)
+    {
+        fields_ids.push_back("field_" + column.id.ToRawString());
+    }
+    return fields_ids;
+}
+
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::Utility

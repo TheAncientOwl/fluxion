@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,10 +18,12 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-#include "CSV/Wrapper/Wrapper.hpp"
+#include "SQLite/BufferedFilteredLogsWriter.hpp"
+#include "SQLite/LogsReader.hpp"
+#include "SQLite/Utility.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::ApplyFilters);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::ApplyFilters);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
@@ -106,17 +108,33 @@ void RegexTags::ApplyFilters(
         LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
         return;
     }
-    auto const output_filtered_path{MakeFilteredLogsPath(*m_last_imported_logs_path)};
-    auto filtered_logs_writer = CSV::Writer{output_filtered_path};
-    LOG_INFO("::ApplyFilters(): Output filtered CSV file {}", output_filtered_path.string());
 
-    auto const input_logs_path{MakeConvertedLogsPath(*m_last_imported_logs_path)};
-    auto converted_logs_reader = CSV::Reader{input_logs_path};
-    LOG_INFO("::ApplyFilters(): Converted CSV file {}", input_logs_path.string());
+    auto const database_path{MakeDatabasePath(*m_last_imported_logs_path)};
+
+    auto logs_reader{SQLite::LogsReader{database_path}};
+    if (!logs_reader.OpenDatabase())
+    {
+        return;
+    }
+    auto const fields_ids{SQLite::Utility::MakeFieldsIDs(m_imported_logs_header)};
+    auto query_handle = logs_reader.PrepareGetAllLogsQuery(fields_ids);
+    if (!query_handle)
+    {
+        return;
+    }
+
+    auto filtered_logs_writer{SQLite::BufferedFilteredLogsWriter{database_path, 5000}};
+    if (!filtered_logs_writer.OpenDatabase() || !filtered_logs_writer.ClearTable())
+    {
+        return;
+    }
+
+    std::size_t log_id{0};
+    std::vector<std::string> row{};
 
     std::size_t total_filtered_logs{0};
     m_logs_progress = 0;
-    for (auto row : converted_logs_reader)
+    while (logs_reader.NextRow(query_handle, log_id, row))
     {
         ++m_logs_progress;
         for (auto const& filter : filters)
@@ -174,23 +192,24 @@ void RegexTags::ApplyFilters(
                     }
                 }
 
-                std::vector<std::string> filtered_row;
-                filtered_row.reserve(row.size() + 2);
-                filtered_row.push_back(filter.id.ToString());
-                filtered_row.push_back(highlight_id.ToString());
-                for (auto const& field : row)
-                {
-                    filtered_row.push_back(field);
-                }
-                filtered_logs_writer.write_row(filtered_row);
+                auto& frame = filtered_logs_writer.NextFrame();
+                frame.log_id = log_id;
+                frame.filter_id = filter.id.ToString();
+                frame.highlight_filter_id = highlight_id.ToString();
+                LOG_DEBUG(
+                    "::ApplyFilters(): log_id {} | filter_id {} | highlight_filter_id {} | data {}",
+                    frame.log_id,
+                    frame.filter_id,
+                    frame.highlight_filter_id,
+                    row);
                 break;
             }
         }
     }
+    filtered_logs_writer.Flush();
 
     LOG_INFO("::ApplyFilters(): Total filtered logs: {}", total_filtered_logs);
     auto settings{GetConfig()};
-    // TODO: move "total_logs" key to some constexpr global
     settings.set("total_logs", total_filtered_logs);
     settings.Save();
 

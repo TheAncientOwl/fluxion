@@ -1,6 +1,7 @@
 # --- 0. Fetch Dependencies ---
 include(FetchContent)
 
+# --- 0.1. Google RE2 ---
 set(ABSL_PROPAGATE_CXX_STANDARD ON)
 set(ABSL_ENABLE_INSTALL OFF)
 FetchContent_Declare(
@@ -19,20 +20,39 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(re2)
 
+# --- 0.2. SQLite ---
+FetchContent_Declare(
+    sqlite3
+    GIT_REPOSITORY https://github.com/sjinks/sqlite3-cmake.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(sqlite3)
+
 # --- 1. Interface ---
 add_library(fluxion_logs_plugin__text__regex_tags__v3_interface INTERFACE)
 
 target_include_directories(fluxion_logs_plugin__text__regex_tags__v3_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite
 )
 
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v3_interface INTERFACE
     re2::re2
+    sqlite3
 )
 
 # --- 2. Implementation ---
 add_library(fluxion_logs_plugin__text__regex_tags__v3 SHARED
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/CSV/Wrapper/Wrapper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Utility.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/OpenCloseManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Creator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/BufferedWriter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/BufferedFilteredLogsWriter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/FilteredLogsReader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/LogsReader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/QueryHandle.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/QueryExecutor.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ApplyFilters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DisableFilters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GetLogs.cpp
@@ -57,14 +77,16 @@ set_target_properties(fluxion_logs_plugin__text__regex_tags__v3 PROPERTIES
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v3 PUBLIC
     project_compile_options
     external_icons_codicons
-    external_miocsv
     graphite_interface
     graphite_impl
     fluxion_api_interface
     fluxion_api_impl
     fluxion_logs_plugin__text__regex_tags__v3_interface
     re2::re2
+    sqlite3
 )
+
+target_compile_options(fluxion_logs_plugin__text__regex_tags__v3 PRIVATE -Wno-nullability-extension)
 
 target_include_directories(fluxion_logs_plugin__text__regex_tags__v3 PRIVATE
     ${PROJECT_SOURCE_DIR}/src

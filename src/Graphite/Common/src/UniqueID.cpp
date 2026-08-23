@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.7
+/// @version 1.8
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -146,6 +146,29 @@ UniqueID UniqueID::Default()
             *ptr++ = '-';
         }
 
+        unsigned char byte = m_data[i];
+        *ptr++ = hex[(byte >> 4) & 0xF];
+        *ptr++ = hex[byte & 0xF];
+    }
+
+    return result;
+}
+
+[[nodiscard]] std::string UniqueID::ToRawString() const
+{
+    if (!initialized())
+    {
+        return "00000000000000000000000000000000";
+    }
+
+    std::string result{};
+    result.resize(32);
+
+    static constexpr char hex[] = "0123456789abcdef";
+    char* ptr = result.data();
+
+    for (std::size_t i = 0; i < m_data.size(); ++i)
+    {
         unsigned char byte = m_data[i];
         *ptr++ = hex[(byte >> 4) & 0xF];
         *ptr++ = hex[byte & 0xF];

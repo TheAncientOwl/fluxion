@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -15,6 +15,7 @@
 #include <fstream>
 #include <memory>
 #include <re2/re2.h>
+#include <sqlite3.h>
 #include <string>
 #include <vector>
 
@@ -22,7 +23,9 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-#include "CSV/Wrapper/Wrapper.hpp"
+#include "SQLite/BufferedWriter.hpp"
+#include "SQLite/Creator.hpp"
+#include "SQLite/Utility.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
@@ -100,13 +103,21 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    auto const output_converted_path{MakeConvertedLogsPath(path)};
-    auto converted_writer = CSV::Writer{output_converted_path};
-    LOG_INFO("Output converted CSV file {}", output_converted_path.string());
+    auto const database_path{MakeDatabasePath(path)};
+    auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
+    {
+        auto sqlite_creator{SQLite::Creator{database_path}};
+        if (!sqlite_creator.OpenDatabase() || !sqlite_creator.CreateTable(fields_ids))
+        {
+            return;
+        }
+    }
+    auto sqlite_writer{SQLite::BufferedWriter{database_path, 500, fields_ids}};
+    if (!sqlite_writer.OpenDatabase())
+    {
+        return;
+    }
 
-    auto const output_filtered_path{MakeFilteredLogsPath(path)};
-    auto filtered_writer = CSV::Writer{output_filtered_path};
-    LOG_INFO("Output filtered CSV file {}", output_filtered_path.string());
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
     std::string line{};
@@ -150,6 +161,8 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
         if (matched)
         {
+            auto& next_row{sqlite_writer.NextFrame()};
+
             ++m_logs_progress;
             if (m_logs_progress % 1000 == 0)
             {
@@ -158,17 +171,15 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
             for (std::size_t i = 0; i < num_captures && i < row.size(); ++i)
             {
-                row[i] = std::move(capture_results[i]);
-                filtered_row[i + 2] = row[i];
+                next_row[i] = std::move(capture_results[i]);
             }
-            converted_writer.write_row(row);
-            filtered_writer.write_row(filtered_row);
         }
         else
         {
             LOG_WARN("::ImportLogs(): Regex did not match entry '{}'", line);
         }
     }
+    sqlite_writer.Flush();
 
     LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_progress);
     auto settings{GetConfig()};
@@ -178,6 +189,19 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     m_total_import_logs = 0;
     m_logs_progress = 0;
+
+    if (!static_cast<bool>(m_db_reader))
+    {
+        m_db_reader.emplace(database_path);
+        if (!m_db_reader->OpenDatabase())
+        {
+            m_db_reader.reset();
+        }
+    }
+    else
+    {
+        m_db_reader->ChangeDatabase(database_path);
+    }
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

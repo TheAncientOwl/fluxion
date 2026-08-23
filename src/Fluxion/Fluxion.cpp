@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.17
+/// @version 0.18
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -51,6 +51,17 @@ FluxionApplication::~FluxionApplication()
     Views::Actions::FiltersView::SaveFiltersToFile(m_app_state);
 }
 
+std::filesystem::path FluxionApplication::GetHomePath() const
+{
+    const char* home_env = std::getenv("HOME");
+    if (!home_env)
+    {
+        std::filesystem::path(home_env) / ".fluxion";
+        LOG_ERROR("HOME environment variable not set");
+    }
+    return std::filesystem::current_path();
+}
+
 void FluxionApplication::OnInit()
 {
     LOG_SCOPE("::AppInit()");
@@ -61,6 +72,7 @@ void FluxionApplication::OnInit()
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
+    LoadAppOptions();
     SetupFonts();
 
     // Load previously used plugin path from configuration
@@ -152,6 +164,24 @@ void FluxionApplication::OnShutdown()
     }
 }
 
+void FluxionApplication::LoadAppOptions()
+{
+    Graphite::Settings::PersistentSettings options{GetHomePath(), "options.json"};
+    auto& app_options{m_app_state.app_options};
+    {
+        auto opt{options.get<bool>("show-logs-table-idx")};
+        if (static_cast<bool>(opt))
+        {
+            app_options.show_logs_table_idx = *opt;
+        }
+        else
+        {
+            options.set("show-logs-table-idx", true);
+        }
+    }
+    options.Save();
+}
+
 void FluxionApplication::SetupFonts()
 {
     LOG_SCOPE("::SetupFonts()");
@@ -199,14 +229,20 @@ void FluxionApplication::OnProcessAction(Graphite::Common::Utility::TAppAction<E
 void FluxionApplication::ResetImportedLogsData()
 {
     LOG_SCOPE("::ResetImportedLogsData()");
+
     m_app_state.logs_progress.operation = Fluxion::Application::ELogsOperation::None;
+
     m_app_state.logs.searched_log.UpdateBackBufferCopyLocking(
         [](Fluxion::Application::Data::Logs::SearchedLog& searched_log) {
             searched_log.index = std::nullopt;
         });
+
+    /// @note we have to <clear, swap & clear again> to get rid of front artifacts that are being swapped on back the first time
     m_app_state.logs.visible.UpdateBackBufferSwap(
-        [](Fluxion::Application::Data::Logs::VisibleLogs& back) { back.logs.clear(); },
-        [](Fluxion::Application::Data::Logs::VisibleLogs& /*back*/) {});
+        [](auto&) {}, [](Fluxion::Application::Data::Logs::VisibleLogs& back) { back.logs.clear(); });
+    m_app_state.logs.visible.SyncFrontBufferSwap();
+    m_app_state.logs.visible.UpdateBackBufferSwap(
+        [](auto&) {}, [](Fluxion::Application::Data::Logs::VisibleLogs& back) { back.logs.clear(); });
 }
 
 } // namespace Fluxion::Application

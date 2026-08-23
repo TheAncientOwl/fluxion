@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -15,8 +15,9 @@
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V3/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
+#include "SQLite/Utility.hpp"
 
-#include "CSV/Wrapper/Wrapper.hpp"
+#include "SQLite/FilteredLogsReader.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
@@ -25,9 +26,15 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
 void RegexTags::GetLogs(
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const
+    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
 {
     LOG_SCOPE("::GetLogs()");
+
+    if (!static_cast<bool>(m_db_reader))
+    {
+        LOG_WARN("::GetLogs(): DB reader was not initialized");
+        return;
+    }
 
     std::stringstream ss{};
     for (auto range : ranges)
@@ -49,56 +56,52 @@ void RegexTags::GetLogs(
         return;
     }
 
-    auto const last_line_index{[&ranges]() {
-        std::size_t last_idx{std::numeric_limits<std::size_t>::min()};
-        for (auto& range : ranges)
-        {
-            last_idx = std::max(last_idx, range.end);
-        }
-        return last_idx;
-    }()};
-
     std::error_code ec;
-    if (std::filesystem::file_size(*m_last_imported_logs_path, ec) == 0 || ec)
+    auto const db_path = MakeDatabasePath(*m_last_imported_logs_path);
+    if (std::filesystem::file_size(db_path, ec) == 0 || ec)
     {
         LOG_WARN(
-            "::GetLogs(): File {} is currently 0 bytes or locked. Skipping read.",
-            m_last_imported_logs_path->string());
+            "::GetLogs(): Database file {} is currently 0 bytes or locked. Skipping read.",
+            db_path.string());
         return;
     }
 
-    auto reader = CSV::Reader{MakeFilteredLogsPath(*m_last_imported_logs_path)};
-    for (auto row : reader)
+    if (m_imported_logs_header.empty())
     {
-        auto const row_num{reader.get_row_num() - 1};
+        LOG_WARN("::GetLogs(): m_imported_logs_header is empty.");
+        return;
+    }
 
-        if (row_num > last_line_index || row_num > *total_logs_opt)
+    auto& reader{*m_db_reader};
+    auto query_handle{reader.PrepareGetRangesQuery(
+        ranges, SQLite::Utility::MakeFieldsIDs(m_imported_logs_header))};
+    if (!query_handle)
+    {
+        LOG_ERROR("::GetLogs(): Failed to prepare ranges query.");
+        return;
+    }
+
+    std::vector<std::string> row_fields;
+    std::string filter_id_str;
+    std::string highlight_id_str;
+    std::size_t view_index = 0;
+
+    while (reader.NextFilteredRow(query_handle, row_fields, filter_id_str, highlight_id_str, view_index))
+    {
+        if (view_index > *total_logs_opt)
         {
             break;
         }
 
-        if (!std::any_of(ranges.begin(), ranges.end(), [row_num](auto const& range) {
-                return range.begin <= row_num && row_num < range.end;
-            }))
-        {
-            continue;
-        }
+        auto& target_row = out_logs[view_index];
 
-        auto& target_row = out_logs[row_num];
-        auto const actual_row_size{row.size() - 2}; // -2 = first 2 filter IDs
-        if (target_row.data.size() != actual_row_size)
-        {
-            target_row.data.resize(actual_row_size);
-        }
-
-        for (std::size_t col_idx = 2; col_idx < row.size(); ++col_idx)
-        {
-            target_row.data[col_idx - 2] = std::move(row[col_idx]);
-        }
+        target_row.data = row_fields;
 
         target_row.metadata = {
-            .filter_id = Graphite::Common::Utility::UniqueID{row[0]},
-            .highlight_id = Graphite::Common::Utility::UniqueID{row[1]}};
+            .filter_id = Graphite::Common::Utility::UniqueID{filter_id_str},
+            .highlight_id = Graphite::Common::Utility::UniqueID{highlight_id_str}};
+
+        row_fields.clear();
     }
 }
 

@@ -5,13 +5,16 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
+
+#pragma once
 
 #include <memory>
 #include <vector>
 
+#include "FilteredLogsReader.hpp"
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Plugin/GraphiteExport.hpp"
@@ -51,14 +54,13 @@ public:
 
     void GetLogs(
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const override final;
+        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
 
     std::size_t GetTotalEstimatedImportLogs() const override final;
     std::size_t GetProcessedLogsProgress() const override final;
 
 private:
-    std::filesystem::path MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const;
-    std::filesystem::path MakeFilteredLogsPath(std::filesystem::path const& raw_logs_path) const;
+    std::filesystem::path MakeDatabasePath(std::filesystem::path const& raw_logs_path) const;
     Graphite::Settings::PersistentSettings GetConfig() const;
 
     void SaveRegexTags(std::vector<std::shared_ptr<Data::RegexTag>> const& tags) const;
@@ -74,6 +76,8 @@ private:
     std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
     std::size_t m_logs_progress{0};
     std::size_t m_total_import_logs{0};
+
+    std::optional<Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::FilteredLogsReader> m_db_reader{};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

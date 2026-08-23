@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Implementation of @see DummyLogsPlugin.hpp
 ///
 
@@ -258,7 +258,7 @@ std::size_t DummyLogsPlugin::GetTotalLogs() const
 
 void DummyLogsPlugin::GetLogs(
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const
+    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
 {
     LOG_SCOPE("::GetLogs()");
 

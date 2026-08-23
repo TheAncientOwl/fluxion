@@ -1,0 +1,56 @@
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file BufferedFilteredLogsWriter.hpp
+/// @author Alexandru Delegeanu
+/// @version 3.0
+/// @brief Wrapper for buffered writes to the filtered_logs table
+///
+
+#pragma once
+
+#include <filesystem>
+#include <sqlite3.h>
+#include <string>
+#include <vector>
+
+#include "OpenCloseManager.hpp"
+
+namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
+
+class BufferedFilteredLogsWriter : public OpenCloseManager
+{
+public:
+    struct FilteredRow
+    {
+        std::size_t log_id{0};
+        std::string filter_id{};
+        std::string highlight_filter_id{};
+    };
+
+public: // Lifecycle
+    BufferedFilteredLogsWriter(std::filesystem::path db_path, std::size_t const batch_size);
+    ~BufferedFilteredLogsWriter();
+
+public: // Public API
+    /**
+     * @brief Gets the next frame (row buffer) to be populated.
+     * @return Reference to the FilteredRow frame struct.
+     */
+    FilteredRow& NextFrame();
+
+    bool ClearTable();
+    bool Flush();
+
+private: // Private API
+    bool ExecuteFlush();
+
+private:
+    std::vector<FilteredRow> m_buffer{};
+    std::size_t m_batch_size{0};
+    std::size_t m_current_index{0};
+};
+
+} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite

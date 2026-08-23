@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -25,7 +25,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
 void RegexTags::GetLogs(
     std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const
+    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
 {
     LOG_SCOPE("::GetLogs()");
 

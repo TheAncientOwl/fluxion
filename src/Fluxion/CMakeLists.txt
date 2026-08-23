@@ -16,6 +16,7 @@ add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/SettingsView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/Modules/Theme.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/Modules/LogsPlugin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/Settings/Modules/Options.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/LogsTable/LogsTableView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/LogsTable/LogsTableViewActions.cpp

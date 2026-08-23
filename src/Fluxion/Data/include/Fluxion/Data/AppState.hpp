@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.20
+/// @version 0.21
 /// @brief Application state.
 ///
 
@@ -81,6 +81,12 @@ struct AppState
         std::optional<std::chrono::steady_clock::time_point> start_time{};
         std::optional<std::chrono::steady_clock::time_point> end_time{};
     } logs_progress{};
+
+    struct AppOptions
+    {
+        bool show_logs_table_idx{true};
+    };
+    AppOptions app_options{};
 };
 
 namespace DefaultState {

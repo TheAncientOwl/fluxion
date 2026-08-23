@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -30,11 +30,14 @@ public:
      */
     void ResetImportedLogsData();
 
+    std::filesystem::path GetHomePath() const;
+
 private:
     friend class Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>;
     FluxionApplication(Graphite::Application::WindowConfiguration window_configuration, AppState initial_state);
 
 private:
+    void LoadAppOptions();
     void SetupFonts();
 
 private:

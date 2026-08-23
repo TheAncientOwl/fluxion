@@ -5,12 +5,13 @@
 ///
 /// @file LogsTableViewActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Main view responsible for rendering logs table.
 ///
 
 #include "LogsTableViewActions.hpp"
 #include "Fluxion/Data/AppState.hpp"
+#include "Fluxion/Data/Formatters.hpp" // IWYU pragma: keep <for Range>
 #include "Graphite/Logger.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Views::LogsTableView::Actions);
@@ -24,6 +25,47 @@ using namespace Fluxion::Application::Data::Logs;
 template <ELogsViewActionViewType ActionType, typename TPayload>
 void handle(AppState& application_state, TPayload const& payload) = delete;
 
+namespace Utility {
+
+std::vector<Fluxion::API::LogsPlugin::Data::Range> MergeRanges(
+    std::vector<Fluxion::API::LogsPlugin::Data::Range>& input_ranges)
+{
+    if (input_ranges.empty())
+    {
+        return {};
+    }
+
+    std::sort(input_ranges.begin(), input_ranges.end(), [](auto const& a, auto const& b) {
+        if (a.begin != b.begin)
+        {
+            return a.begin < b.begin;
+        }
+        return a.end < b.end;
+    });
+
+    std::vector<Fluxion::API::LogsPlugin::Data::Range> merged;
+    merged.push_back(input_ranges[0]);
+
+    for (std::size_t idx = 1; idx < input_ranges.size(); ++idx)
+    {
+        auto& last = merged.back();
+        auto const& current = input_ranges[idx];
+
+        if (current.begin <= last.end)
+        {
+            last.end = std::max(last.end, current.end);
+        }
+        else
+        {
+            merged.push_back(current);
+        }
+    }
+
+    return merged;
+}
+
+} // namespace Utility
+
 template <>
 void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
     AppState& application_state,
@@ -32,6 +74,28 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
     LOG_SCOPE("::handle<UpdateVisibleLogs>()");
     // LOG_INFO("begin {} | end {}", action.visible_logs_indices.begin, action.visible_logs_indices.end);
     // TODO: resize the data when the imported logs change
+
+    LOG_INFO("::handle<UpdateVisibleLogs>(): cleaning up visible logs indices");
+    LOG_INFO("::handle<UpdateVisibleLogs>(): logs indices request: {}", payload.visible_logs_indices);
+    auto final_request_indices{std::vector<Fluxion::API::LogsPlugin::Data::Range>{}};
+    auto const& visible_logs{application_state.logs.visible.GetBack().logs};
+    for (auto const& range : payload.visible_logs_indices)
+    {
+        if (!visible_logs.contains(range.begin) || !visible_logs.contains(range.end - 1))
+        {
+            final_request_indices.emplace_back(range.begin, range.end);
+            // if (range.end == application_state.logs_plugin->GetTotalLogs())
+            // {
+            //     final_request_indices.emplace_back(range.begin, range.end + 1);
+            // }
+            // else
+            // {
+            //     final_request_indices.push_back(range);
+            // }
+        }
+    }
+    final_request_indices = Utility::MergeRanges(final_request_indices);
+    LOG_INFO("::handle<UpdateVisibleLogs>(): final logs indices request: {}", final_request_indices);
 
     application_state.logs.visible.UpdateBackBufferSwap(
         // 1. Prepare Back Buffer
@@ -53,7 +117,7 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
                     // Check if idx is inside any valid interval
                     for (auto const& interval : indices)
                     {
-                        if (idx >= interval.begin && idx <= interval.end)
+                        if (idx >= interval.begin && idx < interval.end)
                         {
                             return false; // Keep it
                         }
@@ -66,10 +130,14 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
                 visible_logs_chunk.logs.size());
         },
         // 2. Update Back Buffer
-        [payload, &logs_logic = application_state.logs_plugin](VisibleLogs& visible_logs_chunk) {
-            logs_logic->GetLogs(
-                payload.visible_logs_indices,
-                Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter{visible_logs_chunk.logs});
+        [&final_request_indices,
+         &logs_plugin = application_state.logs_plugin](VisibleLogs& visible_logs_chunk) {
+            if (!final_request_indices.empty())
+            {
+                logs_plugin->GetLogs(
+                    final_request_indices,
+                    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter{visible_logs_chunk.logs});
+            }
         });
 }
 

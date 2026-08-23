@@ -6,3 +6,4 @@ app.graphite.log
 app.graphite.logger.cfg
 .cache
 benchmark_logs.*
+.fluxion

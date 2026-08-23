@@ -5,7 +5,7 @@
 ///
 /// @file SettingsView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see SettingsView.hpp.
 ///
 
@@ -16,6 +16,7 @@
 
 #include "Graphite/Logger.hpp"
 
+#include "Modules/Options.hpp"
 #include "Modules/Theme.hpp"
 #include "SettingsView.hpp"
 
@@ -87,6 +88,15 @@ void SettingsView::OnRender()
         if (ImGui::BeginTabItem(ICON_CI_SYMBOL_COLOR " Theme"))
         {
             Modules::SettingsView::RenderTheme();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem(ICON_CI_SETTINGS " Options"))
+        {
+            Modules::SettingsView::RenderOptions(
+                app_state.app_options,
+                m_application->As<Fluxion::Application::FluxionApplication>()->GetHomePath(),
+                "options.json");
             ImGui::EndTabItem();
         }
 

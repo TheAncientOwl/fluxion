@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -91,7 +91,7 @@ public:
      */
     virtual void GetLogs(
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) const = 0;
+        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) = 0;
 
     /**
      * @brief Helper function to tell the total of logs in import file
