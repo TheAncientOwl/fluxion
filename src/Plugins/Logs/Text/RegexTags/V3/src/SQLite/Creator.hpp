@@ -40,7 +40,7 @@ public: // Public API
     bool CreateTables(std::vector<std::string> const& fields_ids);
 
 private:
-    DatabaseRef m_db;
+    DatabaseRef m_database;
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite

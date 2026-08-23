@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -106,7 +106,12 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    if (!m_sqlite_connection.OpenDatabase(MakeDatabasePath(path)))
+    auto const database_path{MakeDatabasePath(path)};
+    [[maybe_unused]] std::error_code ec{};
+    std::filesystem::remove(database_path);
+    std::filesystem::remove(database_path.string() + "-wal", ec);
+    std::filesystem::remove(database_path.string() + "-shm", ec);
+    if (!m_sqlite_connection.OpenDatabase(database_path))
     {
         return;
     }
