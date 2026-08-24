@@ -5,7 +5,7 @@
 ///
 /// @file BufferedFilteredLogsWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation of @see BufferedFilteredLogsWriter.hpp
 ///
 
@@ -13,7 +13,6 @@
 
 #include "BufferedFilteredLogsWriter.hpp"
 #include "Graphite/Logger.hpp"
-#include "Wrapper/Transaction.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::BufferedFilteredLogsWriter);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::BufferedFilteredLogsWriter);
@@ -74,14 +73,6 @@ bool BufferedFilteredLogsWriter::ExecuteFlush()
 {
     LOG_SCOPE("::ExecuteFlush()");
 
-    Transaction transaction{m_database};
-    if (!transaction.IsActive())
-    {
-        LOG_ERROR(
-            "::ExecuteFlush(): Failed to begin transaction: {}", m_database.GetLastErrorMessage());
-        return false;
-    }
-
     char const* insert_sql =
         "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) VALUES (?, "
         "?, ?, ?);";
@@ -112,14 +103,6 @@ bool BufferedFilteredLogsWriter::ExecuteFlush()
         }
 
         statement.Reset();
-    }
-
-    if (!transaction.Commit())
-    {
-        LOG_ERROR(
-            "::ExecuteFlush(): Failed to commit transaction: {}", m_database.GetLastErrorMessage());
-        m_current_index = 0;
-        return false;
     }
 
     m_current_index = 0;
