@@ -5,7 +5,7 @@
 ///
 /// @file DatabaseRef.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation of @see DatabaseRef.hpp
 ///
 
@@ -70,22 +70,6 @@ Statement DatabaseRef::Prepare(std::string_view sql) const
         return Statement{nullptr};
     }
     return Statement{raw_stmt};
-}
-
-std::size_t DatabaseRef::GetFilteredLogsCount() const
-{
-    Statement stmt = Prepare("SELECT COUNT(*) FROM filtered_logs;");
-    if (!stmt.IsValid())
-    {
-        return 0;
-    }
-
-    if (stmt.Step() == EStepResult::Row)
-    {
-        return static_cast<std::size_t>(stmt.GetColumnInt64(0));
-    }
-
-    return 0;
 }
 
 char const* DatabaseRef::GetLastErrorMessage() const

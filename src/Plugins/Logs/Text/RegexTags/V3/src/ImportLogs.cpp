@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.3
+/// @version 3.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -27,8 +27,8 @@
 #include "SQLite/Creator.hpp"
 #include "SQLite/Utility.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::ImportLogs);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::ImportLogs);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
@@ -36,6 +36,7 @@ namespace Utility {
 
 size_t CountLines(const std::filesystem::path& filepath)
 {
+    LOG_SCOPE("::CountLines()");
     std::FILE* file = std::fopen(filepath.string().c_str(), "rb");
     if (!file)
         return 0;
@@ -123,8 +124,6 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    auto sqlite_writer{SQLite::BufferedWriter{m_sqlite_connection.GetDatabaseRef(), 500, fields_ids}};
-
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
     std::string line{};
@@ -159,32 +158,39 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         re2_arg_ptrs.push_back(&re2_args.back());
     }
 
-    while (std::getline(raw_logs_file, line))
     {
-        bool const matched =
-            re2::RE2::FullMatchN(line, *line_regex, re2_arg_ptrs.data(), num_captures_int);
+        LOG_SCOPE("::ImportLogs(): writer");
+        auto sqlite_writer{
+            SQLite::BufferedWriter{m_sqlite_connection.GetDatabaseRef(), 1000, fields_ids}};
 
-        if (matched)
+        while (std::getline(raw_logs_file, line))
         {
-            auto& next_row{sqlite_writer.NextFrame()};
+            bool const matched =
+                re2::RE2::FullMatchN(line, *line_regex, re2_arg_ptrs.data(), num_captures_int);
 
-            ++m_logs_progress;
-            if (m_logs_progress % 1000 == 0)
+            if (matched)
             {
-                LOG_INFO("Read another 1000 chunk, total: {}", m_logs_progress);
+                auto& next_row{sqlite_writer.NextFrame()};
+
+                ++m_logs_progress;
+                if (m_logs_progress % 1000 == 0)
+                {
+                    LOG_INFO("Read another 1000 chunk, total: {}", m_logs_progress);
+                }
+
+                for (std::size_t i = 0; i < num_captures && i < row.size(); ++i)
+                {
+                    next_row[i] = capture_results[i];
+                }
             }
-
-            for (std::size_t i = 0; i < num_captures && i < row.size(); ++i)
+            else
             {
-                next_row[i] = std::move(capture_results[i]);
+                LOG_WARN("::ImportLogs(): Regex did not match entry '{}'", line);
             }
         }
-        else
-        {
-            LOG_WARN("::ImportLogs(): Regex did not match entry '{}'", line);
-        }
+
+        sqlite_writer.Flush();
     }
-    sqlite_writer.Flush();
 
     LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_progress);
     auto settings{GetConfig()};

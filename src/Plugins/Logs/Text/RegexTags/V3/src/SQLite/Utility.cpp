@@ -6,17 +6,22 @@
 ///
 /// @file Utilityy.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Utilities
 ///
 
 #include "Utility.hpp"
+#include "Graphite/Logger.hpp"
+
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::Utility);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::Utility);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::Utility {
 
 [[nodiscard]] std::vector<std::string> MakeFieldsIDs(
     std::vector<std::shared_ptr<Data::RegexTag>> const& tags)
 {
+    LOG_SCOPE("::MakeFieldsIDs(vector<shared_ptr<RegexTag>>)");
     std::vector<std::string> fields_ids{};
     for (auto const& tag : tags)
     {
@@ -31,6 +36,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite::Utility {
 [[nodiscard]] std::vector<std::string> MakeFieldsIDs(
     std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> const& columns)
 {
+    LOG_SCOPE("::MakeFieldsIDs(vector<ColumnDetails>)");
     std::vector<std::string> fields_ids{};
     for (auto const& column : columns)
     {

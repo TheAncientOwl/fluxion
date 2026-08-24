@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.14
+/// @version 1.15
 /// @brief Logging utilities
 ///
 
@@ -254,10 +254,10 @@ private:
     ::Graphite::Logger::GetLogger().Log( \
         ::Graphite::Logger::ELogLevel::Debug, __graphite_log_scope, fmt __VA_OPT__(, ) __VA_ARGS__)
 
-#define LOG_SCOPE(fmt, ...)                                               \
-    ::Graphite::Logger::ScopeLogger _graphite_scope_logger                \
-    {                                                                     \
-        std::format(fmt __VA_OPT__(, ) __VA_ARGS__), __graphite_log_scope \
+#define LOG_SCOPE(fmt, ...)                                                  \
+    ::Graphite::Logger::ScopeLogger CONCAT(_graphite_scope_logger, __LINE__) \
+    {                                                                        \
+        std::format(fmt __VA_OPT__(, ) __VA_ARGS__), __graphite_log_scope    \
     }
 
 #define GRAPHITE_ASSERT(condition, message)                                                  \

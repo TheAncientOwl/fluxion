@@ -5,7 +5,7 @@
 ///
 /// @file FilteredLogsReader.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation of @see FilteredLogsReader.hpp
 ///
 
@@ -21,7 +21,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
 FilteredLogsReader::FilteredLogsReader(DatabaseRef db) : m_database{db}
 {
-    LOG_SCOPE("::Reader()");
+    LOG_SCOPE("::FilteredLogsReader()");
 }
 
 Statement FilteredLogsReader::PrepareGetRangesQuery(
@@ -84,6 +84,7 @@ bool FilteredLogsReader::NextFilteredRow(
     std::string& out_highlight_id,
     std::size_t& out_view_index)
 {
+    LOG_SCOPE("::NextFilteredRow()");
     if (!statement.IsValid())
     {
         return false;

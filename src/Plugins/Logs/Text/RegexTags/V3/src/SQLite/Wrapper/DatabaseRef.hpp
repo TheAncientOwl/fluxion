@@ -5,7 +5,7 @@
 ///
 /// @file DatabaseRef.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Non-owning safe handle wrapper for sqlite3 connection
 ///
 
@@ -43,7 +43,6 @@ public: // API
 
     [[nodiscard]] Statement Prepare(std::string_view sql) const;
 
-    [[nodiscard]] std::size_t GetFilteredLogsCount() const;
     [[nodiscard]] char const* GetLastErrorMessage() const;
 
     /**

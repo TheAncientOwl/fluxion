@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,8 +18,8 @@
 #include "SQLite/FilteredLogsReader.hpp"
 #include "SQLite/Utility.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetLogs);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetLogs);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 

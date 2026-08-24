@@ -5,7 +5,7 @@
 ///
 /// @file GetTotalLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -13,8 +13,8 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetTotalLogs);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetTotalLogs);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 

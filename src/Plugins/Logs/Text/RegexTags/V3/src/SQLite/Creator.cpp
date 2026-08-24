@@ -5,7 +5,7 @@
 ///
 /// @file Creator.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.3
+/// @version 3.4
 /// @brief Implementation of @see Creator.hpp
 ///
 
@@ -57,12 +57,15 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
     logs_table_sql += ");";
 
     std::string err_msg{};
-    if (!m_database.Execute(logs_table_sql, &err_msg))
     {
-        LOG_ERROR(
-            "::CreateTables(): Failed to create logs table: {}",
-            err_msg.empty() ? "unknown error" : err_msg);
-        return false;
+        LOG_SCOPE("::CreateTables(): logs table");
+        if (!m_database.Execute(logs_table_sql, &err_msg))
+        {
+            LOG_ERROR(
+                "::CreateTables(): Failed to create logs table: {}",
+                err_msg.empty() ? "unknown error" : err_msg);
+            return false;
+        }
     }
 
     // 3. Create filtered_logs table
@@ -76,12 +79,15 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
         ");";
 
     err_msg.clear();
-    if (!m_database.Execute(filtered_logs_table_sql, &err_msg))
     {
-        LOG_ERROR(
-            "::CreateTables(): Failed to create filtered_logs table: {}",
-            err_msg.empty() ? "unknown error" : err_msg);
-        return false;
+        LOG_SCOPE("::CreateTables(): filtered_logs table");
+        if (!m_database.Execute(filtered_logs_table_sql, &err_msg))
+        {
+            LOG_ERROR(
+                "::CreateTables(): Failed to create filtered_logs table: {}",
+                err_msg.empty() ? "unknown error" : err_msg);
+            return false;
+        }
     }
 
     LOG_INFO("::CreateTables(): Tables created successfully.");

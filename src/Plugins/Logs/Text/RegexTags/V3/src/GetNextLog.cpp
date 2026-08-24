@@ -5,7 +5,7 @@
 ///
 /// @file GetNextLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -14,8 +14,8 @@
 #include "Graphite/Logger.hpp"
 #include "SQLite/FilteredLogsReader.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetNextLog);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetNextLog);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 

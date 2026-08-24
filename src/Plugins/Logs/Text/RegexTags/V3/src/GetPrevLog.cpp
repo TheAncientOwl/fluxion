@@ -5,7 +5,7 @@
 ///
 /// @file GetPrevLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -13,8 +13,8 @@
 #include "Graphite/Logger.hpp"
 #include "SQLite/FilteredLogsReader.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetPrevLog);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetPrevLog);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 

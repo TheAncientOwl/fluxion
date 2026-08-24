@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -15,8 +15,8 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
-USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
+DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::RegexTags);
+USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::RegexTags);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
@@ -38,7 +38,7 @@ Graphite::Settings::PersistentSettings RegexTags::GetConfig() const
 
 void RegexTags::SaveRegexTags(std::vector<std::shared_ptr<Data::RegexTag>> const& tags) const
 {
-    LOG_TRACE("::SaveRegexTags()");
+    LOG_SCOPE("::SaveRegexTags()");
     LOG_INFO("::SaveRegexTags(): size == {}", tags.size());
     auto tags_json = nlohmann::json::array();
 
@@ -59,7 +59,7 @@ void RegexTags::SaveRegexTags(std::vector<std::shared_ptr<Data::RegexTag>> const
 
 std::vector<std::shared_ptr<Data::RegexTag>> RegexTags::LoadRegexTags() const
 {
-    LOG_TRACE("::LoadRegexTags()");
+    LOG_SCOPE("::LoadRegexTags()");
     auto config{GetConfig()};
     auto tags_json_opt = config.GetJsonValue("tags");
 
@@ -95,7 +95,7 @@ std::vector<std::shared_ptr<Data::RegexTag>> RegexTags::LoadRegexTags() const
 
 void RegexTags::UpdateImportedLogsHeader(std::vector<std::shared_ptr<Data::RegexTag>> const& tags)
 {
-    LOG_TRACE("::UpdateImportedLogsHeader():");
+    LOG_SCOPE("::UpdateImportedLogsHeader():");
     LOG_INFO("::UpdateImportedLogsHeader(): tags size == {}", tags.size());
 
     m_imported_logs_header.clear();

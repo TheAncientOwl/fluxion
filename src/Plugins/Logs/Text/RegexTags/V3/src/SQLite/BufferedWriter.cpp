@@ -5,7 +5,7 @@
 ///
 /// @file BufferedWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation of @see BufferedWriter.hpp
 ///
 
@@ -28,6 +28,7 @@ BufferedWriter::BufferedWriter(
 {
     LOG_SCOPE("::BufferedWriter()");
 
+    // 1. Allocate buffer
     m_buffer.resize(m_batch_size);
     auto const fields_size{fields.size()};
     for (auto& row : m_buffer)
@@ -35,16 +36,30 @@ BufferedWriter::BufferedWriter(
         row.resize(fields_size);
     }
 
+    // 2. Generate fields sql
+    std::string fields_sql{""};
+    std::string fields_sql_placeholders{""};
     for (std::size_t i = 0; i < fields_size; ++i)
     {
-        m_fields += fields[i];
-        m_fields_sql_placeholders += "?";
+        fields_sql += fields[i];
+        fields_sql_placeholders += "?";
         if (i + 1 < fields_size)
         {
-            m_fields += ", ";
-            m_fields_sql_placeholders += ", ";
+            fields_sql += ", ";
+            fields_sql_placeholders += ", ";
         }
     }
+
+    // 3. Create logs statement
+    std::string const logs_sql =
+        "INSERT INTO logs (id, " + fields_sql + ") VALUES (?, " + fields_sql_placeholders + ");";
+    m_logs_statement = m_database.Prepare(logs_sql);
+
+    // 4. Create filtered logs statement
+    char const* filtered_sql =
+        "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) VALUES (?, "
+        "?, NULL, NULL);";
+    m_filtered_logs_statement = m_database.Prepare(filtered_sql);
 }
 
 BufferedWriter::~BufferedWriter()
@@ -89,12 +104,7 @@ bool BufferedWriter::ExecuteFlush()
 
     auto const num_fields = m_buffer[0].size();
 
-    // 1. Prepare statement for the logs table
-    std::string const logs_sql =
-        "INSERT INTO logs (id, " + m_fields + ") VALUES (?, " + m_fields_sql_placeholders + ");";
-
-    Statement statement_logs = m_database.Prepare(logs_sql);
-    if (!statement_logs.IsValid())
+    if (!m_logs_statement.IsValid())
     {
         LOG_ERROR(
             "::ExecuteFlush(): Failed to prepare logs statement: {}",
@@ -102,13 +112,7 @@ bool BufferedWriter::ExecuteFlush()
         return false;
     }
 
-    // 2. Prepare statement for the filtered_logs table
-    char const* filtered_sql =
-        "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) VALUES (?, "
-        "?, NULL, NULL);";
-
-    Statement statement_filtered = m_database.Prepare(filtered_sql);
-    if (!statement_filtered.IsValid())
+    if (!m_filtered_logs_statement.IsValid())
     {
         LOG_ERROR(
             "::ExecuteFlush(): Failed to prepare filtered_logs statement: {}",
@@ -120,34 +124,34 @@ bool BufferedWriter::ExecuteFlush()
     {
         auto const& row = m_buffer[i];
 
-        statement_logs.BindInt64(1, ++m_log_id);
+        m_logs_statement.BindInt64(1, ++m_log_id);
         // Bind dynamic log fields
         for (std::size_t fieldIndex = 0; fieldIndex < num_fields; ++fieldIndex)
         {
-            statement_logs.BindText(static_cast<int>(2 + fieldIndex), row[fieldIndex]);
+            m_logs_statement.BindText(static_cast<int>(2 + fieldIndex), row[fieldIndex]);
         }
 
-        if (statement_logs.Step() != EStepResult::Done)
+        if (m_logs_statement.Step() != EStepResult::Done)
         {
             LOG_ERROR(
                 "::ExecuteFlush(): Failed to insert into logs: {}", m_database.GetLastErrorMessage());
-            statement_logs.Reset();
+            m_logs_statement.Reset();
             continue;
         }
 
         // Bind log_id to filtered_logs
-        statement_filtered.BindInt64(1, m_log_id);
-        statement_filtered.BindInt64(2, m_log_id);
+        m_filtered_logs_statement.BindInt64(1, m_log_id);
+        m_filtered_logs_statement.BindInt64(2, m_log_id);
 
-        if (statement_filtered.Step() != EStepResult::Done)
+        if (m_filtered_logs_statement.Step() != EStepResult::Done)
         {
             LOG_ERROR(
                 "::ExecuteFlush(): Failed to insert into filtered_logs: {}",
                 m_database.GetLastErrorMessage());
         }
 
-        statement_logs.Reset();
-        statement_filtered.Reset();
+        m_logs_statement.Reset();
+        m_filtered_logs_statement.Reset();
     }
 
     if (!transaction.Commit())

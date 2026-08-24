@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -21,6 +21,7 @@
 #include "SQLite/BufferedFilteredLogsWriter.hpp"
 #include "SQLite/LogsReader.hpp"
 #include "SQLite/Utility.hpp"
+#include "SQLite/Wrapper/Transaction.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::ApplyFilters);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::ApplyFilters);
@@ -49,6 +50,7 @@ struct ActiveFilter
 ///
 inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
 {
+    LOG_SCOPE("::Convert()");
     using namespace Fluxion::API::LogsPlugin::Data;
     LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
 
@@ -136,73 +138,92 @@ void RegexTags::ApplyFilters(
 
     std::size_t total_filtered_logs{0};
     m_logs_progress = 0;
-    while (logs_reader.NextRow(statement, log_id, row))
     {
-        ++m_logs_progress;
-        for (auto const& filter : filters)
+        LOG_SCOPE("::ApplyFilters(): filtering");
+        SQLite::Transaction transaction{m_sqlite_connection.GetDatabaseRef()};
+        if (!transaction.IsActive())
         {
-            bool matches{true};
-            for (auto const& condition : filter.conditions)
+            LOG_ERROR(
+                "::ApplyFilters(): Failed to begin transaction: {}",
+                m_sqlite_connection.GetDatabaseRef().GetLastErrorMessage());
+            return;
+        }
+        while (logs_reader.NextRow(statement, log_id, row))
+        {
+            ++m_logs_progress;
+            for (auto const& filter : filters)
             {
-                auto const& target{row[condition.column_index]};
-
-                bool const equals =
-                    condition[EConditionFlag::IsRegex]
-                        ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
-                           re2::RE2::FullMatch(
-                               target, *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
-                        : (target == std::get<std::string>(condition.condition));
-
-                if (condition[EConditionFlag::IsEquals] != equals)
+                bool matches{true};
+                for (auto const& condition : filter.conditions)
                 {
-                    matches = false;
+                    auto const& target{row[condition.column_index]};
+
+                    bool const equals =
+                        condition[EConditionFlag::IsRegex]
+                            ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
+                               re2::RE2::FullMatch(
+                                   target, *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
+                            : (target == std::get<std::string>(condition.condition));
+
+                    if (condition[EConditionFlag::IsEquals] != equals)
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                if (matches)
+                {
+                    ++total_filtered_logs;
+
+                    Graphite::Common::Utility::UniqueID highlight_id{filter.id};
+                    auto highlight_priority{filter.priority};
+                    for (auto const& highlight_filter : highlight_only)
+                    {
+                        bool highlight_matches{true};
+                        for (auto const& condition : highlight_filter.conditions)
+                        {
+                            auto const& target{row[condition.column_index]};
+
+                            bool const equals =
+                                condition[EConditionFlag::IsRegex]
+                                    ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
+                                       re2::RE2::FullMatch(
+                                           target,
+                                           *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
+                                    : (target == std::get<std::string>(condition.condition));
+
+                            if (condition[EConditionFlag::IsEquals] != equals)
+                            {
+                                highlight_matches = false;
+                                break;
+                            }
+                        }
+                        if (highlight_matches && highlight_filter.priority > highlight_priority)
+                        {
+                            highlight_id = highlight_filter.id;
+                            highlight_priority = highlight_filter.priority;
+                        }
+                    }
+
+                    auto& frame = filtered_logs_writer.NextFrame();
+                    frame.log_id = log_id;
+                    frame.filter_id = filter.id.ToString();
+                    frame.highlight_filter_id = highlight_id.ToString();
                     break;
                 }
             }
+        }
+        filtered_logs_writer.Flush();
 
-            if (matches)
-            {
-                ++total_filtered_logs;
-
-                Graphite::Common::Utility::UniqueID highlight_id{filter.id};
-                auto highlight_priority{filter.priority};
-                for (auto const& highlight_filter : highlight_only)
-                {
-                    bool highlight_matches{true};
-                    for (auto const& condition : highlight_filter.conditions)
-                    {
-                        auto const& target{row[condition.column_index]};
-
-                        bool const equals =
-                            condition[EConditionFlag::IsRegex]
-                                ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
-                                   re2::RE2::FullMatch(
-                                       target,
-                                       *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
-                                : (target == std::get<std::string>(condition.condition));
-
-                        if (condition[EConditionFlag::IsEquals] != equals)
-                        {
-                            highlight_matches = false;
-                            break;
-                        }
-                    }
-                    if (highlight_matches && highlight_filter.priority > highlight_priority)
-                    {
-                        highlight_id = highlight_filter.id;
-                        highlight_priority = highlight_filter.priority;
-                    }
-                }
-
-                auto& frame = filtered_logs_writer.NextFrame();
-                frame.log_id = log_id;
-                frame.filter_id = filter.id.ToString();
-                frame.highlight_filter_id = highlight_id.ToString();
-                break;
-            }
+        if (!transaction.Commit())
+        {
+            LOG_ERROR(
+                "::ApplyFilters(): Failed to commit transaction: {}",
+                m_sqlite_connection.GetDatabaseRef().GetLastErrorMessage());
+            return;
         }
     }
-    filtered_logs_writer.Flush();
 
     LOG_INFO("::ApplyFilters(): Total filtered logs: {}", total_filtered_logs);
     auto settings{GetConfig()};
