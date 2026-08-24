@@ -5,7 +5,7 @@
 ///
 /// @file Creator.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Wrapper for SQLite create operations
 ///
 
@@ -18,12 +18,22 @@
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
-// Table schema:
-// id: Number autoincrement
-// field_<field-id>: String
-// filter_id: string
-// highlight_filter_id: string
-// filtered_view_index: number
+// --------------------------------------------------
+// Tables schemas
+// --------------------------------------------------
+// [logs]
+// id                | number | PK
+// field_<field-id0> | string
+// field_<field-id1> | string
+// ...
+// field_<field-idN> | string
+// --------------------------------------------------
+// [filtered_logs]
+// view_index         | number | PK
+// log_id             | number | FK references logs:id
+// filter_id          | string
+// highligh_filter_id | string
+// --------------------------------------------------
 
 class Creator
 {

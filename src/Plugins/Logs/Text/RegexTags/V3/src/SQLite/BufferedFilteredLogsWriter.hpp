@@ -5,7 +5,7 @@
 ///
 /// @file BufferedFilteredLogsWriter.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Wrapper for buffered writes to the filtered_logs table
 ///
 
@@ -57,6 +57,7 @@ private:
     std::vector<FilteredRow> m_buffer{};
     std::size_t m_batch_size{0};
     std::size_t m_current_index{0};
+    std::int64_t m_view_index{-1};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite

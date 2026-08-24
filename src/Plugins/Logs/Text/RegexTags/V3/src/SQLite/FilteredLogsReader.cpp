@@ -5,7 +5,7 @@
 ///
 /// @file FilteredLogsReader.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation of @see FilteredLogsReader.hpp
 ///
 
@@ -58,8 +58,8 @@ Statement FilteredLogsReader::PrepareGetRangesQuery(
         {
             query_str += " OR ";
         }
-        query_str += "(f.view_index >= " + std::to_string(ranges[i].begin + 1) +
-                     " AND f.view_index < " + std::to_string(ranges[i].end + 1) + ")";
+        query_str += "(f.view_index >= " + std::to_string(ranges[i].begin) +
+                     " AND f.view_index < " + std::to_string(ranges[i].end) + ")";
     }
     query_str += " ORDER BY f.view_index ASC;";
 
@@ -125,7 +125,7 @@ bool FilteredLogsReader::NextFilteredRow(
         const char* highlight_text = statement.GetColumnText(highlight_col_idx);
         out_highlight_id = highlight_text ? highlight_text : default_filter_id;
 
-        out_view_index = static_cast<std::size_t>(statement.GetColumnInt64(view_index_col_idx)) - 1;
+        out_view_index = static_cast<std::size_t>(statement.GetColumnInt64(view_index_col_idx));
 
         return true;
     }
@@ -188,7 +188,7 @@ std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
         {
             if (try_forward)
             {
-                stmt.BindInt64(1, static_cast<std::int64_t>(target_idx + 1));
+                stmt.BindInt64(1, static_cast<std::int64_t>(target_idx));
             }
         }
         else
@@ -197,13 +197,13 @@ std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
             stmt.BindText(2, std::string{filter_id_str});
             if (try_forward)
             {
-                stmt.BindInt64(3, static_cast<std::int64_t>(target_idx + 1));
+                stmt.BindInt64(3, static_cast<std::int64_t>(target_idx));
             }
         }
 
         if (stmt.Step() == EStepResult::Row)
         {
-            return static_cast<std::size_t>(stmt.GetColumnInt64(0)) - 1;
+            return static_cast<std::size_t>(stmt.GetColumnInt64(0));
         }
         return std::nullopt;
     };
@@ -274,7 +274,7 @@ std::optional<std::size_t> FilteredLogsReader::GetPrevFilteredIndex(
         {
             if (try_backward)
             {
-                statement.BindInt64(1, static_cast<std::int64_t>(target_idx + 1));
+                statement.BindInt64(1, static_cast<std::int64_t>(target_idx));
             }
         }
         else
@@ -283,13 +283,13 @@ std::optional<std::size_t> FilteredLogsReader::GetPrevFilteredIndex(
             statement.BindText(2, std::string{filter_id_str});
             if (try_backward)
             {
-                statement.BindInt64(3, static_cast<std::int64_t>(target_idx + 1));
+                statement.BindInt64(3, static_cast<std::int64_t>(target_idx));
             }
         }
 
         if (statement.Step() == EStepResult::Row)
         {
-            return static_cast<std::size_t>(statement.GetColumnInt64(0)) - 1;
+            return static_cast<std::size_t>(statement.GetColumnInt64(0));
         }
         return std::nullopt;
     };

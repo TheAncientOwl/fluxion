@@ -5,7 +5,7 @@
 ///
 /// @file DatabaseRef.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Non-owning safe handle wrapper for sqlite3 connection
 ///
 
@@ -13,7 +13,6 @@
 
 #include "Statement.hpp"
 
-#include <cstdint>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -44,7 +43,6 @@ public: // API
 
     [[nodiscard]] Statement Prepare(std::string_view sql) const;
 
-    [[nodiscard]] std::int64_t GetLastInsertRowId() const;
     [[nodiscard]] std::size_t GetFilteredLogsCount() const;
     [[nodiscard]] char const* GetLastErrorMessage() const;
 

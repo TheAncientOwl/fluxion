@@ -5,7 +5,7 @@
 ///
 /// @file BufferedWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation of @see BufferedWriter.hpp
 ///
 
@@ -91,7 +91,7 @@ bool BufferedWriter::ExecuteFlush()
 
     // 1. Prepare statement for the logs table
     std::string const logs_sql =
-        "INSERT INTO logs (" + m_fields + ") VALUES (" + m_fields_sql_placeholders + ");";
+        "INSERT INTO logs (id, " + m_fields + ") VALUES (?, " + m_fields_sql_placeholders + ");";
 
     Statement statement_logs = m_database.Prepare(logs_sql);
     if (!statement_logs.IsValid())
@@ -104,8 +104,8 @@ bool BufferedWriter::ExecuteFlush()
 
     // 2. Prepare statement for the filtered_logs table
     char const* filtered_sql =
-        "INSERT INTO filtered_logs (log_id, filter_id, highlight_filter_id) VALUES (?, NULL, "
-        "NULL);";
+        "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) VALUES (?, "
+        "?, NULL, NULL);";
 
     Statement statement_filtered = m_database.Prepare(filtered_sql);
     if (!statement_filtered.IsValid())
@@ -120,10 +120,11 @@ bool BufferedWriter::ExecuteFlush()
     {
         auto const& row = m_buffer[i];
 
+        statement_logs.BindInt64(1, ++m_log_id);
         // Bind dynamic log fields
-        for (std::size_t f = 0; f < num_fields; ++f)
+        for (std::size_t fieldIndex = 0; fieldIndex < num_fields; ++fieldIndex)
         {
-            statement_logs.BindText(static_cast<int>(1 + f), row[f]);
+            statement_logs.BindText(static_cast<int>(2 + fieldIndex), row[fieldIndex]);
         }
 
         if (statement_logs.Step() != EStepResult::Done)
@@ -134,11 +135,9 @@ bool BufferedWriter::ExecuteFlush()
             continue;
         }
 
-        // Retrieve the auto-generated primary key ID
-        std::int64_t const log_id = m_database.GetLastInsertRowId();
-
         // Bind log_id to filtered_logs
-        statement_filtered.BindInt64(1, log_id);
+        statement_filtered.BindInt64(1, m_log_id);
+        statement_filtered.BindInt64(2, m_log_id);
 
         if (statement_filtered.Step() != EStepResult::Done)
         {

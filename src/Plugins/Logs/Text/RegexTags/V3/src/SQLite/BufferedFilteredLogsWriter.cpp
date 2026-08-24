@@ -5,7 +5,7 @@
 ///
 /// @file BufferedFilteredLogsWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Implementation of @see BufferedFilteredLogsWriter.hpp
 ///
 
@@ -34,18 +34,10 @@ BufferedFilteredLogsWriter::~BufferedFilteredLogsWriter()
 
 bool BufferedFilteredLogsWriter::ClearTable()
 {
-    std::string err_msg{};
-    char const* filtered_logs_table_sql =
-        "DROP TABLE IF EXISTS filtered_logs;"
-        "CREATE TABLE filtered_logs ("
-        "    view_index INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "    log_id INTEGER NOT NULL,"
-        "    filter_id TEXT,"
-        "    highlight_filter_id TEXT,"
-        "    FOREIGN KEY(log_id) REFERENCES logs(id)"
-        ");";
+    LOG_SCOPE("::ClearTable():");
 
-    if (!m_database.Execute(filtered_logs_table_sql, &err_msg))
+    std::string err_msg{};
+    if (!m_database.Execute("DELETE FROM filtered_logs", &err_msg))
     {
         LOG_ERROR(
             "::BufferedFilteredLogsWriter(): Failed to drop/create filtered_logs table: {}",
@@ -91,7 +83,8 @@ bool BufferedFilteredLogsWriter::ExecuteFlush()
     }
 
     char const* insert_sql =
-        "INSERT INTO filtered_logs (log_id, filter_id, highlight_filter_id) VALUES (?, ?, ?);";
+        "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) VALUES (?, "
+        "?, ?, ?);";
 
     Statement statement = m_database.Prepare(insert_sql);
     if (!statement.IsValid())
@@ -106,9 +99,10 @@ bool BufferedFilteredLogsWriter::ExecuteFlush()
     {
         auto const& row = m_buffer[i];
 
-        statement.BindInt64(1, static_cast<std::int64_t>(row.log_id));
-        statement.BindText(2, row.filter_id);
-        statement.BindText(3, row.highlight_filter_id);
+        statement.BindInt64(1, ++m_view_index);
+        statement.BindInt64(2, static_cast<std::int64_t>(row.log_id));
+        statement.BindText(3, row.filter_id);
+        statement.BindText(4, row.highlight_filter_id);
 
         if (statement.Step() != EStepResult::Done)
         {

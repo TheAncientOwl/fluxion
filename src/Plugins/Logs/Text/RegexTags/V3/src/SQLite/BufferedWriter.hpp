@@ -5,7 +5,7 @@
 ///
 /// @file BufferedWriter.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.1
+/// @version 3.2
 /// @brief Wrapper for SQLite write operations
 ///
 
@@ -45,6 +45,7 @@ private:
     std::size_t m_current_index{0};
     std::string m_fields{""};
     std::string m_fields_sql_placeholders{""};
+    std::int64_t m_log_id{-1};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite

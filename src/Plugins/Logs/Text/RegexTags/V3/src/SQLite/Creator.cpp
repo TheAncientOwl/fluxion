@@ -5,7 +5,7 @@
 ///
 /// @file Creator.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation of @see Creator.hpp
 ///
 
@@ -48,7 +48,7 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
     // 2. Create logs table
     std::string logs_table_sql =
         "CREATE TABLE logs ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT";
+        "id INTEGER PRIMARY KEY";
 
     for (auto const& field_id : fields_ids)
     {
@@ -68,7 +68,7 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
     // 3. Create filtered_logs table
     char const* filtered_logs_table_sql =
         "CREATE TABLE filtered_logs ("
-        "    view_index INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "    view_index INTEGER PRIMARY KEY,"
         "    log_id INTEGER NOT NULL,"
         "    filter_id TEXT,"
         "    highlight_filter_id TEXT,"

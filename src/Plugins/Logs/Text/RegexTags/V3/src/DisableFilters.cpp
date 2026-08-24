@@ -5,7 +5,7 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -57,22 +57,18 @@ void RegexTags::DisableFilters()
 
     m_logs_progress = 0;
 
-    SQLite::DatabaseRef::ProgressCallback progress_cb = [this, database_ref]() -> int {
-        m_logs_progress += 1000; // Increment progress based on processed opcodes
-        if (auto stmt = database_ref.Prepare("SELECT COUNT(*) FROM filtered_logs;");
-            stmt.IsValid() && stmt.Step() == SQLite::EStepResult::Row)
-        {
-            m_logs_progress = static_cast<std::size_t>(stmt.GetColumnInt64(0));
-        }
+    SQLite::DatabaseRef::ProgressCallback progress_cb =
+        [this, total_logs = *total_logs_imported_opt]() -> int {
+        m_logs_progress = std::min(m_logs_progress + 50, total_logs);
         return 0;
     };
     database_ref.SetProgressHandler(1000, progress_cb);
 
     auto const success = database_ref.ExecuteTransaction([&database_ref]() {
-        return database_ref.Execute("DROP TABLE IF EXISTS filtered_logs;") &&
+        return database_ref.Execute("DROP TABLE filtered_logs") &&
                database_ref.Execute(
                    "CREATE TABLE filtered_logs ("
-                   "    view_index INTEGER PRIMARY KEY AUTOINCREMENT,"
+                   "    view_index INTEGER PRIMARY KEY,"
                    "    log_id INTEGER NOT NULL,"
                    "    filter_id TEXT,"
                    "    highlight_filter_id TEXT,"

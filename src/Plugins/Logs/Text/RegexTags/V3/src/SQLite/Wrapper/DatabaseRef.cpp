@@ -5,7 +5,7 @@
 ///
 /// @file DatabaseRef.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation of @see DatabaseRef.hpp
 ///
 
@@ -70,11 +70,6 @@ Statement DatabaseRef::Prepare(std::string_view sql) const
         return Statement{nullptr};
     }
     return Statement{raw_stmt};
-}
-
-std::int64_t DatabaseRef::GetLastInsertRowId() const
-{
-    return static_cast<std::int64_t>(sqlite3_last_insert_rowid(m_db));
 }
 
 std::size_t DatabaseRef::GetFilteredLogsCount() const
