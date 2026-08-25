@@ -34,6 +34,7 @@ add_library(fluxion_logs_plugin__text__regex_tags__v5_interface INTERFACE)
 target_include_directories(fluxion_logs_plugin__text__regex_tags__v5_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Import
 )
 
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v5_interface INTERFACE
@@ -49,7 +50,7 @@ add_library(fluxion_logs_plugin__text__regex_tags__v5 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Wrapper/Transaction.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/BufferedFilteredLogsWriter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/BufferedWriter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/LogsWriter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Creator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/FilteredLogsReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/LogsReader.cpp

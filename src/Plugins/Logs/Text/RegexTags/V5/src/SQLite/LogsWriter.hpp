@@ -3,10 +3,10 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
-/// @file BufferedWriter.hpp
+/// @file LogsWriter.hpp
 /// @author Alexandru Delegeanu
 /// @version 5.0
-/// @brief Wrapper for SQLite write operations
+/// @brief Direct SQLite writer executing chunk-level transactions without double-buffering
 ///
 
 #pragma once
@@ -19,30 +19,23 @@
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V5::SQLite {
 
-class BufferedWriter
+class LogsWriter
 {
 public: // Lifecycle
-    BufferedWriter(DatabaseRef db, std::size_t const batch_size, std::vector<std::string> const& fields);
-    ~BufferedWriter();
+    LogsWriter(DatabaseRef db, std::vector<std::string> const& fields);
+    ~LogsWriter() = default;
 
-    BufferedWriter(BufferedWriter const&) = delete;
-    BufferedWriter& operator=(BufferedWriter const&) = delete;
+    LogsWriter(LogsWriter const&) = delete;
+    LogsWriter& operator=(LogsWriter const&) = delete;
 
-    BufferedWriter(BufferedWriter&&) noexcept = default;
-    BufferedWriter& operator=(BufferedWriter&&) noexcept = default;
+    LogsWriter(LogsWriter&&) noexcept = default;
+    LogsWriter& operator=(LogsWriter&&) noexcept = default;
 
 public: // Public API
-    std::vector<std::string>& NextFrame();
-    bool Flush();
-
-private: // Private API
-    bool ExecuteFlush();
+    bool WriteChunk(std::vector<std::vector<std::string>> const& rows, std::size_t active_rows);
 
 private:
     DatabaseRef m_database;
-    std::vector<std::vector<std::string>> m_buffer{};
-    std::size_t m_batch_size{0};
-    std::size_t m_current_index{0};
     std::int64_t m_log_id{-1};
     Statement m_logs_statement{};
     Statement m_filtered_logs_statement{};
