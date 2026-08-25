@@ -5,7 +5,7 @@
 ///
 /// @file OnEnable.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -27,6 +27,8 @@ void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& dat
 
     LOG_SCOPE("::OnEnable()");
     LOG_TRACE("::OnEnable()");
+
+    LoadSettings();
 
     auto tags{LoadRegexTags()};
     if (tags.empty())

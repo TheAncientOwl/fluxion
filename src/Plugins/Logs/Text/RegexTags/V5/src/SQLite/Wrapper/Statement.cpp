@@ -5,7 +5,7 @@
 ///
 /// @file Statement.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation of @see Statement.hpp
 ///
 
@@ -61,6 +61,12 @@ bool Statement::BindText(int index, std::string_view value)
     return sqlite3_bind_text(
                m_stmt, index, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT) ==
            SQLITE_OK;
+}
+
+bool Statement::BindTextStatic(int index, std::string_view value)
+{
+    return sqlite3_bind_text(
+               m_stmt, index, value.data(), static_cast<int>(value.size()), SQLITE_STATIC) == SQLITE_OK;
 }
 
 EStepResult Statement::Step()

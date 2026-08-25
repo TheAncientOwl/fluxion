@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -169,6 +169,102 @@ void RegexTags::RenderMenu()
     if (tags_dirty)
     {
         SaveRegexTags(m_regex_tags.GetFront());
+    }
+
+    static auto s_default_config{Data::Settings{}};
+
+    if (ImGui::CollapsingHeader("Import Settings", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::BeginTable("##ImportSettingsTable", 3, ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Input", ImGuiTableColumnFlags_WidthFixed, 110.0f);
+            ImGui::TableSetupColumn("Reset", ImGuiTableColumnFlags_WidthFixed, 110.0f);
+
+            auto render_input = [this](
+                                    const char* label,
+                                    const char* id,
+                                    std::int32_t& value,
+                                    std::int32_t const max_value,
+                                    std::int32_t const default_value,
+                                    const char* obj_key,
+                                    const char* config_key) {
+                ImGui::TableNextRow();
+
+                // Column 0: Label
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextUnformatted(label);
+
+                // Column 1: Input control
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-1); // Fill available column width (110px)
+
+                std::optional<std::int32_t> opt_value{std::nullopt};
+
+                if (ImGui::InputInt(id, &value, 1))
+                {
+                    opt_value = std::clamp(value, 1, max_value);
+                }
+
+                ImGui::TableNextColumn();
+                ImGui::PushID(id);
+                if (ImGui::Button("Reset"))
+                {
+                    opt_value = default_value;
+                    value = default_value;
+                }
+                ImGui::PopID();
+
+                if (static_cast<bool>(opt_value))
+                {
+                    value = *opt_value;
+
+                    auto config{GetConfig()};
+                    auto json = config.GetJsonValue(obj_key).value_or(nlohmann::json::object());
+
+                    json[config_key] = *opt_value;
+
+                    config.SetJsonValue(obj_key, json);
+                    config.Save();
+                }
+            };
+
+            render_input(
+                "Workers Count",
+                "##workerscount",
+                m_settings.import_params.workers_count,
+                s_default_config.import_params.workers_count * 100,
+                s_default_config.import_params.workers_count,
+                "import",
+                "workers_count");
+            render_input(
+                "Batch Capacity",
+                "##batchcapacity",
+                m_settings.import_params.batch_capacity,
+                s_default_config.import_params.batch_capacity * 100,
+                s_default_config.import_params.batch_capacity,
+                "import",
+                "batch_capacity");
+            render_input(
+                "Available batches per worker",
+                "##availablebpw",
+                m_settings.import_params.available_batches_per_worker,
+                s_default_config.import_params.available_batches_per_worker * 100,
+                s_default_config.import_params.available_batches_per_worker,
+                "import",
+                "available_batches_per_worker");
+            render_input(
+                "Rows per transaction",
+                "##rowspertransaction",
+                m_settings.import_params.rows_per_transaction,
+                s_default_config.import_params.rows_per_transaction * 100,
+                s_default_config.import_params.rows_per_transaction,
+                "import",
+                "rows_per_transaction");
+
+            ImGui::EndTable();
+        }
     }
 }
 

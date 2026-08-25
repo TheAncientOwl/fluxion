@@ -5,7 +5,7 @@
 ///
 /// @file OnDisable.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -21,6 +21,8 @@ void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /
 {
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");
+
+    SaveSettings();
 
     SaveRegexTags(m_regex_tags.GetFront());
     auto config{GetConfig()};

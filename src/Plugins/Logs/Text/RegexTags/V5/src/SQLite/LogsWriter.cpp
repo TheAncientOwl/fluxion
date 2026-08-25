@@ -5,14 +5,13 @@
 ///
 /// @file LogsWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Implementation of @see LogsWriter.hpp
 ///
 
 #include "LogsWriter.hpp"
 #include <string_view>
 #include "Graphite/Logger.hpp"
-#include "Wrapper/Transaction.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::SQLite::LogsWriter);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::SQLite::LogsWriter);
@@ -59,13 +58,6 @@ bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& ro
         return true;
     }
 
-    Transaction transaction{m_database};
-    if (!transaction.IsActive())
-    {
-        LOG_ERROR("::WriteChunk(): Failed to begin transaction: {}", m_database.GetLastErrorMessage());
-        return false;
-    }
-
     if (!m_logs_statement.IsValid() || !m_filtered_logs_statement.IsValid())
     {
         LOG_ERROR("::WriteChunk(): Invalid statements: {}", m_database.GetLastErrorMessage());
@@ -81,7 +73,7 @@ bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& ro
 
         for (std::size_t field_idx = 0; field_idx < num_fields; ++field_idx)
         {
-            m_logs_statement.BindText(static_cast<int>(2 + field_idx), row[field_idx]);
+            m_logs_statement.BindTextStatic(static_cast<int>(2 + field_idx), row[field_idx]);
         }
 
         if (m_logs_statement.Step() != EStepResult::Done)
@@ -104,13 +96,6 @@ bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& ro
 
         m_logs_statement.Reset();
         m_filtered_logs_statement.Reset();
-    }
-
-    if (!transaction.Commit())
-    {
-        LOG_ERROR(
-            "::WriteChunk(): Failed to commit transaction: {}", m_database.GetLastErrorMessage());
-        return false;
     }
 
     return true;

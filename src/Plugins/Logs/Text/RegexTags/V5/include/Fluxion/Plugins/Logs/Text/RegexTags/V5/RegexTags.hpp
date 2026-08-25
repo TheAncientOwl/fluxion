@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -67,6 +67,9 @@ private:
     std::vector<std::shared_ptr<Data::RegexTag>> LoadRegexTags() const;
     void UpdateImportedLogsHeader(std::vector<std::shared_ptr<Data::RegexTag>> const& tags);
 
+    void LoadSettings();
+    void SaveSettings() const;
+
 private:
     Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<std::shared_ptr<Data::RegexTag>>>
         m_regex_tags{};
@@ -78,6 +81,8 @@ private:
     std::size_t m_total_import_logs{0};
 
     SQLite::ConnectionManager m_sqlite_connection{};
+
+    Data::Settings m_settings{};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V5

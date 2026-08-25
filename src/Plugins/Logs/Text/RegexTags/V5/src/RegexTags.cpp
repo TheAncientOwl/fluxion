@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -91,6 +91,37 @@ std::vector<std::shared_ptr<Data::RegexTag>> RegexTags::LoadRegexTags() const
 
     LOG_INFO("::SaveRegexTags(): size == {}", loaded_tags.size());
     return loaded_tags;
+}
+
+void RegexTags::SaveSettings() const
+{
+    LOG_SCOPE("::SaveSettings()");
+    auto config{GetConfig()};
+    config.SetJsonValue("import", m_settings.import_params);
+    config.Save();
+}
+
+void RegexTags::LoadSettings()
+{
+    LOG_SCOPE("::LoadSettings()");
+    auto config{GetConfig()};
+    auto json_opt = config.GetJsonValue("import");
+
+    if (!json_opt || !json_opt->is_object())
+    {
+        LOG_WARN("::LoadSettings(): Missing or invalid 'import' configuration.");
+        m_settings.import_params = Data::Settings::ImportMultithreadingParams{};
+        return;
+    }
+
+    try
+    {
+        m_settings.import_params = json_opt->get<Data::Settings::ImportMultithreadingParams>();
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR("::LoadSettings(): Failed to parse import settings: {}", e.what());
+    }
 }
 
 void RegexTags::UpdateImportedLogsHeader(std::vector<std::shared_ptr<Data::RegexTag>> const& tags)

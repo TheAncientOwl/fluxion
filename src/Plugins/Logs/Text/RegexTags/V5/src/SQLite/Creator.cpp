@@ -5,7 +5,7 @@
 ///
 /// @file Creator.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation of @see Creator.hpp
 ///
 
@@ -27,8 +27,10 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
     LOG_SCOPE("::CreateTables()");
 
     // 1. Setup PRAGMAs
-    if (!m_database.Execute("PRAGMA journal_mode=WAL;") ||
-        !m_database.Execute("PRAGMA synchronous=NORMAL;") ||
+    if (!m_database.Execute("PRAGMA page_size=65536;") ||
+        !m_database.Execute("PRAGMA journal_mode=OFF;") ||
+        !m_database.Execute("PRAGMA synchronous=OFF;") ||
+        !m_database.Execute("PRAGMA locking_mode=EXCLUSIVE;") ||
         !m_database.Execute("PRAGMA cache_size=-64000;"))
     {
         LOG_ERROR(

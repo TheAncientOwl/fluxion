@@ -5,7 +5,7 @@
 ///
 /// @file Statement.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief RAII wrapper for sqlite3_stmt operations
 ///
 
@@ -42,6 +42,7 @@ public: // API
 
     bool BindInt64(int index, std::int64_t value);
     bool BindText(int index, std::string_view value);
+    bool BindTextStatic(int index, std::string_view value);
 
     EStepResult Step();
     bool Reset();
