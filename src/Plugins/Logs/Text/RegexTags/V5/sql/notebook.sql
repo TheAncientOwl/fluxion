@@ -7,15 +7,15 @@
 
 -- SELECT MIN(view_index), MAX(view_index), COUNT(*) FROM filtered_logs;
 
-SELECT *
-FROM filtered_logs;
+-- SELECT COUNT(*)
+-- FROM filtered_logs;
 
--- SELECT * FROM (
---     SELECT * FROM logs 
---     ORDER BY id DESC 
---     LIMIT 20
--- ) 
--- ORDER BY id ASC;
+SELECT * FROM (
+    SELECT * FROM logs 
+    ORDER BY id DESC
+    LIMIT 200
+) 
+ORDER BY id ASC;
 
 -- SELECT COUNT(*)
 -- from logs;

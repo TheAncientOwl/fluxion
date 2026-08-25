@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.4
+/// @version 3.5
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -70,8 +70,8 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     LOG_SCOPE("::ImportLogs()");
     LOG_INFO("Importing {}", path.c_str());
 
-    m_logs_progress = 0;
-    m_total_import_logs = Utility::CountLines(path);
+    m_logs_operation_progress = 0;
+    m_logs_operation_target = Utility::CountLines(path);
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const& tags{m_regex_tags.GetFront()};
@@ -172,10 +172,10 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
             {
                 auto& next_row{sqlite_writer.NextFrame()};
 
-                ++m_logs_progress;
-                if (m_logs_progress % 1000 == 0)
+                ++m_logs_operation_progress;
+                if (m_logs_operation_progress % 1000 == 0)
                 {
-                    LOG_INFO("Read another 1000 chunk, total: {}", m_logs_progress);
+                    LOG_INFO("Read another 1000 chunk, total: {}", m_logs_operation_progress);
                 }
 
                 for (std::size_t i = 0; i < num_captures && i < row.size(); ++i)
@@ -192,14 +192,14 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         sqlite_writer.Flush();
     }
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_progress);
+    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};
-    settings.set("total_logs", m_logs_progress);
-    settings.set("total_logs_imported", m_logs_progress);
+    settings.set("total_logs", m_logs_operation_progress);
+    settings.set("total_logs_imported", m_logs_operation_progress);
     settings.Save();
 
-    m_total_import_logs = 0;
-    m_logs_progress = 0;
+    m_logs_operation_target = 0;
+    m_logs_operation_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

@@ -5,7 +5,7 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.0
+/// @version 4.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -55,11 +55,11 @@ void RegexTags::DisableFilters()
 
     auto database_ref{m_sqlite_connection.GetDatabaseRef()};
 
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
 
     SQLite::DatabaseRef::ProgressCallback progress_cb =
         [this, total_logs = *total_logs_imported_opt]() -> int {
-        m_logs_progress = std::min(m_logs_progress + 50, total_logs);
+        m_logs_operation_progress = std::min(m_logs_operation_progress + 50, total_logs);
         return 0;
     };
     database_ref.SetProgressHandler(1000, progress_cb);
@@ -87,7 +87,7 @@ void RegexTags::DisableFilters()
         return;
     }
 
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
     LOG_INFO(
         "::DisableFilters(): Successfully disabled filters. Restored {} logs.",
         *total_logs_imported_opt);

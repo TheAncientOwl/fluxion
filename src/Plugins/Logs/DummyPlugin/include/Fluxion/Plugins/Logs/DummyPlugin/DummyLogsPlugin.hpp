@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Dummy implementation of a LogsPlugin
 ///
 
@@ -52,8 +52,9 @@ public:
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
         Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
 
-    std::size_t GetTotalEstimatedImportLogs() const override final;
-    std::size_t GetProcessedLogsProgress() const override final;
+    std::size_t GetLogsOperationTarget() const override final;
+    std::size_t GetLogsOperationProgress() const override final;
+    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit GetLogsOperationUnit() const override final;
 
 private:
     std::vector<std::vector<std::string>> m_logs;

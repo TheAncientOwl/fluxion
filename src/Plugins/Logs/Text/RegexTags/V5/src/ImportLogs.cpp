@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.4
+/// @version 5.5
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -44,44 +44,22 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V5 {
 
 namespace Utility {
 
-std::size_t EstimateTotalLines(const char* data, std::size_t const size)
+class LogsOperationUnitResetter
 {
-    LOG_SCOPE("::EstimateTotalLines()");
-
-    if (data == nullptr || size == 0)
+public:
+    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& target)
+        : m_target{target}
     {
-        return 0;
     }
 
-    // Sample the first 4 MB slice
-    std::size_t const sample_size = std::min<std::size_t>(size, 4 * 1024 * 1024);
-
-    std::size_t sample_lines = 0;
-    const char* ptr = data;
-    const char* const end = data + sample_size;
-
-    while (ptr < end)
+    ~LogsOperationUnitResetter()
     {
-        auto const remaining_bytes = static_cast<std::size_t>(end - ptr);
-        auto const* newline = static_cast<const char*>(std::memchr(ptr, '\n', remaining_bytes));
+        m_target = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+    };
 
-        if (!newline)
-        {
-            break;
-        }
-
-        ++sample_lines;
-        ptr = newline + 1;
-    }
-
-    if (sample_lines == 0 || sample_size == size)
-    {
-        return sample_lines;
-    }
-
-    double const bytes_per_line = static_cast<double>(sample_size) / static_cast<double>(sample_lines);
-    return static_cast<std::size_t>(static_cast<double>(size) / bytes_per_line);
-}
+private:
+    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& m_target;
+};
 
 struct MappedFile
 {
@@ -194,6 +172,7 @@ struct LogChunk
     std::size_t chunk_index{0}; // Local sequence within slice
     std::vector<std::vector<std::string_view>> rows;
     std::size_t active_populated_rows{0};
+    std::size_t chunk_size_bytes{0};
 
     LogChunk(std::size_t const capacity, std::size_t const field_count)
         : rows(capacity, std::vector<std::string_view>(field_count))
@@ -228,6 +207,7 @@ public:
 
         chunk->slice_id = slice_id;
         chunk->active_populated_rows = 0;
+        chunk->chunk_size_bytes = 0;
         return chunk;
     }
 
@@ -328,8 +308,10 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     }
 
     m_last_imported_logs_path = path;
-    m_logs_progress = 0;
-    m_total_import_logs = Utility::EstimateTotalLines(mapped_file.get(), mapped_file.size);
+    m_logs_operation_progress = 0;
+    Utility::LogsOperationUnitResetter logs_operation_unit_resetter{m_logs_operation_unit};
+    m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
+    m_logs_operation_target = mapped_file.size;
 
     auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
     {
@@ -363,6 +345,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         row_fields_count);
 
     // 1. Single Writer Thread: Consumes chunks sequentially per slice index
+    std::size_t total_logs{0};
     auto writer_future = std::async(std::launch::async, [&]() {
         LOG_SCOPE("::ImportLogs(): writer_thread");
 
@@ -383,12 +366,12 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                     break;
                 }
 
-                m_logs_progress += chunk->active_populated_rows;
-
                 sqlite_writer.WriteChunk(chunk->rows, chunk->active_populated_rows);
 
-                rows_in_current_transaction += chunk->active_populated_rows;
+                m_logs_operation_progress += chunk->chunk_size_bytes;
+                total_logs += chunk->active_populated_rows;
 
+                rows_in_current_transaction += chunk->active_populated_rows;
                 if (rows_in_current_transaction >=
                     static_cast<std::size_t>(m_settings.import_params.rows_per_transaction))
                 {
@@ -417,97 +400,101 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
              worker_idx < static_cast<std::size_t>(m_settings.import_params.workers_count);
              ++worker_idx)
         {
-            workers.emplace_back(
-                [&, num_captures, batch_capacity = m_settings.import_params.batch_capacity]() {
-                    LOG_SCOPE("::ParserWorkerThread::{}()", std::this_thread::get_id());
+            workers.emplace_back([&,
+                                  num_captures,
+                                  batch_capacity = m_settings.import_params.batch_capacity]() {
+                LOG_SCOPE("::ParserWorkerThread::{}()", std::this_thread::get_id());
 
-                    // Per-thread capture buffer reuse
-                    std::vector<re2::StringPiece> capture_results(num_captures);
-                    std::vector<re2::RE2::Arg> re2_args{};
-                    std::vector<re2::RE2::Arg*> re2_arg_ptrs{};
-                    re2_args.reserve(num_captures);
-                    re2_arg_ptrs.reserve(num_captures);
+                // Per-thread capture buffer reuse
+                std::vector<re2::StringPiece> capture_results(num_captures);
+                std::vector<re2::RE2::Arg> re2_args{};
+                std::vector<re2::RE2::Arg*> re2_arg_ptrs{};
+                re2_args.reserve(num_captures);
+                re2_arg_ptrs.reserve(num_captures);
 
-                    for (std::size_t capture_idx = 0; capture_idx < num_captures; ++capture_idx)
+                for (std::size_t capture_idx = 0; capture_idx < num_captures; ++capture_idx)
+                {
+                    re2_args.emplace_back(&capture_results[capture_idx]);
+                    re2_arg_ptrs.push_back(&re2_args.back());
+                }
+
+                while (true)
+                {
+                    auto const slice_idx{next_slice_idx.fetch_add(1, std::memory_order_relaxed)};
+                    if (slice_idx >= total_slices)
                     {
-                        re2_args.emplace_back(&capture_results[capture_idx]);
-                        re2_arg_ptrs.push_back(&re2_args.back());
+                        break;
                     }
 
-                    while (true)
+                    const char* ptr{file_slices[slice_idx].start};
+                    const char* const slice_end{file_slices[slice_idx].end};
+
+                    std::size_t local_chunk_idx{0};
+                    auto current_chunk = queue.AcquireFreeChunk(slice_idx);
+                    current_chunk->chunk_index = local_chunk_idx++;
+
+                    while (ptr < slice_end)
                     {
-                        auto const slice_idx{next_slice_idx.fetch_add(1, std::memory_order_relaxed)};
-                        if (slice_idx >= total_slices)
+                        const char* newline = static_cast<const char*>(
+                            std::memchr(ptr, '\n', static_cast<std::size_t>(slice_end - ptr)));
+
+                        const char* line_end = newline ? newline : slice_end;
+                        const char* next_ptr = newline ? newline + 1 : slice_end;
+
+                        current_chunk->chunk_size_bytes += static_cast<std::size_t>(next_ptr - ptr);
+
+                        auto line_length = static_cast<std::size_t>(line_end - ptr);
+                        if (line_length > 0 && ptr[line_length - 1] == '\r')
                         {
-                            break;
+                            --line_length;
                         }
 
-                        const char* ptr{file_slices[slice_idx].start};
-                        const char* const slice_end{file_slices[slice_idx].end};
-
-                        std::size_t local_chunk_idx{0};
-                        auto current_chunk = queue.AcquireFreeChunk(slice_idx);
-                        current_chunk->chunk_index = local_chunk_idx++;
-
-                        while (ptr < slice_end)
+                        re2::StringPiece const line_piece(ptr, line_length);
+                        if (re2::RE2::FullMatchN(
+                                line_piece,
+                                shared_regex,
+                                re2_arg_ptrs.data(),
+                                static_cast<int>(num_captures)))
                         {
-                            const char* newline = static_cast<const char*>(
-                                std::memchr(ptr, '\n', static_cast<std::size_t>(slice_end - ptr)));
+                            auto& row = current_chunk->rows[current_chunk->active_populated_rows++];
 
-                            const char* line_end = newline ? newline : slice_end;
-                            auto line_length = static_cast<std::size_t>(line_end - ptr);
-                            if (line_length > 0 && ptr[line_length - 1] == '\r')
+                            for (std::size_t i = 0; i < num_captures && i < row_fields_count; ++i)
                             {
-                                --line_length;
-                            }
-
-                            re2::StringPiece const line_piece(ptr, line_length);
-                            if (re2::RE2::FullMatchN(
-                                    line_piece,
-                                    shared_regex,
-                                    re2_arg_ptrs.data(),
-                                    static_cast<int>(num_captures)))
-                            {
-                                auto& row =
-                                    current_chunk->rows[current_chunk->active_populated_rows++];
-
-                                for (std::size_t i = 0; i < num_captures && i < row_fields_count; ++i)
+                                if (capture_results[i].data() != nullptr)
                                 {
-                                    if (capture_results[i].data() != nullptr)
-                                    {
-                                        row[i] = std::string_view(
-                                            capture_results[i].data(), capture_results[i].size());
-                                    }
-                                    else
-                                    {
-                                        row[i] = {};
-                                    }
+                                    row[i] = std::string_view(
+                                        capture_results[i].data(), capture_results[i].size());
                                 }
-
-                                if (current_chunk->active_populated_rows ==
-                                    static_cast<std::size_t>(batch_capacity))
+                                else
                                 {
-                                    queue.SubmitFilledChunk(std::move(current_chunk));
-                                    current_chunk = queue.AcquireFreeChunk(slice_idx);
-                                    current_chunk->chunk_index = local_chunk_idx++;
+                                    row[i] = {};
                                 }
                             }
 
-                            ptr = newline ? newline + 1 : slice_end;
+                            if (current_chunk->active_populated_rows ==
+                                static_cast<std::size_t>(batch_capacity))
+                            {
+                                queue.SubmitFilledChunk(std::move(current_chunk));
+                                current_chunk = queue.AcquireFreeChunk(slice_idx);
+                                current_chunk->chunk_index = local_chunk_idx++;
+                            }
                         }
 
-                        if (current_chunk->active_populated_rows > 0)
-                        {
-                            queue.SubmitFilledChunk(std::move(current_chunk));
-                        }
-                        else
-                        {
-                            queue.RecycleChunk(std::move(current_chunk));
-                        }
-
-                        queue.MarkSliceDone(slice_idx);
+                        ptr = next_ptr;
                     }
-                });
+
+                    if (current_chunk->active_populated_rows > 0 || current_chunk->chunk_size_bytes > 0)
+                    {
+                        queue.SubmitFilledChunk(std::move(current_chunk));
+                    }
+                    else
+                    {
+                        queue.RecycleChunk(std::move(current_chunk));
+                    }
+
+                    queue.MarkSliceDone(slice_idx);
+                }
+            });
         }
     }
 
@@ -518,15 +505,15 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     writer_future.wait();
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_progress);
+    LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
 
     auto settings{GetConfig()};
-    settings.set("total_logs", m_logs_progress);
-    settings.set("total_logs_imported", m_logs_progress);
+    settings.set("total_logs", total_logs);
+    settings.set("total_logs_imported", total_logs);
     settings.Save();
 
-    m_total_import_logs = 0;
-    m_logs_progress = 0;
+    m_logs_operation_target = 0;
+    m_logs_operation_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V5

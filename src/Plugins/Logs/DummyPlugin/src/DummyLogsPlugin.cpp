@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Implementation of @see DummyLogsPlugin.hpp
 ///
 
@@ -386,14 +386,19 @@ std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(
     return std::nullopt;
 }
 
-std::size_t DummyLogsPlugin::GetTotalEstimatedImportLogs() const
+std::size_t DummyLogsPlugin::GetLogsOperationTarget() const
 {
     return 0;
 }
 
-std::size_t DummyLogsPlugin::GetProcessedLogsProgress() const
+std::size_t DummyLogsPlugin::GetLogsOperationProgress() const
 {
     return 0;
+}
+
+Fluxion::API::LogsPlugin::Data::ELogsOperationUnit DummyLogsPlugin::GetLogsOperationUnit() const
+{
+    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
 }
 
 } // namespace Fluxion::Plugins::Logs::DummyLogsPlugin

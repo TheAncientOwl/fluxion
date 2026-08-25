@@ -5,7 +5,7 @@
 ///
 /// @file Progress.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,14 +18,19 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
-std::size_t RegexTags::GetTotalEstimatedImportLogs() const
+std::size_t RegexTags::GetLogsOperationTarget() const
 {
-    return m_total_import_logs;
+    return m_logs_operation_target;
 }
 
-std::size_t RegexTags::GetProcessedLogsProgress() const
+std::size_t RegexTags::GetLogsOperationProgress() const
 {
-    return m_logs_progress;
+    return m_logs_operation_progress;
+}
+
+Fluxion::API::LogsPlugin::Data::ELogsOperationUnit RegexTags::GetLogsOperationUnit() const
+{
+    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

@@ -30,7 +30,8 @@
 - Improvement over `Plugins/Logs/Text/RegexTags/V4`
 - Regex engine: google RE2
 - Storage: SQLite3
-- Faster data imports: use mmap for input file + parallelism for count lines over mmap
+- No longer count lines to display logs progress, use bytes processed instead
+- Faster data imports: use mmap for input file
 - Split mmapped file into slices
 - Parse the slices on multiple threads using google RE2
 - Each thread submits the parsed logs to the sqlite writer

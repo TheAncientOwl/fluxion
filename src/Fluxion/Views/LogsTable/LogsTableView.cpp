@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.24
+/// @version 0.25
 /// @brief Implementation of @see LogsTableView.hpp.
 ///
 
@@ -83,16 +83,20 @@ void LogsTableView::OnRender()
 
     if (app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None)
     {
-        auto const processed{app_state.logs_plugin->GetProcessedLogsProgress()};
+        auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};
         auto const total{
             app_state.logs_progress.operation == Fluxion::Application::ELogsOperation::Import
-                ? app_state.logs_plugin->GetTotalEstimatedImportLogs()
+                ? app_state.logs_plugin->GetLogsOperationTarget()
                 : app_state.logs_plugin->GetTotalLogs()};
 
         ImGui::Text(
-            ICON_CI_COFFEE " Operation in progress... %zu/%zu logs (%.1f%%)",
+            ICON_CI_COFFEE " Operation in progress... %zu/%zu %s (%.1f%%)",
             processed,
             total,
+            app_state.logs_plugin->GetLogsOperationUnit() ==
+                    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+                ? "bytes"
+                : "logs",
             static_cast<double>(Fluxion::Common::Utility::Math::Percentage(processed, total)));
     }
     else if (app_state.logs_plugin->GetTotalLogs())

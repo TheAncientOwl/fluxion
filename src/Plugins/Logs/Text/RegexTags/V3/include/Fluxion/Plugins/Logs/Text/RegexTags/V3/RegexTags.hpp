@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.3
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -56,8 +56,9 @@ public:
         std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
         Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
 
-    std::size_t GetTotalEstimatedImportLogs() const override final;
-    std::size_t GetProcessedLogsProgress() const override final;
+    std::size_t GetLogsOperationTarget() const override final;
+    std::size_t GetLogsOperationProgress() const override final;
+    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit GetLogsOperationUnit() const override final;
 
 private:
     std::filesystem::path MakeDatabasePath(std::filesystem::path const& raw_logs_path) const;
@@ -74,8 +75,8 @@ private:
     std::filesystem::path m_home_path{};
     std::optional<std::filesystem::path> m_last_imported_logs_path{};
     std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
-    std::size_t m_logs_progress{0};
-    std::size_t m_total_import_logs{0};
+    std::size_t m_logs_operation_progress{0};
+    std::size_t m_logs_operation_target{0};
 
     SQLite::ConnectionManager m_sqlite_connection{};
 };

@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -110,10 +110,10 @@ void RegexTags::ApplyFilters(
     LOG_INFO("::ApplyFilters(): Converted CSV file {}", input_logs_path.string());
 
     std::size_t total_filtered_logs{0};
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
     for (auto row : converted_logs_reader)
     {
-        ++m_logs_progress;
+        ++m_logs_operation_progress;
         for (auto const& filter : filters)
         {
             bool matches{true};
@@ -184,7 +184,7 @@ void RegexTags::ApplyFilters(
     settings.set("total_logs", total_filtered_logs);
     settings.Save();
 
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

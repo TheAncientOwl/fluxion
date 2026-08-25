@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.3
+/// @version 3.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -137,7 +137,7 @@ void RegexTags::ApplyFilters(
     std::vector<std::string> row{};
 
     std::size_t total_filtered_logs{0};
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
     {
         LOG_SCOPE("::ApplyFilters(): filtering");
         SQLite::Transaction transaction{m_sqlite_connection.GetDatabaseRef()};
@@ -150,7 +150,7 @@ void RegexTags::ApplyFilters(
         }
         while (logs_reader.NextRow(statement, log_id, row))
         {
-            ++m_logs_progress;
+            ++m_logs_operation_progress;
             for (auto const& filter : filters)
             {
                 bool matches{true};
@@ -230,7 +230,7 @@ void RegexTags::ApplyFilters(
     settings.set("total_logs", total_filtered_logs);
     settings.Save();
 
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

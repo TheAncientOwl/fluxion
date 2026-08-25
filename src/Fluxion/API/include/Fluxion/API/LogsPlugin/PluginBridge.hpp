@@ -5,7 +5,7 @@
 ///
 /// @file PluginBridgeData.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief General data.
 ///
 
@@ -92,6 +92,13 @@ public:
 
 private:
     IndexToLogRowMap& m_map;
+};
+
+enum class ELogsOperationUnit : std::uint8_t
+{
+    None = 0,
+    Logs = 1,
+    Bytes = 2
 };
 
 } // namespace Fluxion::API::LogsPlugin::Data

@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Do nothing...
 ///
 
@@ -99,14 +99,19 @@ std::optional<std::size_t> SentinelLogsPlugin::GetPrevLog(
     return std::nullopt;
 }
 
-std::size_t SentinelLogsPlugin::GetTotalEstimatedImportLogs() const
+std::size_t SentinelLogsPlugin::GetLogsOperationTarget() const
 {
     return 0;
 }
 
-std::size_t SentinelLogsPlugin::GetProcessedLogsProgress() const
+std::size_t SentinelLogsPlugin::GetLogsOperationProgress() const
 {
     return 0;
+}
+
+Fluxion::API::LogsPlugin::Data::ELogsOperationUnit SentinelLogsPlugin::GetLogsOperationUnit() const
+{
+    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
 }
 
 std::unique_ptr<Fluxion::API::LogsPlugin::IFluxionLogsPlugin> Create()

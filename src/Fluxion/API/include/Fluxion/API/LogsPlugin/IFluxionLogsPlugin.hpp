@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 1.0
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -97,13 +97,19 @@ public:
      * @brief Helper function to tell the total of logs in import file
      * @note Should be thread safe
      */
-    virtual std::size_t GetTotalEstimatedImportLogs() const = 0;
+    virtual std::size_t GetLogsOperationTarget() const = 0;
+
+    /**
+     * @brief Helper function to tell the unit in wwhich logs operation progress is measured
+     * @note Should be thread safe
+     */
+    virtual Fluxion::API::LogsPlugin::Data::ELogsOperationUnit GetLogsOperationUnit() const = 0;
 
     /**
      * @brief Helper function to track how many logs were processed at call time
      * @note Should be thread safe
      */
-    virtual std::size_t GetProcessedLogsProgress() const = 0;
+    virtual std::size_t GetLogsOperationProgress() const = 0;
 
     virtual ~IFluxionLogsPlugin() = default;
 };

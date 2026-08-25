@@ -5,7 +5,7 @@
 ///
 /// @file LogsProgressView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief Main view responsible for rendering import progress.
 ///
 
@@ -64,19 +64,23 @@ void LogsProgressView::OnRender()
     ImGui::SetNextWindowSize(ImVec2(600.0f, 100.0f));
     ImGui::Begin(ICON_CI_OUTPUT " Logs Progress", nullptr, ImGuiWindowFlags_NoResize);
 
-    auto render_progress = [&](const char* icon, const char* action_name, std::size_t total) {
-        auto const processed{app_state.logs_plugin->GetProcessedLogsProgress()};
-        auto const percentage{Fluxion::Common::Utility::Math::Percentage(processed, total)};
+    auto render_progress =
+        [&,
+         operation = app_state.logs_plugin->GetLogsOperationUnit() ==
+                             Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+                         ? "bytes"
+                         : "logs"](const char* icon, const char* action_name, std::size_t total) {
+            auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};
+            auto const percentage{Fluxion::Common::Utility::Math::Percentage(processed, total)};
 
-        ImGui::Text("%s %s %zu/%zu logs", icon, action_name, processed, total);
-        Graphite::Common::UI::ProgressBar(percentage);
-    };
+            ImGui::Text("%s %s %zu/%zu %s", icon, action_name, processed, total, operation);
+            Graphite::Common::UI::ProgressBar(percentage);
+        };
 
     switch (app_state.logs_progress.operation)
     {
     case Fluxion::Application::ELogsOperation::Import:
-        render_progress(
-            ICON_CI_ROCKET, "Imported", app_state.logs_plugin->GetTotalEstimatedImportLogs());
+        render_progress(ICON_CI_ROCKET, "Imported", app_state.logs_plugin->GetLogsOperationTarget());
         break;
 
     case Fluxion::Application::ELogsOperation::Filter:

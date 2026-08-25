@@ -5,7 +5,7 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -35,7 +35,7 @@ void RegexTags::DisableFilters()
     {
         LOG_INFO("::DisableFilters(): No logs imported before, nothing to disable");
     }
-    m_logs_progress = 0;
+    m_logs_operation_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

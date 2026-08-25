@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.1
+/// @version 4.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -120,8 +120,8 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     const char* const file_data = static_cast<const char*>(mapped_ptr);
     ::madvise(mapped_ptr, file_size, MADV_WILLNEED | MADV_SEQUENTIAL);
 
-    m_logs_progress = 0;
-    m_total_import_logs = Utility::CountLinesParallel(file_data, file_size);
+    m_logs_operation_progress = 0;
+    m_logs_operation_target = Utility::CountLinesParallel(file_data, file_size);
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const& tags{m_regex_tags.GetFront()};
@@ -210,11 +210,11 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
             if (re2::RE2::FullMatchN(line_piece, *line_regex, re2_arg_ptrs.data(), num_captures_int))
             {
                 auto& next_row{sqlite_writer.NextFrame()};
-                ++m_logs_progress;
+                ++m_logs_operation_progress;
 
-                if (m_logs_progress % 1000 == 0)
+                if (m_logs_operation_progress % 1000 == 0)
                 {
-                    LOG_INFO("Read another 1000 chunk, total: {}", m_logs_progress);
+                    LOG_INFO("Read another 1000 chunk, total: {}", m_logs_operation_progress);
                 }
 
                 for (std::size_t i = 0; i < num_captures && i < max_header_fields; ++i)
@@ -240,14 +240,14 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_progress);
+    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};
-    settings.set("total_logs", m_logs_progress);
-    settings.set("total_logs_imported", m_logs_progress);
+    settings.set("total_logs", m_logs_operation_progress);
+    settings.set("total_logs_imported", m_logs_operation_progress);
     settings.Save();
 
-    m_total_import_logs = 0;
-    m_logs_progress = 0;
+    m_logs_operation_target = 0;
+    m_logs_operation_progress = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V4
