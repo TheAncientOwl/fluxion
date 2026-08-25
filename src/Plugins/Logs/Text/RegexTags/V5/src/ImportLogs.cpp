@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.3
+/// @version 5.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -43,6 +43,45 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::ImportLogs);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V5 {
 
 namespace Utility {
+
+std::size_t EstimateTotalLines(const char* data, std::size_t const size)
+{
+    LOG_SCOPE("::EstimateTotalLines()");
+
+    if (data == nullptr || size == 0)
+    {
+        return 0;
+    }
+
+    // Sample the first 4 MB slice
+    std::size_t const sample_size = std::min<std::size_t>(size, 4 * 1024 * 1024);
+
+    std::size_t sample_lines = 0;
+    const char* ptr = data;
+    const char* const end = data + sample_size;
+
+    while (ptr < end)
+    {
+        auto const remaining_bytes = static_cast<std::size_t>(end - ptr);
+        auto const* newline = static_cast<const char*>(std::memchr(ptr, '\n', remaining_bytes));
+
+        if (!newline)
+        {
+            break;
+        }
+
+        ++sample_lines;
+        ptr = newline + 1;
+    }
+
+    if (sample_lines == 0 || sample_size == size)
+    {
+        return sample_lines;
+    }
+
+    double const bytes_per_line = static_cast<double>(sample_size) / static_cast<double>(sample_lines);
+    return static_cast<std::size_t>(static_cast<double>(size) / bytes_per_line);
+}
 
 struct MappedFile
 {
@@ -87,7 +126,8 @@ MappedFile MapFile(std::filesystem::path const& path)
     }
 
     auto const file_size = static_cast<std::size_t>(sb.st_size);
-    void* mapped_ptr = ::mmap(nullptr, file_size, PROT_READ, MAP_SHARED, fd, 0);
+
+    void* mapped_ptr = ::mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
     ::close(fd);
 
     if (mapped_ptr == MAP_FAILED)
@@ -95,7 +135,8 @@ MappedFile MapFile(std::filesystem::path const& path)
         return {};
     }
 
-    ::madvise(mapped_ptr, file_size, MADV_WILLNEED | MADV_SEQUENTIAL);
+    ::madvise(mapped_ptr, file_size, MADV_SEQUENTIAL);
+    // ::madvise(mapped_ptr, file_size, MADV_WILLNEED);
 
     return MappedFile{
         .data = std::unique_ptr<const char, MappedFile::Deleter>(
@@ -104,49 +145,6 @@ MappedFile MapFile(std::filesystem::path const& path)
 }
 
 namespace Multithreading {
-
-std::size_t CountLinesParallel(const char* data, std::size_t size)
-{
-    LOG_SCOPE("::CountLinesParallel()");
-
-    unsigned int num_threads = std::thread::hardware_concurrency();
-    if (num_threads == 0)
-    {
-        num_threads = 8;
-    }
-
-    std::size_t const chunk_size = size / num_threads;
-    std::vector<std::future<std::size_t>> futures;
-    futures.reserve(num_threads);
-
-    for (unsigned int i = 0; i < num_threads; ++i)
-    {
-        std::size_t const start = i * chunk_size;
-        std::size_t const end = (i == num_threads - 1) ? size : (i + 1) * chunk_size;
-
-        futures.push_back(std::async(std::launch::async, [data, start, end]() -> std::size_t {
-            std::size_t lines = 0;
-            const char* ptr = data + start;
-            const char* const chunk_end = data + end;
-
-            while ((ptr = static_cast<const char*>(std::memchr(
-                        ptr, '\n', static_cast<std::size_t>(chunk_end - ptr)))) != nullptr)
-            {
-                ++lines;
-                ++ptr;
-            }
-            return lines;
-        }));
-    }
-
-    std::size_t total_lines = 0;
-    for (auto& f : futures)
-    {
-        total_lines += f.get();
-    }
-
-    return total_lines;
-}
 
 struct FileSlice
 {
@@ -331,8 +329,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     m_last_imported_logs_path = path;
     m_logs_progress = 0;
-    m_total_import_logs =
-        Utility::Multithreading::CountLinesParallel(mapped_file.get(), mapped_file.size);
+    m_total_import_logs = Utility::EstimateTotalLines(mapped_file.get(), mapped_file.size);
 
     auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
     {
