@@ -5,7 +5,7 @@
 ///
 /// @file LogsWriter.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Direct SQLite writer executing chunk-level transactions without double-buffering
 ///
 
@@ -32,7 +32,7 @@ public: // Lifecycle
     LogsWriter& operator=(LogsWriter&&) noexcept = default;
 
 public: // Public API
-    bool WriteChunk(std::vector<std::vector<std::string>> const& rows, std::size_t active_rows);
+    bool WriteChunk(std::vector<std::vector<std::string_view>> const& rows, std::size_t const active_rows);
 
 private:
     DatabaseRef m_database;

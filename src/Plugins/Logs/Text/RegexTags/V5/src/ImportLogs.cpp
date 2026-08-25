@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -22,10 +22,11 @@
 #include <re2/stringpiece.h>
 #include <sqlite3.h>
 #include <string>
+#include <string_view>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <thread>
-#include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V5/RegexTags.hpp"
@@ -193,11 +194,11 @@ struct LogChunk
 {
     std::size_t slice_id{0};
     std::size_t chunk_index{0}; // Local sequence within slice
-    std::vector<std::vector<std::string>> rows;
+    std::vector<std::vector<std::string_view>> rows;
     std::size_t active_populated_rows{0};
 
     LogChunk(std::size_t const capacity, std::size_t const field_count)
-        : rows(capacity, std::vector<std::string>(field_count))
+        : rows(capacity, std::vector<std::string_view>(field_count))
     {
     }
 };
@@ -236,7 +237,8 @@ public:
     {
         std::unique_lock<std::mutex> lock{m_mutex};
         std::size_t const s_id = chunk->slice_id;
-        m_ready_chunks[s_id].push_back(std::move(chunk));
+        std::size_t const c_idx = chunk->chunk_index;
+        m_ready_chunks[s_id].emplace(c_idx, std::move(chunk));
         m_cv_writer.notify_one();
     }
 
@@ -251,28 +253,15 @@ public:
     {
         std::unique_lock<std::mutex> lock{m_mutex};
 
-        auto find_chunk = [&]() -> std::size_t {
-            auto const& ready = m_ready_chunks[slice_id];
-            for (std::size_t i = 0; i < ready.size(); ++i)
-            {
-                if (ready[i]->chunk_index == expected_index)
-                {
-                    return i;
-                }
-            }
-            return static_cast<std::size_t>(-1);
-        };
-
         m_cv_writer.wait(lock, [&] {
-            return find_chunk() != static_cast<std::size_t>(-1) || m_slice_done[slice_id];
+            return m_ready_chunks[slice_id].contains(expected_index) || m_slice_done[slice_id];
         });
 
-        std::size_t const idx = find_chunk();
-        if (idx != static_cast<std::size_t>(-1))
+        auto& slice_map = m_ready_chunks[slice_id];
+        if (auto const it = slice_map.find(expected_index); it != slice_map.end())
         {
-            auto& ready = m_ready_chunks[slice_id];
-            auto chunk = std::move(ready[idx]);
-            ready.erase(ready.begin() + static_cast<std::ptrdiff_t>(idx));
+            auto chunk = std::move(it->second);
+            slice_map.erase(it);
             return chunk;
         }
 
@@ -292,7 +281,7 @@ private:
     std::condition_variable m_cv_writer{};
 
     std::vector<std::unique_ptr<LogChunk>> m_free_pool{};
-    std::vector<std::vector<std::unique_ptr<LogChunk>>> m_ready_chunks{};
+    std::vector<std::unordered_map<std::size_t, std::unique_ptr<LogChunk>>> m_ready_chunks{};
     std::vector<bool> m_slice_done{};
 };
 
@@ -322,15 +311,15 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
             }
         }
         LOG_INFO("::ImportLogs(): Full regex pattern: {}", line_regex_pattern);
-        {
-            auto const line_regex = std::make_unique<re2::RE2>(line_regex_pattern);
-            if (!line_regex->ok())
-            {
-                LOG_WARN("Invalid regex: {}", line_regex->error());
-                return;
-            }
-        }
     }
+
+    re2::RE2 const shared_regex(line_regex_pattern);
+    if (!shared_regex.ok())
+    {
+        LOG_WARN("Invalid regex: {}", shared_regex.error());
+        return;
+    }
+
     UpdateImportedLogsHeader(tags);
 
     auto mapped_file = Utility::MapFile(path);
@@ -369,7 +358,6 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     std::size_t const batch_capacity = 5000;
     std::size_t const total_chunks = workers_count * 10;
 
-    // Split file into dynamic ~4MB slices
     auto const file_slices =
         Utility::Multithreading::SplitFile(mapped_file.get(), mapped_file.size, 4 * 1024 * 1024);
     auto const total_slices = file_slices.size();
@@ -377,7 +365,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     Utility::Multithreading::DynamicChunkQueue queue(
         total_slices, total_chunks, batch_capacity, row_fields_count);
 
-    // 1. Single Writer Thread: Consumes chunks sequentially per slice index [0..total_slices-1]
+    // 1. Single Writer Thread: Consumes chunks sequentially per slice index
     auto writer_future = std::async(std::launch::async, [&]() {
         LOG_SCOPE("::ImportLogs(): writer_thread");
         SQLite::LogsWriter sqlite_writer{m_sqlite_connection.GetDatabaseRef(), fields_ids};
@@ -403,21 +391,20 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
     });
 
-    // 2. Parallel RE2 Worker Threads: Dynamically process available file slices
+    // 2. Parallel Worker Threads using shared RE2 instance
     std::vector<std::thread> workers{};
     {
         LOG_SCOPE("::ParserWorkerThreadsCreation()");
         workers.reserve(workers_count);
         std::atomic<std::size_t> next_slice_idx{0};
+        auto const num_captures = static_cast<std::size_t>(shared_regex.NumberOfCapturingGroups());
+
         for (unsigned int worker_idx = 0; worker_idx < workers_count; ++worker_idx)
         {
-            workers.emplace_back([&]() {
+            workers.emplace_back([&, num_captures]() {
                 LOG_SCOPE("::ParserWorkerThread::{}()", std::this_thread::get_id());
 
-                auto worker_regex = std::make_unique<re2::RE2>(line_regex_pattern);
-                auto const num_captures =
-                    static_cast<std::size_t>(worker_regex->NumberOfCapturingGroups());
-
+                // Per-thread capture buffer reuse
                 std::vector<re2::StringPiece> capture_results(num_captures);
                 std::vector<re2::RE2::Arg> re2_args{};
                 std::vector<re2::RE2::Arg*> re2_arg_ptrs{};
@@ -460,21 +447,22 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                         re2::StringPiece const line_piece(ptr, line_length);
                         if (re2::RE2::FullMatchN(
                                 line_piece,
-                                *worker_regex,
+                                shared_regex,
                                 re2_arg_ptrs.data(),
                                 static_cast<int>(num_captures)))
                         {
                             auto& row = current_chunk->rows[current_chunk->active_populated_rows++];
+
                             for (std::size_t i = 0; i < num_captures && i < row_fields_count; ++i)
                             {
                                 if (capture_results[i].data() != nullptr)
                                 {
-                                    row[i].assign(
+                                    row[i] = std::string_view(
                                         capture_results[i].data(), capture_results[i].size());
                                 }
                                 else
                                 {
-                                    row[i].clear();
+                                    row[i] = {};
                                 }
                             }
 

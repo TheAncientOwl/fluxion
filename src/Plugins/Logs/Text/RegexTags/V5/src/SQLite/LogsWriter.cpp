@@ -5,11 +5,12 @@
 ///
 /// @file LogsWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation of @see LogsWriter.hpp
 ///
 
 #include "LogsWriter.hpp"
+#include <string_view>
 #include "Graphite/Logger.hpp"
 #include "Wrapper/Transaction.hpp"
 
@@ -49,7 +50,7 @@ LogsWriter::LogsWriter(DatabaseRef db, std::vector<std::string> const& fields) :
     m_filtered_logs_statement = m_database.Prepare(filtered_sql);
 }
 
-bool LogsWriter::WriteChunk(std::vector<std::vector<std::string>> const& rows, std::size_t const active_rows)
+bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& rows, std::size_t const active_rows)
 {
     LOG_SCOPE("::WriteChunk()");
 
