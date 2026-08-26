@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.18
+/// @version 0.19
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -98,17 +98,19 @@ void MainMenuView::OnAdd()
                     }()};
 
                     static auto const s_default_id = Graphite::Common::Utility::UniqueID::Default();
-
+                    bool any_condition_changed{false};
                     app_state.filters.tabs.UpdateBackBufferCopy(
-                        [&column_lookup](std::vector<Data::Filters::Tab::Ptr>& tabs) {
+                        [&column_lookup,
+                         &any_condition_changed](std::vector<Data::Filters::Tab::Ptr>& tabs) {
                             for (auto& tab : tabs)
                             {
                                 tab->filters.UpdateBackBufferCopy(
-                                    [&column_lookup](std::vector<Data::Filters::Filter::Ptr>& filters) {
+                                    [&column_lookup, &any_condition_changed](
+                                        std::vector<Data::Filters::Filter::Ptr>& filters) {
                                         for (auto& filter : filters)
                                         {
                                             filter->conditions.UpdateBackBufferCopy(
-                                                [&column_lookup](
+                                                [&column_lookup, &any_condition_changed](
                                                     std::vector<Data::Filters::Condition::Ptr>& conditions) {
                                                     for (auto& condition_ptr : conditions)
                                                     {
@@ -124,10 +126,17 @@ void MainMenuView::OnAdd()
                                                                 new_condition->over_column_display_name);
                                                             it != column_lookup.end())
                                                         {
-                                                            new_condition->over_column_id = it->second;
+                                                            if (new_condition->over_column_id !=
+                                                                it->second)
+                                                            {
+                                                                any_condition_changed = true;
+                                                                new_condition->over_column_id =
+                                                                    it->second;
+                                                            }
                                                         }
                                                         else
                                                         {
+                                                            any_condition_changed = true;
                                                             new_condition->over_column_id =
                                                                 s_default_id;
                                                             new_condition->over_column_display_name =
@@ -141,10 +150,13 @@ void MainMenuView::OnAdd()
                                     });
                             }
                         });
-                    app_state.filters.metadata.UpdateBackBufferCopyLocking(
-                        [](Data::Filters::FiltersGeneralMetadata& metadata) {
-                            metadata[Data::Filters::EFiltersMetadataFlag::SavedToDisk] = false;
-                        });
+                    if (any_condition_changed)
+                    {
+                        app_state.filters.metadata.UpdateBackBufferCopyLocking(
+                            [](Data::Filters::FiltersGeneralMetadata& metadata) {
+                                metadata[Data::Filters::EFiltersMetadataFlag::SavedToDisk] = false;
+                            });
+                    }
                 }
             }};
             worker.detach();
