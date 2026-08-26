@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.41
+/// @version 0.42
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -272,6 +272,14 @@ void FiltersView::MarkFiltersMetadataDirty()
         });
 }
 
+void FiltersView::MarkFiltersMetadataNotSavedOnDisk()
+{
+    m_application->GetApplicationState().filters.metadata.UpdateBackBufferCopyLocking(
+        [](Filters::FiltersGeneralMetadata& metadata) {
+            metadata[Filters::EFiltersMetadataFlag::SavedToDisk] = false;
+        });
+}
+
 void FiltersView::RenderToolbar()
 {
     auto& app_state{m_application->GetApplicationState()};
@@ -513,12 +521,14 @@ void FiltersView::RenderFilter(Graphite::Common::Utility::UniqueID const& owning
             "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet"))
     {
         m_application->GetApplicationState().filters.id_to_metadata[filter.id].colors = filter.colors;
+        MarkFiltersMetadataNotSavedOnDisk();
     }
     ImGui::SameLine();
     if (UIHelpers::ColorsPicker(
             "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet"))
     {
         m_application->GetApplicationState().filters.id_to_metadata[filter.id].colors = filter.colors;
+        MarkFiltersMetadataNotSavedOnDisk();
     }
 
     ImGui::SameLine();

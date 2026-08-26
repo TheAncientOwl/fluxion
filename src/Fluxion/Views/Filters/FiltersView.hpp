@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -43,6 +43,7 @@ public: // Public API
 
 private: // Private API
     void MarkFiltersMetadataDirty();
+    void MarkFiltersMetadataNotSavedOnDisk();
 
 private: // Private Rendering API
     void RenderToolbar();
