@@ -13,7 +13,7 @@
 SELECT * FROM (
     SELECT * FROM logs 
     ORDER BY id DESC
-    LIMIT 200
+    LIMIT 50
 ) 
 ORDER BY id ASC;
 

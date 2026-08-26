@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.25
+/// @version 0.26
 /// @brief Implementation of @see LogsTableView.hpp.
 ///
 
@@ -146,15 +146,18 @@ void LogsTableView::RenderLogsTable()
         return;
     }
 
-    ImGui::BeginChild("LogsTableRegion");
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 5));
+    float const clipper_row_height =
+        ImGui::GetTextLineHeight() + ImGui::GetStyle().CellPadding.y * 2.0f;
+    ImVec2 const outer_size = ImVec2(0.0f, ImGui::GetContentRegionAvail().y);
+
     if (ImGui::BeginTable(
             app_state.app_options.show_logs_table_idx ? "LogsTable_+index" : "LogsTable_-index",
             static_cast<int>(table_header.size()),
             ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable |
                 ImGuiTableFlags_SizingFixedFit,
-            ImVec2(0.0f, 0.0f)))
+            outer_size))
     {
         // 1. Render Table Header
         for (auto const& header : table_header)
@@ -164,36 +167,47 @@ void LogsTableView::RenderLogsTable()
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableHeadersRow();
 
-        // 2. Render Logs Rows
-        ImGuiListClipper clipper{};
-        LOG_DEBUG("::RenderLogsTable(): clipper.Begin({})", app_state.logs_plugin->GetTotalLogs());
-        clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()));
-
-        auto& searched_log_state = app_state.logs.searched_log.GetFront();
+        // 2. Search Jump Pre-pass (Before Clipper init)
+        auto const& searched_log_state = app_state.logs.searched_log.GetFront();
         static std::optional<std::size_t> s_last_search_index{std::nullopt};
-        bool search_index_changed = s_last_search_index != searched_log_state.index;
+        bool const search_index_changed = s_last_search_index != searched_log_state.index;
+
         if (search_index_changed)
         {
             s_last_search_index = searched_log_state.index;
+            if (searched_log_state.index)
+            {
+                auto const target_idx = static_cast<float>(*searched_log_state.index);
+                float const target_top = clipper_row_height * target_idx;
+                float const target_bottom = target_top + clipper_row_height;
+
+                float const current_scroll_y = ImGui::GetScrollY();
+                float const visible_height = ImGui::GetWindowHeight();
+
+                if (target_top < current_scroll_y ||
+                    target_bottom > (current_scroll_y + visible_height))
+                {
+                    static constexpr float upper_padding_rows = 2.0f;
+                    float const target_scroll =
+                        std::max(0.0f, target_top - (clipper_row_height * upper_padding_rows));
+                    ImGui::SetScrollY(target_scroll);
+                }
+            }
         }
 
-        if (static_cast<bool>(searched_log_state.index))
-        {
-            clipper.IncludeItemByIndex(static_cast<int>(*searched_log_state.index));
-        }
+        // 3. Render Logs Rows using Clipper
+        ImGuiListClipper clipper{};
+        LOG_DEBUG(
+            "::RenderLogsTable(): clipper.Begin({}, {})",
+            app_state.logs_plugin->GetTotalLogs(),
+            clipper_row_height);
+        clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()), clipper_row_height);
 
+        auto const& front_buffer = app_state.logs.visible.GetFront();
         std::vector<Fluxion::API::LogsPlugin::Data::Range> ranges{};
+
         while (clipper.Step())
         {
-            static auto constexpr margin{25};
-            ranges.emplace_back(
-                static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
-                static_cast<std::size_t>(std::min(
-                    static_cast<int>(app_state.logs_plugin->GetTotalLogs()),
-                    clipper.DisplayEnd + margin)));
-
-            auto const& front_buffer = app_state.logs.visible.GetFront();
-
             LOG_TRACE(
                 "::RenderLogsTable(): DisplayStart == {} | DisplayEnd == {} | Searched == {} | "
                 "ScrollY == {}",
@@ -202,18 +216,12 @@ void LogsTableView::RenderLogsTable()
                 searched_log_state.index,
                 ImGui::GetScrollY());
 
-            if (search_index_changed && static_cast<bool>(searched_log_state.index))
-            {
-                auto const target_idx = static_cast<int>(*searched_log_state.index);
-                if ((clipper.DisplayStart != 0 && clipper.DisplayEnd != 1) &&
-                    (target_idx < clipper.DisplayStart || target_idx >= clipper.DisplayEnd))
-                {
-                    search_index_changed = false;
-                    float const row_height = clipper.ItemsHeight > 0.0f ? clipper.ItemsHeight : 20.0f;
-                    auto const searched_scroll = row_height * static_cast<float>(target_idx);
-                    ImGui::SetScrollY(searched_scroll);
-                }
-            }
+            static auto constexpr margin{25};
+            ranges.emplace_back(
+                static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
+                static_cast<std::size_t>(std::min(
+                    static_cast<int>(app_state.logs_plugin->GetTotalLogs()),
+                    clipper.DisplayEnd + margin)));
 
             for (auto row_idx = clipper.DisplayStart; row_idx < clipper.DisplayEnd; ++row_idx)
             {
@@ -244,6 +252,7 @@ void LogsTableView::RenderLogsTable()
                         row.data.size() + (app_state.app_options.show_logs_table_idx ? 1 : 0) ==
                             table_header.size(),
                         "Row size != header size");
+
                     if (app_state.app_options.show_logs_table_idx)
                     {
                         ImGui::TableNextColumn();
@@ -255,7 +264,7 @@ void LogsTableView::RenderLogsTable()
                         ImGui::TextUnformatted(field.c_str());
                     }
 
-                    if (row_idx == app_state.logs.searched_log.GetFront().index)
+                    if (row_idx == searched_log_state.index)
                     {
                         UIHelpers::PopFoundRowStyles();
                     }
@@ -289,7 +298,6 @@ void LogsTableView::RenderLogsTable()
         ImGui::EndTable();
     }
     ImGui::PopStyleVar();
-    ImGui::EndChild();
 }
 
 void LogsTableView::OnRemove()
