@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.39
+/// @version 0.40
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -614,19 +614,8 @@ void FiltersView::RenderCondition(
         ImGui::SetDragDropPayload(
             "CONDITION_PAYLOAD", &condition.id, sizeof(Graphite::Common::Utility::UniqueID));
 
-        auto const& header = m_application->GetApplicationState().logs.table_header;
-        std::string column_name = "Unknown";
-        for (auto const& col : header)
-        {
-            if (col.id == condition.over_column_id)
-            {
-                column_name = col.display_name;
-                break;
-            }
-        }
-
         using EConditionFlag = Filters::EConditionFlag;
-        std::string flags;
+        std::string flags{};
         if (condition[EConditionFlag::IsRegex])
             flags += "R";
         if (condition[EConditionFlag::IsEquals])
@@ -634,7 +623,7 @@ void FiltersView::RenderCondition(
         if (condition[EConditionFlag::IsCaseSensitive])
             flags += "C";
 
-        ImGui::TextUnformatted(column_name.c_str());
+        ImGui::TextUnformatted(condition.over_column_display_name.c_str());
         ImGui::Text("%s", condition.data.c_str());
         if (!flags.empty())
         {
@@ -680,20 +669,33 @@ void FiltersView::RenderCondition(
     std::optional<std::size_t> selected_index_opt{};
     for (std::size_t i = 0; i < header.size(); ++i)
     {
-        if (header[i].id == condition.over_column_id)
+        if (header[i].display_name == condition.over_column_display_name)
         {
             selected_index_opt = i;
             break;
         }
     }
 
+    static const char* s_none_str{"None"};
+    const char* preview_value = header.empty() || !static_cast<bool>(selected_index_opt)
+                                    ? s_none_str
+                                    : header[*selected_index_opt].display_name.c_str();
     ImGui::SameLine();
     ImGui::PushItemWidth(125);
-    const char* preview_value = header.empty() || !static_cast<bool>(selected_index_opt)
-                                    ? "None"
-                                    : header[*selected_index_opt].display_name.c_str();
+    if (preview_value == s_none_str)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(1.0f, 0.5f, 0.0f, 0.4f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(1.0f, 0.5f, 0.0f, 0.5f));
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.4f, 0.0f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.5f, 0.0f, 0.8f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.6f, 0.0f, 0.8f));
+    }
     if (ImGui::BeginCombo("##alternative", preview_value))
     {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
         for (std::size_t select_index = 0; select_index < header.size(); ++select_index)
         {
             bool is_selected = (selected_index_opt == select_index);
@@ -701,6 +703,7 @@ void FiltersView::RenderCondition(
             {
                 selected_index_opt = select_index;
                 condition.over_column_id = header[select_index].id;
+                condition.over_column_display_name = header[select_index].display_name;
                 MarkFiltersMetadataDirty();
             }
             if (is_selected)
@@ -708,7 +711,13 @@ void FiltersView::RenderCondition(
                 ImGui::SetItemDefaultFocus();
             }
         }
+        ImGui::PopStyleColor();
+
         ImGui::EndCombo();
+    }
+    if (preview_value == s_none_str)
+    {
+        ImGui::PopStyleColor(6);
     }
     ImGui::PopItemWidth();
 

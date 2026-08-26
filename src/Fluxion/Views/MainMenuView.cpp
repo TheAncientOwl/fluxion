@@ -5,16 +5,17 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.17
+/// @version 0.18
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
-#include "MainMenuView.hpp"
+#include <filesystem>
+#include <unordered_map>
+
 #include "Graphite/Application/Views/TSoftCloseableView.hpp"
 #include "Graphite/Common/Utility/Time.hpp"
 #include "Graphite/Logger.hpp"
-
-#include <filesystem>
+#include "MainMenuView.hpp"
 
 #include "IconsCodicons.h"
 #include "imgui.h"
@@ -82,6 +83,69 @@ void MainMenuView::OnAdd()
                 app_state.logs_progress.end_time = std::chrono::steady_clock::now();
 
                 LOG_INFO("Import finished!");
+
+                {
+                    LOG_SCOPE("::FiltersFieldsReconciliation()");
+
+                    auto const column_lookup{[&table_header = app_state.logs.table_header]() {
+                        std::unordered_map<std::string_view, Graphite::Common::Utility::UniqueID> out{};
+                        out.reserve(table_header.size());
+                        for (auto const& col : table_header)
+                        {
+                            out.emplace(col.display_name, col.id);
+                        }
+                        return out;
+                    }()};
+
+                    static auto const s_default_id = Graphite::Common::Utility::UniqueID::Default();
+
+                    app_state.filters.tabs.UpdateBackBufferCopy(
+                        [&column_lookup](std::vector<Data::Filters::Tab::Ptr>& tabs) {
+                            for (auto& tab : tabs)
+                            {
+                                tab->filters.UpdateBackBufferCopy(
+                                    [&column_lookup](std::vector<Data::Filters::Filter::Ptr>& filters) {
+                                        for (auto& filter : filters)
+                                        {
+                                            filter->conditions.UpdateBackBufferCopy(
+                                                [&column_lookup](
+                                                    std::vector<Data::Filters::Condition::Ptr>& conditions) {
+                                                    for (auto& condition_ptr : conditions)
+                                                    {
+                                                        if (!condition_ptr)
+                                                            continue;
+
+                                                        // Create a clone to prevent mutating objects held by the front buffer
+                                                        auto new_condition =
+                                                            std::make_shared<Data::Filters::Condition>(
+                                                                *condition_ptr);
+
+                                                        if (auto const it = column_lookup.find(
+                                                                new_condition->over_column_display_name);
+                                                            it != column_lookup.end())
+                                                        {
+                                                            new_condition->over_column_id = it->second;
+                                                        }
+                                                        else
+                                                        {
+                                                            new_condition->over_column_id =
+                                                                s_default_id;
+                                                            new_condition->over_column_display_name =
+                                                                "None";
+                                                        }
+
+                                                        condition_ptr = std::move(new_condition);
+                                                    }
+                                                });
+                                        }
+                                    });
+                            }
+                        });
+                    app_state.filters.metadata.UpdateBackBufferCopyLocking(
+                        [](Data::Filters::FiltersGeneralMetadata& metadata) {
+                            metadata[Data::Filters::EFiltersMetadataFlag::SavedToDisk] = false;
+                        });
+                }
             }};
             worker.detach();
         }

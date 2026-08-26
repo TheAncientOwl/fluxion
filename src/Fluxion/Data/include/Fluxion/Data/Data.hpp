@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief General data.
 ///
 
@@ -43,6 +43,7 @@ struct Condition : public Graphite::Common::Utility::TWithFlags<Condition, ECond
 
     Graphite::Common::Utility::UniqueID id{};
     Graphite::Common::Utility::UniqueID over_column_id{};
+    std::string over_column_display_name{};
     std::string data{};
 };
 

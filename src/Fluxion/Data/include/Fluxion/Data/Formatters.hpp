@@ -5,7 +5,7 @@
 ///
 /// @file Formatters.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief IO related utilities.
 ///
 
@@ -121,7 +121,11 @@ struct std::formatter<Fluxion::Application::Data::Filters::Condition>
     {
         return std::formatter<std::string_view>::format(
             std::format(
-                "Condition(ID: {}, ColumnID: {}, Data: '{}')", fc.id, fc.over_column_id, fc.data),
+                "Condition(ID: {}, ColumnID: {}, ColumnName: {}, Data: '{}')",
+                fc.id,
+                fc.over_column_id,
+                fc.over_column_display_name,
+                fc.data),
             ctx);
     }
 };

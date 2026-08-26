@@ -5,7 +5,7 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see AppState.hpp.
 ///
 
@@ -51,6 +51,7 @@ std::vector<Fluxion::Application::Data::Filters::Tab::Ptr> MakeDefaultTabs()
     auto condition_ptr = std::make_shared<Condition>();
     condition_ptr->id = UniqueID::Generate();
     condition_ptr->over_column_id = UniqueID::Default();
+    condition_ptr->over_column_display_name = "None";
     (*condition_ptr)[EConditionFlag::IsEquals] = true;
 
     // 1. Initialize Conditions Double Buffer

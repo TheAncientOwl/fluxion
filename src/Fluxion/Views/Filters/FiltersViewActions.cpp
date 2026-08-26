@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.20
+/// @version 0.21
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -455,10 +455,10 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
     auto const& header{application_state.logs_plugin->GetTableHeader()};
 
     auto get_column_index =
-        [&header](Graphite::Common::Utility::UniqueID const id) -> std::optional<std::size_t> {
+        [&header](std::string_view const display_name) -> std::optional<std::size_t> {
         for (std::size_t index = 0; index < header.size(); ++index)
         {
-            if (header[index].id == id)
+            if (header[index].display_name == display_name)
             {
                 return index;
             }
@@ -488,7 +488,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
             for (auto const& condition_ptr : filter.conditions.GetBack())
             {
                 auto const& condition{*condition_ptr};
-                auto const column_index{get_column_index(condition.over_column_id)};
+                auto const column_index{get_column_index(condition.over_column_display_name)};
                 if (!static_cast<bool>(column_index))
                 {
                     continue;
@@ -762,6 +762,8 @@ void SaveFiltersToFile(AppState const& application_state)
                 {
                     nlohmann::json condition_json;
                     condition_json["over_column_id"] = condition->over_column_id.ToString();
+                    condition_json["over_column_display_name"] = condition->over_column_display_name;
+                    condition_json["over_column_display_name"] = condition->over_column_display_name;
                     condition_json["data"] = condition->data;
                     condition_json["is_regex"] =
                         static_cast<bool>(condition->operator[](Filters::EConditionFlag::IsRegex));
@@ -882,6 +884,8 @@ void LoadFiltersFromFile(AppState& application_state)
 
                     condition_ptr->over_column_id = Graphite::Common::Utility::UniqueID{
                         condition_json.at("over_column_id").get<std::string>()};
+                    condition_ptr->over_column_display_name =
+                        condition_json.at("over_column_display_name").get<std::string>();
                     condition_ptr->data = condition_json.at("data").get<std::string>();
                     (*condition_ptr)[Filters::EConditionFlag::IsRegex] =
                         condition_json.at("is_regex").get<bool>();
