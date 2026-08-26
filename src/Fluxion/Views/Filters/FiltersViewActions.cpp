@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.21
+/// @version 0.22
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -872,6 +872,13 @@ void LoadFiltersFromFile(AppState& application_state)
                 filter_ptr->colors.background.y = bg.at("y").get<float>();
                 filter_ptr->colors.background.z = bg.at("z").get<float>();
                 filter_ptr->colors.background.w = bg.at("w").get<float>();
+
+                application_state.filters.id_to_metadata.emplace(
+                    filter_ptr->id,
+                    Data::Logs::SharedFilterMetadata{
+                        .colors = {
+                            .foreground{filter_ptr->colors.foreground},
+                            .background = {filter_ptr->colors.background}}});
 
                 // Load conditions
                 std::vector<Filters::Condition::Ptr> loaded_conditions;
