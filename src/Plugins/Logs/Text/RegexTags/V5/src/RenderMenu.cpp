@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.2
+/// @version 5.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -43,6 +43,66 @@ std::string ConcatRegex(Data::RegexTags const& tags)
     return out;
 }
 
+inline ImVec4 GetCaptureGroupColor(std::size_t const group_index)
+{
+    float const hue =
+        std::fmod(std::fmod(static_cast<float>(group_index) * 4.2069911f, 3.14159f), 1.0f);
+    float r{0.0f}, g{0.0f}, b{0.0f};
+    ImGui::ColorConvertHSVtoRGB(hue, 0.75f, 0.95f, r, g, b);
+    return ImVec4(r, g, b, 1.0f);
+}
+
+void RenderRegexTagsPreview(Data::RegexTags const& tags, float const width = -1.0f)
+{
+    float const target_width = (width <= 0.0f) ? ImGui::GetContentRegionAvail().x : width;
+    ImVec2 const frame_size(target_width, ImGui::GetFrameHeight());
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImGui::GetStyle().FramePadding);
+    if (ImGui::BeginChild(
+            "##RegexTagsPreview", frame_size, ImGuiChildFlags_FrameStyle, ImGuiWindowFlags_NoScrollbar))
+    {
+        std::size_t capture_group_idx{0};
+        bool is_first_segment{true};
+
+        ImVec4 const not_visible_tag_color{1.0f, 1.0f, 1.0f, 1.0f};
+
+        for (auto const& tag : tags)
+        {
+            if (!tag || tag->regex_data.empty())
+            {
+                continue;
+            }
+
+            if (!is_first_segment)
+            {
+                ImGui::SameLine(0.0f, 0.0f);
+            }
+            is_first_segment = false;
+
+            if (tag->visible)
+            {
+                ImVec4 const group_color = GetCaptureGroupColor(capture_group_idx++);
+
+                // Darken the group color for parentheses (25% darker)
+                ImVec4 const paren_color{
+                    group_color.x * 0.75f, group_color.y * 0.75f, group_color.z * 0.75f, group_color.w};
+
+                ImGui::TextColored(paren_color, "(");
+                ImGui::SameLine(0.0f, 0.0f);
+                ImGui::TextColored(group_color, "%s", tag->regex_data.c_str());
+                ImGui::SameLine(0.0f, 0.0f);
+                ImGui::TextColored(paren_color, ")");
+            }
+            else
+            {
+                ImGui::TextColored(not_visible_tag_color, "%s", tag->regex_data.c_str());
+            }
+        }
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+}
+
 } // namespace Utility
 
 void RegexTags::RenderMenu()
@@ -58,14 +118,8 @@ void RegexTags::RenderMenu()
     Graphite::Common::UI::IconButton(ICON_CI_REPO_PULL, "Import", []() {});
     ImGui::SameLine();
     Graphite::Common::UI::IconButton(ICON_CI_REPO_PUSH, "Export", []() {});
-    auto const full_regex{Utility::ConcatRegex(m_regex_tags.GetFront())};
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputText(
-        "##full-regex",
-        const_cast<char*>(full_regex.data()),
-        full_regex.size() + 1,
-        ImGuiInputTextFlags_ReadOnly);
+    Utility::RenderRegexTagsPreview(m_regex_tags.GetFront());
 
     if (ImGui::BeginTable(
             "##regex-configurator", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX))
