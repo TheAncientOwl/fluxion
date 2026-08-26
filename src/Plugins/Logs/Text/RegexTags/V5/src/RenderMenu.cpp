@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -30,7 +30,14 @@ std::string ConcatRegex(Data::RegexTags const& tags)
 
     for (auto const& tag : tags)
     {
-        out += tag->regex_data;
+        if (tag->visible)
+        {
+            out += "(" + tag->regex_data + ")";
+        }
+        else
+        {
+            out += tag->regex_data;
+        }
     }
 
     return out;
