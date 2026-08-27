@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.20
+/// @version 0.21
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -83,6 +83,19 @@ void MainMenuView::OnAdd()
                 app_state.logs_progress.end_time = std::chrono::steady_clock::now();
 
                 LOG_INFO("Import finished!");
+
+                {
+                    LOG_SCOPE("::ResizeLogsBufferSizes()");
+                    app_state.logs.visible.UpdateBackBufferSwap(
+                        [row_size = app_state.logs.table_header.size()](
+                            Data::Logs::VisibleLogs& visible_logs_chunk) {
+                            for (auto& id_to_row : visible_logs_chunk.logs)
+                            {
+                                id_to_row.second.data.resize(row_size);
+                            }
+                        },
+                        [](Data::Logs::VisibleLogs&) {});
+                }
 
                 {
                     LOG_SCOPE("::FiltersFieldsReconciliation()");

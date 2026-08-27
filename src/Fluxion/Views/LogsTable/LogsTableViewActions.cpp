@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableViewActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -73,7 +73,6 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
 {
     LOG_SCOPE("::handle<UpdateVisibleLogs>()");
     // LOG_INFO("begin {} | end {}", action.visible_logs_indices.begin, action.visible_logs_indices.end);
-    // TODO: resize the data when the imported logs change
 
     LOG_INFO("::handle<UpdateVisibleLogs>(): cleaning up visible logs indices");
     LOG_INFO("::handle<UpdateVisibleLogs>(): logs indices request: {}", payload.visible_logs_indices);
@@ -84,14 +83,6 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
         if (!visible_logs.contains(range.begin) || !visible_logs.contains(range.end - 1))
         {
             final_request_indices.emplace_back(range.begin, range.end);
-            // if (range.end == application_state.logs_plugin->GetTotalLogs())
-            // {
-            //     final_request_indices.emplace_back(range.begin, range.end + 1);
-            // }
-            // else
-            // {
-            //     final_request_indices.push_back(range);
-            // }
         }
     }
     final_request_indices = Utility::MergeRanges(final_request_indices);
@@ -106,7 +97,6 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
                 return;
             }
 
-            // TODO: better handle logs request / culling so we don't hit the plugin for the same chunks every frame
             LOG_INFO(
                 "::handle<UpdateVisibleLogs>(): buffer_preparer > Begin culling. Map size: {}",
                 visible_logs_chunk.logs.size());
