@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -39,7 +39,6 @@ enum class EFilterActionType : std::uint8_t
     MoveCondition,
 
     SaveFilters,
-    LoadFilters
 };
 
 namespace Payloads {
@@ -76,11 +75,17 @@ struct MoveCondition
 struct ApplyFilters
 {
     std::function<void()> reset_imported_logs_data;
+    std::function<void()> save_filters_on_disk;
 };
 
 struct DisableFilters
 {
     std::function<void()> reset_imported_logs_data;
+};
+
+struct SaveFilters
+{
+    std::function<void()> save_filters_on_disk;
 };
 
 }; // namespace Payloads
@@ -94,15 +99,10 @@ struct FilterActionPayload
         Payloads::MoveFilter,
         Payloads::MoveCondition,
         Payloads::ApplyFilters,
-        Payloads::DisableFilters>
+        Payloads::DisableFilters,
+        Payloads::SaveFilters>
         data{};
 };
-
-void SaveFiltersToFile(AppState const& application_state);
-void LoadFiltersFromFile(AppState& application_state);
-
-void SavePluginPathToFile(AppState const& application_state);
-void LoadPluginPathFromFile(AppState& application_state);
 
 void HandleFiltersViewAction(AppState& application_state, FilterActionPayload const& action);
 

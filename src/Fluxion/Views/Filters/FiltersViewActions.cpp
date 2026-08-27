@@ -5,19 +5,17 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.22
+/// @version 0.23
 /// @brief Main view responsible for rendering logs table.
 ///
 
 #include <algorithm>
 #include <cstdlib>
-#include <filesystem>
 
 #include <nlohmann/json.hpp>
 #include "FiltersViewActions.hpp"
 #include "Fluxion/Data/Formatters.hpp" // IWYU pragma: keep
 #include "Graphite/Logger.hpp"
-#include "Graphite/Settings/PersistentSettings.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Views::FiltersView::Actions);
 USE_LOG_SCOPE(Fluxion::Application::Views::FiltersView::Actions);
@@ -438,7 +436,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
         LOG_INFO(
             "::handle<ApplyFilters>(): No logs recorded; Next steps -> save tabs -> update "
             "metadata -> stop filtering.");
-        Actions::FiltersView::SaveFiltersToFile(application_state);
+        payload.save_filters_on_disk();
 
         application_state.filters.metadata.UpdateBackBufferCopyLocking(
             [](Data::Filters::FiltersGeneralMetadata& metadata) {
@@ -706,311 +704,6 @@ void handle<EFilterActionType::MoveCondition>(
     });
 }
 
-// TODO: move to DiskIO.cpp
-void SaveFiltersToFile(AppState const& application_state)
-{
-    LOG_SCOPE("::SaveFiltersToFile()");
-
-    try
-    {
-        const char* home = std::getenv("HOME");
-        if (!home)
-            home = ".";
-        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
-
-        // Build JSON structure
-        auto const& tabs = application_state.filters.tabs.GetFront();
-        nlohmann::json tabs_json = nlohmann::json::array();
-
-        for (auto const& tab : tabs)
-        {
-            nlohmann::json tab_json;
-            tab_json["name"] = tab->name;
-            tab_json["is_active"] = static_cast<bool>(tab->operator[](Filters::ETabFlag::IsActive));
-
-            nlohmann::json filters_json = nlohmann::json::array();
-            for (auto const& filter : tab->filters.GetFront())
-            {
-                nlohmann::json filter_json;
-                filter_json["name"] = filter->name;
-                filter_json["priority"] = filter->priority;
-                filter_json["is_active"] =
-                    static_cast<bool>(filter->operator[](Filters::EFilterFlag::IsActive));
-                filter_json["is_highlight_only"] =
-                    static_cast<bool>(filter->operator[](Filters::EFilterFlag::IsHighlightOnly));
-                filter_json["is_collapsed"] =
-                    static_cast<bool>(filter->operator[](Filters::EFilterFlag::IsCollapsed));
-
-                // Colors
-                nlohmann::json foreground_json;
-                foreground_json["x"] = filter->colors.foreground.x;
-                foreground_json["y"] = filter->colors.foreground.y;
-                foreground_json["z"] = filter->colors.foreground.z;
-                foreground_json["w"] = filter->colors.foreground.w;
-                filter_json["foreground"] = foreground_json;
-
-                nlohmann::json background_json;
-                background_json["x"] = filter->colors.background.x;
-                background_json["y"] = filter->colors.background.y;
-                background_json["z"] = filter->colors.background.z;
-                background_json["w"] = filter->colors.background.w;
-                filter_json["background"] = background_json;
-
-                // Conditions
-                nlohmann::json conditions_json = nlohmann::json::array();
-                for (auto const& condition : filter->conditions.GetFront())
-                {
-                    nlohmann::json condition_json;
-                    condition_json["over_column_id"] = condition->over_column_id.ToString();
-                    condition_json["over_column_display_name"] = condition->over_column_display_name;
-                    condition_json["over_column_display_name"] = condition->over_column_display_name;
-                    condition_json["data"] = condition->data;
-                    condition_json["is_regex"] =
-                        static_cast<bool>(condition->operator[](Filters::EConditionFlag::IsRegex));
-                    condition_json["is_equals"] =
-                        static_cast<bool>(condition->operator[](Filters::EConditionFlag::IsEquals));
-                    condition_json["is_case_sensitive"] = static_cast<bool>(
-                        condition->operator[](Filters::EConditionFlag::IsCaseSensitive));
-                    conditions_json.push_back(condition_json);
-                }
-                filter_json["conditions"] = conditions_json;
-
-                filters_json.push_back(filter_json);
-            }
-            tab_json["filters"] = filters_json;
-            tabs_json.push_back(tab_json);
-        }
-
-        // Save using PersistentSettings
-        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
-        settings.SetJsonValue("tabs", tabs_json);
-        settings.Save();
-
-        LOG_INFO(
-            "::SaveFiltersToFile(): Successfully saved filters to {}/filters.json",
-            config_dir.string());
-
-        // Mark as saved
-        const_cast<AppState&>(application_state)
-            .filters.metadata.UpdateBackBufferCopyLocking([](FiltersGeneralMetadata& metadata) {
-                metadata[Filters::EFiltersMetadataFlag::SavedToDisk] = true;
-            });
-    }
-    catch (std::exception const& e)
-    {
-        LOG_ERROR("::SaveFiltersToFile(): Failed to save filters: {}", e.what());
-    }
-}
-
-// TODO: move to DiskIO.cpp
-void LoadFiltersFromFile(AppState& application_state)
-{
-    LOG_SCOPE("::LoadFiltersFromFile()");
-
-    try
-    {
-        const char* home = std::getenv("HOME");
-        if (!home)
-            home = ".";
-        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
-
-        // Create PersistentSettings for filters
-        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
-
-        // Get the JSON data
-        auto tabs_json_opt = settings.GetJsonValue("tabs");
-        if (!tabs_json_opt)
-        {
-            LOG_INFO("::LoadFiltersFromFile(): No saved filters found, using defaults");
-            return;
-        }
-
-        auto const& tabs_json = *tabs_json_opt;
-        if (!tabs_json.is_array() || tabs_json.empty())
-        {
-            LOG_WARN("::LoadFiltersFromFile(): Invalid or empty filters file format");
-            return;
-        }
-
-        std::vector<Filters::Tab::Ptr> loaded_tabs;
-
-        for (auto const& tab_json : tabs_json)
-        {
-            auto tab_ptr = std::make_shared<Filters::Tab>();
-            tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-
-            tab_ptr->name = tab_json.at("name").get<std::string>();
-            (*tab_ptr)[Filters::ETabFlag::IsActive] = tab_json.at("is_active").get<bool>();
-
-            std::vector<Filters::Filter::Ptr> loaded_filters;
-            auto const& filters_json = tab_json.at("filters");
-
-            for (auto const& filter_json : filters_json)
-            {
-                auto filter_ptr = std::make_shared<Filters::Filter>();
-                filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-
-                filter_ptr->name = filter_json.at("name").get<std::string>();
-                filter_ptr->priority =
-                    static_cast<std::uint8_t>(filter_json.at("priority").get<int>());
-                (*filter_ptr)[Filters::EFilterFlag::IsActive] =
-                    filter_json.at("is_active").get<bool>();
-                (*filter_ptr)[Filters::EFilterFlag::IsHighlightOnly] =
-                    filter_json.at("is_highlight_only").get<bool>();
-                (*filter_ptr)[Filters::EFilterFlag::IsCollapsed] =
-                    filter_json.at("is_collapsed").get<bool>();
-
-                // Load colors
-                auto const& fg = filter_json.at("foreground");
-                filter_ptr->colors.foreground.x = fg.at("x").get<float>();
-                filter_ptr->colors.foreground.y = fg.at("y").get<float>();
-                filter_ptr->colors.foreground.z = fg.at("z").get<float>();
-                filter_ptr->colors.foreground.w = fg.at("w").get<float>();
-
-                auto const& bg = filter_json.at("background");
-                filter_ptr->colors.background.x = bg.at("x").get<float>();
-                filter_ptr->colors.background.y = bg.at("y").get<float>();
-                filter_ptr->colors.background.z = bg.at("z").get<float>();
-                filter_ptr->colors.background.w = bg.at("w").get<float>();
-
-                application_state.filters.id_to_metadata.emplace(
-                    filter_ptr->id,
-                    Data::Logs::SharedFilterMetadata{
-                        .colors = {
-                            .foreground{filter_ptr->colors.foreground},
-                            .background = {filter_ptr->colors.background}}});
-
-                // Load conditions
-                std::vector<Filters::Condition::Ptr> loaded_conditions;
-                auto const& conditions_json = filter_json.at("conditions");
-
-                for (auto const& condition_json : conditions_json)
-                {
-                    auto condition_ptr = std::make_shared<Filters::Condition>();
-                    condition_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
-
-                    condition_ptr->over_column_id = Graphite::Common::Utility::UniqueID{
-                        condition_json.at("over_column_id").get<std::string>()};
-                    condition_ptr->over_column_display_name =
-                        condition_json.at("over_column_display_name").get<std::string>();
-                    condition_ptr->data = condition_json.at("data").get<std::string>();
-                    (*condition_ptr)[Filters::EConditionFlag::IsRegex] =
-                        condition_json.at("is_regex").get<bool>();
-                    (*condition_ptr)[Filters::EConditionFlag::IsEquals] =
-                        condition_json.at("is_equals").get<bool>();
-                    (*condition_ptr)[Filters::EConditionFlag::IsCaseSensitive] =
-                        condition_json.at("is_case_sensitive").get<bool>();
-
-                    loaded_conditions.push_back(std::move(condition_ptr));
-                }
-
-                filter_ptr->conditions.Init(
-                    std::vector(loaded_conditions), std::move(loaded_conditions));
-                loaded_filters.push_back(std::move(filter_ptr));
-            }
-
-            tab_ptr->filters.Init(std::vector(loaded_filters), std::move(loaded_filters));
-            tab_ptr->UpdateImGuiID();
-            loaded_tabs.push_back(std::move(tab_ptr));
-        }
-
-        if (loaded_tabs.empty())
-        {
-            LOG_WARN("::LoadFiltersFromFile(): Loaded filters file is empty, using defaults");
-            return;
-        }
-
-        application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
-            tabs_back = std::move(loaded_tabs);
-            tabs_back.shrink_to_fit();
-        });
-
-        LOG_INFO("::LoadFiltersFromFile(): Successfully loaded {} tabs from disk", tabs_json.size());
-
-        application_state.filters.metadata.UpdateBackBufferCopyLocking(
-            [](FiltersGeneralMetadata& metadata) {
-                metadata[Filters::EFiltersMetadataFlag::SavedToDisk] = true;
-            });
-    }
-    catch (std::exception const& e)
-    {
-        LOG_ERROR("::LoadFiltersFromFile(): Failed to load filters: {}", e.what());
-    }
-}
-
-// TODO: why is this here wtf??? move it to Fluxion class
-void SavePluginPathToFile(AppState const& application_state)
-{
-    LOG_SCOPE("::SavePluginPathToFile()");
-
-    try
-    {
-        const char* home = std::getenv("HOME");
-        if (!home)
-            home = ".";
-        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
-
-        // Create PersistentSettings for plugin config
-        Graphite::Settings::PersistentSettings settings(config_dir, "plugin_config");
-
-        // Save plugin path
-        settings.set<std::string>("plugin_path", application_state.selected_logs_plugin_path.string());
-        settings.Save();
-
-        LOG_INFO(
-            "::SavePluginPathToFile(): Successfully saved plugin path to {}/plugin_config.json",
-            config_dir.string());
-    }
-    catch (std::exception const& e)
-    {
-        LOG_ERROR("::SavePluginPathToFile(): Failed to save plugin path: {}", e.what());
-    }
-}
-
-// TODO: why is this here wtf??? move it to Fluxion class
-void LoadPluginPathFromFile(AppState& application_state)
-{
-    LOG_SCOPE("::LoadPluginPathFromFile()");
-
-    try
-    {
-        const char* home = std::getenv("HOME");
-        if (!home)
-            home = ".";
-        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
-
-        // Create PersistentSettings for plugin config
-        Graphite::Settings::PersistentSettings settings(config_dir, "plugin_config");
-
-        // Load plugin path
-        if (auto plugin_path_opt = settings.get<std::string>("plugin_path"))
-        {
-            std::filesystem::path plugin_path(*plugin_path_opt);
-
-            // Validate that the plugin file still exists
-            if (!plugin_path.empty() && std::filesystem::exists(plugin_path))
-            {
-                application_state.selected_logs_plugin_path = plugin_path;
-                LOG_INFO("::LoadPluginPathFromFile(): Loaded plugin path: {}", *plugin_path_opt);
-            }
-            else if (!plugin_path.empty())
-            {
-                LOG_WARN(
-                    "::LoadPluginPathFromFile(): Saved plugin path no longer exists: {}",
-                    *plugin_path_opt);
-            }
-        }
-        else
-        {
-            LOG_ERROR("::LoadPluginPathFromFile(): No saved plugin configuration found");
-        }
-    }
-    catch (std::exception const& e)
-    {
-        LOG_ERROR("::LoadPluginPathFromFile(): Failed to load plugin path: {}", e.what());
-    }
-}
-
 void HandleFiltersViewAction(AppState& application_state, FilterActionPayload const& payload)
 {
     if (payload.type == EFilterActionType::None)
@@ -1147,11 +840,7 @@ void HandleFiltersViewAction(AppState& application_state, FilterActionPayload co
         break;
     }
     case EFilterActionType::SaveFilters: {
-        SaveFiltersToFile(application_state);
-        break;
-    }
-    case EFilterActionType::LoadFilters: {
-        LoadFiltersFromFile(application_state);
+        std::get<Payloads::SaveFilters>(payload.data).save_filters_on_disk();
         break;
     }
     default: {

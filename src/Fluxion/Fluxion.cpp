@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.19
+/// @version 0.20
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -73,12 +73,6 @@ FluxionApplication::FluxionApplication(
 FluxionApplication::~FluxionApplication()
 {
     LOG_SCOPE("::~FluxionApplication()");
-    // Destroy plugin before unloading library
-    m_app_state.logs_plugin.reset();
-    m_app_state.loaded_plugin_library.reset();
-    // Save plugin path and filters to disk on application shutdown
-    Views::Actions::FiltersView::SavePluginPathToFile(m_app_state);
-    Views::Actions::FiltersView::SaveFiltersToFile(m_app_state);
 }
 
 std::filesystem::path FluxionApplication::GetHomePath() const
@@ -110,12 +104,14 @@ void FluxionApplication::OnInit()
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    LoadAppOptions();
-    LoadFiltersSwatches();
+    LoadAppOptionsFromDisk();
+    LoadFiltersSwatchesFromDisk();
+    LoadFiltersFromDisk();
+
     SetupFonts();
 
     // Load previously used plugin path from configuration
-    Views::Actions::FiltersView::LoadPluginPathFromFile(m_app_state);
+    LoadPluginPathFromDisk();
 
     // Try to load the saved plugin, fall back to DummyPlugin if not available
     if (!m_app_state.selected_logs_plugin_path.empty() &&
@@ -138,31 +134,29 @@ void FluxionApplication::OnInit()
                     LOG_INFO(
                         "Loading saved logs plugin from: {}",
                         m_app_state.selected_logs_plugin_path.string());
-                    m_app_state.logs_plugin.reset(factory());
-
-                    Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
-
-                    // setup plugin home path
-                    const char* home_env = std::getenv("HOME");
-                    if (!home_env)
+                    auto plugin_ptr{factory()};
+                    if (plugin_ptr != nullptr)
                     {
-                        enable_data.plugin_home_path = std::filesystem::path(home_env) / ".fluxion";
-                        LOG_ERROR("HOME environment variable not set");
-                    }
-                    else if (m_app_state.logs_plugin)
-                    {
+                        LOG_INFO("::RenderPluginSelection(): Plugin created");
+                        m_app_state.logs_plugin.reset(plugin_ptr);
+
+                        Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+
                         enable_data.plugin_home_path =
-                            std::filesystem::path(home_env) / ".fluxion" /
-                            std::string(m_app_state.logs_plugin->GetDisplayName());
+                            GetHomePath() / std::string(m_app_state.logs_plugin->GetDisplayName());
+                        std::filesystem::create_directories(enable_data.plugin_home_path);
+
+                        m_app_state.logs_plugin->OnEnable(enable_data);
+
+                        m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
                     }
                     else
                     {
-                        GRAPHITE_ASSERT(
-                            false, "HOME env variable not set and logs_plugin ptr is null");
+                        LOG_ERROR(
+                            "::RenderPluginSelection(): Failed to create the plugin from "
+                            "{}",
+                            m_app_state.selected_logs_plugin_path.string());
                     }
-                    std::filesystem::create_directories(enable_data.plugin_home_path);
-
-                    m_app_state.logs_plugin->OnEnable(enable_data);
                 }
             }
         }
@@ -178,12 +172,10 @@ void FluxionApplication::OnInit()
         LOG_INFO("::AppInit(): No plugin loaded, setting sentinel");
         m_app_state.logs_plugin = Fluxion::SentinelPlugins::Logs::Create();
         m_app_state.selected_logs_plugin_path.clear();
+        m_app_state.loaded_plugin_library.reset();
     }
 
     m_app_state.logs.table_header = m_app_state.logs_plugin->GetTableHeader();
-
-    // Load filters from disk after logger is initialized
-    Views::Actions::FiltersView::LoadFiltersFromFile(m_app_state);
 
     AddView<Views::BaseView>(shared_from_this(), 0);
     AddView<Views::DevView>(
@@ -197,15 +189,23 @@ void FluxionApplication::OnInit()
 
 void FluxionApplication::OnShutdown()
 {
+    LOG_SCOPE("::OnShutDown():");
+
+    SavePluginPathToDisk();
+    SaveFiltersSwatchesToDisk();
+    SaveFiltersToDisk();
+
     if (m_app_state.logs_plugin != nullptr)
     {
         m_app_state.logs_plugin->OnDisable({});
     }
-    SaveFiltersSwatches();
+    m_app_state.logs_plugin.reset();
+    m_app_state.loaded_plugin_library.reset();
 }
 
-void FluxionApplication::LoadAppOptions()
+void FluxionApplication::LoadAppOptionsFromDisk()
 {
+    LOG_SCOPE("::LoadAppOptions()");
     Graphite::Settings::PersistentSettings options{GetHomePath(), "options.json"};
     auto& app_options{m_app_state.app_options};
     {
@@ -285,7 +285,7 @@ void FluxionApplication::ResetImportedLogsData()
         [](auto&) {}, [](Fluxion::Application::Data::Logs::VisibleLogs& back) { back.logs.clear(); });
 }
 
-void FluxionApplication::SaveFiltersSwatches() const
+void FluxionApplication::SaveFiltersSwatchesToDisk() const
 {
     LOG_SCOPE("::SaveFiltersSwatches()");
     Graphite::Settings::PersistentSettings settings{GetHomePath(), "swatches"};
@@ -293,7 +293,7 @@ void FluxionApplication::SaveFiltersSwatches() const
     settings.Save();
 }
 
-void FluxionApplication::LoadFiltersSwatches()
+void FluxionApplication::LoadFiltersSwatchesFromDisk()
 {
     LOG_SCOPE("::LoadFiltersSwatches()");
     Graphite::Settings::PersistentSettings settings{GetHomePath(), "swatches"};
@@ -326,7 +326,313 @@ void FluxionApplication::LoadFiltersSwatches()
             {ImVec4(0.95f, 0.30f, 0.50f, 1.0f), ImVec4(0.35f, 0.05f, 0.15f, 0.35f)}  // Deep Rose (Security / Audit)
         };
         // clang-format on
-        SaveFiltersSwatches();
+        SaveFiltersSwatchesToDisk();
+    }
+}
+
+void FluxionApplication::SaveFiltersToDisk() const
+{
+    LOG_SCOPE("::SaveFiltersToFile()");
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+
+        // Build JSON structure
+        auto const& tabs = m_app_state.filters.tabs.GetFront();
+        nlohmann::json tabs_json = nlohmann::json::array();
+
+        for (auto const& tab : tabs)
+        {
+            nlohmann::json tab_json;
+            tab_json["name"] = tab->name;
+            tab_json["is_active"] = static_cast<bool>(
+                tab->operator[](Fluxion::Application::Data::Filters::ETabFlag::IsActive));
+
+            nlohmann::json filters_json = nlohmann::json::array();
+            for (auto const& filter : tab->filters.GetFront())
+            {
+                nlohmann::json filter_json;
+                filter_json["name"] = filter->name;
+                filter_json["priority"] = filter->priority;
+                filter_json["is_active"] = static_cast<bool>(
+                    filter->operator[](Fluxion::Application::Data::Filters::EFilterFlag::IsActive));
+                filter_json["is_highlight_only"] = static_cast<bool>(filter->operator[](
+                    Fluxion::Application::Data::Filters::EFilterFlag::IsHighlightOnly));
+                filter_json["is_collapsed"] = static_cast<bool>(filter->operator[](
+                    Fluxion::Application::Data::Filters::EFilterFlag::IsCollapsed));
+
+                // Colors
+                nlohmann::json foreground_json;
+                foreground_json["x"] = filter->colors.foreground.x;
+                foreground_json["y"] = filter->colors.foreground.y;
+                foreground_json["z"] = filter->colors.foreground.z;
+                foreground_json["w"] = filter->colors.foreground.w;
+                filter_json["foreground"] = foreground_json;
+
+                nlohmann::json background_json;
+                background_json["x"] = filter->colors.background.x;
+                background_json["y"] = filter->colors.background.y;
+                background_json["z"] = filter->colors.background.z;
+                background_json["w"] = filter->colors.background.w;
+                filter_json["background"] = background_json;
+
+                // Conditions
+                nlohmann::json conditions_json = nlohmann::json::array();
+                for (auto const& condition : filter->conditions.GetFront())
+                {
+                    nlohmann::json condition_json;
+                    condition_json["over_column_id"] = condition->over_column_id.ToString();
+                    condition_json["over_column_display_name"] = condition->over_column_display_name;
+                    condition_json["over_column_display_name"] = condition->over_column_display_name;
+                    condition_json["data"] = condition->data;
+                    condition_json["is_regex"] = static_cast<bool>(condition->operator[](
+                        Fluxion::Application::Data::Filters::EConditionFlag::IsRegex));
+                    condition_json["is_equals"] = static_cast<bool>(condition->operator[](
+                        Fluxion::Application::Data::Filters::EConditionFlag::IsEquals));
+                    condition_json["is_case_sensitive"] = static_cast<bool>(condition->operator[](
+                        Fluxion::Application::Data::Filters::EConditionFlag::IsCaseSensitive));
+                    conditions_json.push_back(condition_json);
+                }
+                filter_json["conditions"] = conditions_json;
+
+                filters_json.push_back(filter_json);
+            }
+            tab_json["filters"] = filters_json;
+            tabs_json.push_back(tab_json);
+        }
+
+        // Save using PersistentSettings
+        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
+        settings.SetJsonValue("tabs", tabs_json);
+        settings.Save();
+
+        LOG_INFO(
+            "::SaveFiltersToFile(): Successfully saved filters to {}/filters.json",
+            config_dir.string());
+
+        // Mark as saved
+        const_cast<AppState&>(m_app_state)
+            .filters.metadata.UpdateBackBufferCopyLocking(
+                [](Fluxion::Application::Data::Filters::FiltersGeneralMetadata& metadata) {
+                    metadata[Fluxion::Application::Data::Filters::EFiltersMetadataFlag::SavedToDisk] =
+                        true;
+                });
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::SaveFiltersToFile(): Failed to save filters: {}", e.what());
+    }
+}
+
+void FluxionApplication::LoadFiltersFromDisk()
+{
+    LOG_SCOPE("::LoadFiltersFromFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+
+        // Create PersistentSettings for filters
+        Graphite::Settings::PersistentSettings settings(config_dir, "filters");
+
+        // Get the JSON data
+        auto tabs_json_opt = settings.GetJsonValue("tabs");
+        if (!tabs_json_opt)
+        {
+            LOG_INFO("::LoadFiltersFromFile(): No saved filters found, using defaults");
+            return;
+        }
+
+        auto const& tabs_json = *tabs_json_opt;
+        if (!tabs_json.is_array() || tabs_json.empty())
+        {
+            LOG_WARN("::LoadFiltersFromFile(): Invalid or empty filters file format");
+            return;
+        }
+
+        std::vector<Fluxion::Application::Data::Filters::Tab::Ptr> loaded_tabs;
+
+        for (auto const& tab_json : tabs_json)
+        {
+            auto tab_ptr = std::make_shared<Fluxion::Application::Data::Filters::Tab>();
+            tab_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+
+            tab_ptr->name = tab_json.at("name").get<std::string>();
+            (*tab_ptr)[Fluxion::Application::Data::Filters::ETabFlag::IsActive] =
+                tab_json.at("is_active").get<bool>();
+
+            std::vector<Fluxion::Application::Data::Filters::Filter::Ptr> loaded_filters;
+            auto const& filters_json = tab_json.at("filters");
+
+            for (auto const& filter_json : filters_json)
+            {
+                auto filter_ptr = std::make_shared<Fluxion::Application::Data::Filters::Filter>();
+                filter_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+
+                filter_ptr->name = filter_json.at("name").get<std::string>();
+                filter_ptr->priority =
+                    static_cast<std::uint8_t>(filter_json.at("priority").get<int>());
+                (*filter_ptr)[Fluxion::Application::Data::Filters::EFilterFlag::IsActive] =
+                    filter_json.at("is_active").get<bool>();
+                (*filter_ptr)[Fluxion::Application::Data::Filters::EFilterFlag::IsHighlightOnly] =
+                    filter_json.at("is_highlight_only").get<bool>();
+                (*filter_ptr)[Fluxion::Application::Data::Filters::EFilterFlag::IsCollapsed] =
+                    filter_json.at("is_collapsed").get<bool>();
+
+                // Load colors
+                auto const& fg = filter_json.at("foreground");
+                filter_ptr->colors.foreground.x = fg.at("x").get<float>();
+                filter_ptr->colors.foreground.y = fg.at("y").get<float>();
+                filter_ptr->colors.foreground.z = fg.at("z").get<float>();
+                filter_ptr->colors.foreground.w = fg.at("w").get<float>();
+
+                auto const& bg = filter_json.at("background");
+                filter_ptr->colors.background.x = bg.at("x").get<float>();
+                filter_ptr->colors.background.y = bg.at("y").get<float>();
+                filter_ptr->colors.background.z = bg.at("z").get<float>();
+                filter_ptr->colors.background.w = bg.at("w").get<float>();
+
+                m_app_state.filters.id_to_metadata.emplace(
+                    filter_ptr->id,
+                    Data::Logs::SharedFilterMetadata{
+                        .colors = {
+                            .foreground{filter_ptr->colors.foreground},
+                            .background = {filter_ptr->colors.background}}});
+
+                // Load conditions
+                std::vector<Fluxion::Application::Data::Filters::Condition::Ptr> loaded_conditions;
+                auto const& conditions_json = filter_json.at("conditions");
+
+                for (auto const& condition_json : conditions_json)
+                {
+                    auto condition_ptr =
+                        std::make_shared<Fluxion::Application::Data::Filters::Condition>();
+                    condition_ptr->id = Graphite::Common::Utility::UniqueID::Generate();
+
+                    condition_ptr->over_column_id = Graphite::Common::Utility::UniqueID{
+                        condition_json.at("over_column_id").get<std::string>()};
+                    condition_ptr->over_column_display_name =
+                        condition_json.at("over_column_display_name").get<std::string>();
+                    condition_ptr->data = condition_json.at("data").get<std::string>();
+                    (*condition_ptr)[Fluxion::Application::Data::Filters::EConditionFlag::IsRegex] =
+                        condition_json.at("is_regex").get<bool>();
+                    (*condition_ptr)[Fluxion::Application::Data::Filters::EConditionFlag::IsEquals] =
+                        condition_json.at("is_equals").get<bool>();
+                    (*condition_ptr)[Fluxion::Application::Data::Filters::EConditionFlag::IsCaseSensitive] =
+                        condition_json.at("is_case_sensitive").get<bool>();
+
+                    loaded_conditions.push_back(std::move(condition_ptr));
+                }
+
+                filter_ptr->conditions.Init(
+                    std::vector(loaded_conditions), std::move(loaded_conditions));
+                loaded_filters.push_back(std::move(filter_ptr));
+            }
+
+            tab_ptr->filters.Init(std::vector(loaded_filters), std::move(loaded_filters));
+            tab_ptr->UpdateImGuiID();
+            loaded_tabs.push_back(std::move(tab_ptr));
+        }
+
+        if (loaded_tabs.empty())
+        {
+            LOG_WARN("::LoadFiltersFromFile(): Loaded filters file is empty, using defaults");
+            return;
+        }
+
+        m_app_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
+            tabs_back = std::move(loaded_tabs);
+            tabs_back.shrink_to_fit();
+        });
+
+        LOG_INFO("::LoadFiltersFromFile(): Successfully loaded {} tabs from disk", tabs_json.size());
+
+        m_app_state.filters.metadata.UpdateBackBufferCopyLocking(
+            [](Fluxion::Application::Data::Filters::FiltersGeneralMetadata& metadata) {
+                metadata[Fluxion::Application::Data::Filters::EFiltersMetadataFlag::SavedToDisk] =
+                    true;
+            });
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::LoadFiltersFromFile(): Failed to load filters: {}", e.what());
+    }
+}
+
+void FluxionApplication::SavePluginPathToDisk() const
+{
+    LOG_SCOPE("::SavePluginPathToFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+
+        // Create PersistentSettings for plugin config
+        Graphite::Settings::PersistentSettings settings(config_dir, "plugin_config");
+
+        // Save plugin path
+        settings.set<std::string>("plugin_path", m_app_state.selected_logs_plugin_path.string());
+        settings.Save();
+
+        LOG_INFO(
+            "::SavePluginPathToFile(): Successfully saved plugin path to {}/plugin_config.json",
+            config_dir.string());
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::SavePluginPathToFile(): Failed to save plugin path: {}", e.what());
+    }
+}
+
+void FluxionApplication::LoadPluginPathFromDisk()
+{
+    LOG_SCOPE("::LoadPluginPathFromFile()");
+
+    try
+    {
+        const char* home = std::getenv("HOME");
+        if (!home)
+            home = ".";
+        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+
+        // Create PersistentSettings for plugin config
+        Graphite::Settings::PersistentSettings settings(config_dir, "plugin_config");
+
+        // Load plugin path
+        if (auto plugin_path_opt = settings.get<std::string>("plugin_path"))
+        {
+            std::filesystem::path plugin_path(*plugin_path_opt);
+
+            // Validate that the plugin file still exists
+            if (!plugin_path.empty() && std::filesystem::exists(plugin_path))
+            {
+                m_app_state.selected_logs_plugin_path = plugin_path;
+                LOG_INFO("::LoadPluginPathFromFile(): Loaded plugin path: {}", *plugin_path_opt);
+            }
+            else if (!plugin_path.empty())
+            {
+                LOG_WARN(
+                    "::LoadPluginPathFromFile(): Saved plugin path no longer exists: {}",
+                    *plugin_path_opt);
+            }
+        }
+        else
+        {
+            LOG_ERROR("::LoadPluginPathFromFile(): No saved plugin configuration found");
+        }
+    }
+    catch (std::exception const& e)
+    {
+        LOG_ERROR("::LoadPluginPathFromFile(): Failed to load plugin path: {}", e.what());
     }
 }
 

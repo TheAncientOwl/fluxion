@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.44
+/// @version 0.45
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -107,7 +107,7 @@ bool ColorsPicker(
             Graphite::Common::UI::ItemHoverTooltip(
                 ICON_CI_SYMBOL_COLOR
                 " foreground({:.2f}, {:.2f}, {:.2f}, {:.2f})\n" ICON_CI_PAINTCAN
-                    " background({:.2f}, {:.2f}, {:.2f}, {:.2f})",
+                " background({:.2f}, {:.2f}, {:.2f}, {:.2f})",
                 swatch.foreground.x,
                 swatch.foreground.y,
                 swatch.foreground.z,
@@ -438,11 +438,9 @@ void FiltersView::RenderToolbar()
     Graphite::Common::UI::TabItemIconButton(ICON_CI_SAVE, "Save Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::SaveFilters,
-             .data = Actions::FiltersView::Payloads::FiltersDataModify{
-                 .tab_id = std::nullopt,
-                 .filter_id = std::nullopt,
-                 .condition_id = std::nullopt,
-             }});
+             .data = Actions::FiltersView::Payloads::SaveFilters{.save_filters_on_disk = [this]() {
+                 m_application->As<FluxionApplication>()->SaveFiltersToDisk();
+             }}});
     });
     ImGui::EndDisabled();
 
@@ -478,9 +476,16 @@ void FiltersView::RenderToolbar()
     Graphite::Common::UI::TabItemIconButton(ICON_CI_WAND, "Apply Filters", [&]() {
         Dispatch(
             {.type = Actions::FiltersView::EFilterActionType::ApplyFilters,
-             .data = Actions::FiltersView::Payloads::ApplyFilters{.reset_imported_logs_data = [this]() {
-                 m_application->As<Fluxion::Application::FluxionApplication>()->ResetImportedLogsData();
-             }}});
+             .data = Actions::FiltersView::Payloads::ApplyFilters{
+                 .reset_imported_logs_data =
+                     [this]() {
+                         m_application->As<Fluxion::Application::FluxionApplication>()
+                             ->ResetImportedLogsData();
+                     },
+                 .save_filters_on_disk =
+                     [this]() {
+                         m_application->As<Fluxion::Application::FluxionApplication>()->SaveFiltersToDisk();
+                     }}});
     });
     ImGui::EndDisabled();
 

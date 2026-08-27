@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -36,13 +36,19 @@ private:
     friend class Graphite::Application::TGraphiteApplication<AppState, EFluxionAction>;
     FluxionApplication(Graphite::Application::WindowConfiguration window_configuration, AppState initial_state);
 
-private:
-    void LoadAppOptions();
     void SetupFonts();
 
-private: // Persistence
-    void LoadFiltersSwatches();
-    void SaveFiltersSwatches() const;
+public: // Persistence
+    void LoadFiltersFromDisk();
+    void SaveFiltersToDisk() const;
+
+    void LoadAppOptionsFromDisk();
+
+    void LoadFiltersSwatchesFromDisk();
+    void SaveFiltersSwatchesToDisk() const;
+
+    void SavePluginPathToDisk() const;
+    void LoadPluginPathFromDisk();
 
 private:
     void OnInit() override;

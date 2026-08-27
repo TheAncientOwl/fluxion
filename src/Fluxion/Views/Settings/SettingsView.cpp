@@ -5,7 +5,7 @@
 ///
 /// @file SettingsView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see SettingsView.hpp.
 ///
 
@@ -61,7 +61,7 @@ void SettingsView::SetIsActive(bool active) noexcept
 void SettingsView::OnAdd()
 {
     LOG_SCOPE("::OnAdd()");
-    m_logs_plugin_renderer.OnAdd(m_application->GetApplicationState());
+    m_logs_plugin_renderer.OnAdd(m_application);
 }
 
 void SettingsView::OnIterate()
@@ -81,7 +81,7 @@ void SettingsView::OnRender()
     {
         if (ImGui::BeginTabItem("Logs Plugins"))
         {
-            m_logs_plugin_renderer.Render(app_state);
+            m_logs_plugin_renderer.Render();
             ImGui::EndTabItem();
         }
 

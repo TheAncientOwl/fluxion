@@ -5,7 +5,7 @@
 ///
 /// @file BaseView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Implementation of @see BaseView.hpp.
 ///
 
@@ -102,26 +102,9 @@ void BaseView::OnAdd()
 
     // --- Resolve Custom Path ---
     static std::string persistent_path{}; // Must stay alive for ImGui
-    const char* home = std::getenv("HOME");
-
-#ifdef _WIN32
-    if (!home)
-    {
-        home = std::getenv("USERPROFILE");
-    }
-#endif
-
-    if (home)
-    {
-        std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
-        std::filesystem::create_directories(config_dir); // Ensure folder exists
-        persistent_path = (config_dir / "fluxion.ini").string();
-        io.IniFilename = persistent_path.c_str();
-    }
-    else
-    {
-        LOG_WARN("Could not find home path...");
-    }
+    persistent_path =
+        (m_application->As<FluxionApplication>()->GetHomePath() / "fluxion.ini").string();
+    io.IniFilename = persistent_path.c_str();
 
     // --- Set Default Layout ---
     if (io.IniFilename && !std::filesystem::exists(io.IniFilename))
