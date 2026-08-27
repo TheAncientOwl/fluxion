@@ -5,28 +5,32 @@
 ///
 /// @file ImGuiHelpers.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Wrappers for ImGui UI elements.
 ///
+
+#include <format>
 
 #include "imgui.h"
 #include "misc/cpp/imgui_stdlib.h"
 
 namespace Graphite::Common::UI {
 
-template <typename... Args>
-void ItemHoverTooltip(const char* fmt, Args&&... args)
+inline void ItemHoverTooltip(const char* text)
 {
     if (ImGui::IsItemHovered())
     {
-        if constexpr (sizeof...(args) == 0)
-        {
-            ImGui::SetTooltip("%s", fmt);
-        }
-        else
-        {
-            ImGui::SetTooltip(fmt, std::forward<Args>(args)...);
-        }
+        ImGui::SetTooltip("%s", text);
+    }
+}
+
+template <typename... Args>
+void ItemHoverTooltip(std::format_string<std::remove_cvref_t<Args>...> fmt, Args&&... args)
+{
+    if (ImGui::IsItemHovered())
+    {
+        auto const formatted = std::vformat(fmt.get(), std::make_format_args(args...));
+        ImGui::SetTooltip("%s", formatted.c_str());
     }
 }
 

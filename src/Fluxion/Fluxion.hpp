@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Fluxion business logic entry point.
 ///
 
@@ -39,6 +39,10 @@ private:
 private:
     void LoadAppOptions();
     void SetupFonts();
+
+private: // Persistence
+    void LoadFiltersSwatches();
+    void SaveFiltersSwatches() const;
 
 private:
     void OnInit() override;

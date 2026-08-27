@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.21
+/// @version 0.22
 /// @brief Application state.
 ///
 
@@ -57,6 +57,7 @@ struct AppState
         Graphite::Common::DataStructures::TSwapDoubleBuffer<IdToMetadataMapUpdates> id_to_metadata_updates{};
         IdToMetadataMap id_to_metadata{};
 
+        std::vector<API::Data::Common::Highlight> colors_swatches{};
     } filters{};
 
     struct

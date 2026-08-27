@@ -5,11 +5,12 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.43
+/// @version 0.44
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
 #include <cstring>
+#include <limits>
 
 #include "IconsCodicons.h"
 #include "imgui.h"
@@ -28,81 +29,226 @@ using namespace Fluxion::Application::Data;
 
 namespace UIHelpers {
 
+enum class EColorPickerType : std::uint8_t
+{
+    Foreground = 0,
+    Background = 1
+};
+
+struct ColorPreset
+{
+    char const* name;
+    ImVec4 foreground;
+    ImVec4 background;
+};
+
+template <EColorPickerType ColorPickerType>
 bool ColorsPicker(
     const char* id,
     Fluxion::API::Data::Common::Highlight& colors,
+    std::vector<Fluxion::API::Data::Common::Highlight>& color_swatches,
     ImVec4 const& display,
-    std::string_view const preview)
+    std::string_view const preview,
+    bool const over_the_rainbow_default_open)
 {
-    static bool s_editing_fg = true;
+    static EColorPickerType s_color_picker_type{EColorPickerType::Foreground};
 
     if (ImGui::ColorButton(id, display))
     {
+        s_color_picker_type = ColorPickerType;
         ImGui::OpenPopup(id);
     }
 
+    // --- Calculate exact popup width matching an open ColorPicker4 ---
+    ImGuiStyle const& style = ImGui::GetStyle();
+    float const picker_width = ImGui::GetFrameHeight() * 12.0f;
+    float const popup_width = picker_width + style.WindowPadding.x * 2.0f;
+
+    ImGui::SetNextWindowSizeConstraints(
+        ImVec2(popup_width, 0.0f),
+        ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
+
     bool modified{false};
+    auto const swatches_per_line{9};
     if (ImGui::BeginPopup(id))
     {
-        // --- Checkbox to switch FG/BG ---
-        if (ImGui::ColorButton(
-                "FG", colors.foreground, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoSidePreview))
+        // --- Cache initial Y position on first open ---
+        ImGuiStorage* storage = ImGui::GetStateStorage();
+        ImGuiID const orig_y_key = ImGui::GetID("##orig_popup_y");
+
+        if (ImGui::IsWindowAppearing())
         {
-            s_editing_fg = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::ColorButton(
-                "BG", colors.background, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoSidePreview))
-        {
-            s_editing_fg = false;
+            storage->SetFloat(orig_y_key, ImGui::GetWindowPos().y);
         }
 
-        // --- Preview ---
-        ImGui::SameLine();
-        auto const padding = ImVec2(5.0f, 3.0f);
-        auto const cursor_pos = ImGui::GetCursorScreenPos();
-        auto const rect_max = ImVec2(
-            cursor_pos.x + ImGui::GetContentRegionAvail().x,
-            cursor_pos.y + ImGui::GetTextLineHeight() + 2.0f * padding.y);
+        float const orig_y = storage->GetFloat(orig_y_key, ImGui::GetWindowPos().y);
 
-        ImGui::GetWindowDrawList()->AddRectFilled(
-            cursor_pos, rect_max, ImGui::GetColorU32(colors.background), 4.0f);
+        int index_to_remove{-1};
 
-        ImGui::SetCursorScreenPos(ImVec2(cursor_pos.x + padding.x, cursor_pos.y + padding.y));
-        ImGui::TextColored(colors.foreground, "%s", preview.data());
+        // --- Render Colors Swatches ---
+        for (size_t color_swatch_idx = 0; color_swatch_idx < color_swatches.size(); ++color_swatch_idx)
+        {
+            auto const& swatch{color_swatches[color_swatch_idx]};
+            ImGui::PushID(static_cast<int>(color_swatch_idx));
+            if (color_swatch_idx > 0 && color_swatch_idx % swatches_per_line != 0)
+            {
+                ImGui::SameLine();
+            }
+
+            if (ImGui::ColorButton(
+                    "##swatch",
+                    swatch.foreground,
+                    ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs))
+            {
+                colors = swatch;
+                modified = true;
+            }
+
+            Graphite::Common::UI::ItemHoverTooltip(
+                ICON_CI_SYMBOL_COLOR
+                " foreground({:.2f}, {:.2f}, {:.2f}, {:.2f})\n" ICON_CI_PAINTCAN
+                    " background({:.2f}, {:.2f}, {:.2f}, {:.2f})",
+                swatch.foreground.x,
+                swatch.foreground.y,
+                swatch.foreground.z,
+                swatch.foreground.w,
+                swatch.background.x,
+                swatch.background.y,
+                swatch.background.z,
+                swatch.background.w);
+
+            if (ImGui::BeginPopupContextItem("##swatch_ctx"))
+            {
+                if (ImGui::MenuItem(ICON_CI_CLOSE " Delete Color"))
+                {
+                    index_to_remove = static_cast<int>(color_swatch_idx);
+                }
+                ImGui::EndPopup();
+            }
+
+            ImGui::PopID();
+        }
+
+        // Handle deletion outside iteration loop
+        if (index_to_remove != -1)
+        {
+            color_swatches.erase(color_swatches.begin() + index_to_remove);
+            modified = true;
+        }
+
+        // --- Add New Swatch Button ---
+        if (!color_swatches.empty() && color_swatches.size() % swatches_per_line != 0)
+        {
+            ImGui::SameLine();
+        }
+        Graphite::Common::UI::IconButton(
+            ICON_CI_ADD, ICON_CI_ADD " Add current colors", [&color_swatches, &modified, &colors]() {
+                color_swatches.push_back(colors);
+                modified = true;
+            });
 
         ImGui::Separator();
 
-        auto& target = s_editing_fg ? colors.foreground : colors.background;
-
-        auto const brightness =
-            0.299f * target.x + 0.587f * target.y + 0.114f * target.z; // perceived luminance
-        auto const grab_color = brightness < 0.5f ? ImVec4(
-                                                        std::min(target.x + 0.6f, 1.0f),
-                                                        std::min(target.y + 0.6f, 1.0f),
-                                                        std::min(target.z + 0.6f, 1.0f),
-                                                        1.0f)
-                                                  : ImVec4(
-                                                        std::max(target.x - 0.6f, 0.0f),
-                                                        std::max(target.y - 0.6f, 0.0f),
-                                                        std::max(target.z - 0.6f, 0.0f),
-                                                        1.0f);
-        auto const text_color = (target.x + target.y + target.z) / 3.0f < 0.5f ? ImVec4(1, 1, 1, 1)
-                                                                               : ImVec4(0, 0, 0, 1);
-
-        ImGui::PushStyleColor(ImGuiCol_Text, text_color);
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, target);
-        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, target);
-        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, target);
-        ImGui::PushStyleColor(ImGuiCol_SliderGrab, grab_color);
-        ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, grab_color);
-        ImGui::SliderFloat("##opacity", &target.w, 0.0f, 1.0f, "%.2f");
-        ImGui::PopStyleColor(6);
-
-        if (ImGui::ColorPicker4(
-                "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview))
+        if (ImGui::CollapsingHeader(
+                ICON_CI_SYMBOL_COLOR " Over the Rainbow",
+                over_the_rainbow_default_open ? ImGuiTreeNodeFlags_DefaultOpen
+                                              : ImGuiTreeNodeFlags_None))
         {
-            modified = true;
+            // --- Checkbox to switch FG/BG ---
+            if (ImGui::ColorButton(
+                    "FG",
+                    colors.foreground,
+                    ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoSidePreview))
+            {
+                s_color_picker_type = EColorPickerType::Foreground;
+            }
+            ImGui::SameLine();
+            if (ImGui::ColorButton(
+                    "BG",
+                    colors.background,
+                    ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoSidePreview))
+            {
+                s_color_picker_type = EColorPickerType::Background;
+            }
+
+            // --- Preview ---
+            ImGui::SameLine();
+            auto const padding = ImVec2(5.0f, 3.0f);
+            auto const cursor_pos = ImGui::GetCursorScreenPos();
+            auto const rect_max = ImVec2(
+                cursor_pos.x + ImGui::GetContentRegionAvail().x,
+                cursor_pos.y + ImGui::GetTextLineHeight() + 2.0f * padding.y);
+
+            ImGui::GetWindowDrawList()->AddRectFilled(
+                cursor_pos, rect_max, ImGui::GetColorU32(colors.background), 4.0f);
+
+            ImGui::SetCursorScreenPos(ImVec2(cursor_pos.x + padding.x, cursor_pos.y + padding.y));
+            ImGui::TextColored(
+                colors.foreground, "%.*s", static_cast<int>(preview.size()), preview.data());
+
+            ImGui::Separator();
+
+            auto& target = s_color_picker_type == EColorPickerType::Foreground ? colors.foreground
+                                                                               : colors.background;
+
+            auto const brightness = 0.299f * target.x + 0.587f * target.y + 0.114f * target.z;
+            auto const grab_color = brightness < 0.5f ? ImVec4(
+                                                            std::min(target.x + 0.6f, 1.0f),
+                                                            std::min(target.y + 0.6f, 1.0f),
+                                                            std::min(target.z + 0.6f, 1.0f),
+                                                            1.0f)
+                                                      : ImVec4(
+                                                            std::max(target.x - 0.6f, 0.0f),
+                                                            std::max(target.y - 0.6f, 0.0f),
+                                                            std::max(target.z - 0.6f, 0.0f),
+                                                            1.0f);
+            auto const text_color = (target.x + target.y + target.z) / 3.0f < 0.5f
+                                        ? ImVec4(1, 1, 1, 1)
+                                        : ImVec4(0, 0, 0, 1);
+
+            ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, target);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, target);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, target);
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, grab_color);
+            ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, grab_color);
+
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::SliderFloat("##opacity", &target.w, 0.0f, 1.0f, "%.2f"))
+            {
+                modified = true;
+            }
+            ImGui::PopStyleColor(6);
+
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::ColorPicker4(
+                    "##color", reinterpret_cast<float*>(&target), ImGuiColorEditFlags_NoSidePreview))
+            {
+                modified = true;
+            }
+        }
+
+        // --- Auto-adjust window position relative to orig_y ---
+        ImVec2 const current_pos = ImGui::GetWindowPos();
+        float const content_height =
+            (ImGui::GetCursorScreenPos().y + style.WindowPadding.y) - current_pos.y;
+        float const projected_bottom_y = orig_y + content_height;
+
+        ImGuiViewport const* viewport = ImGui::GetMainViewport();
+        float const viewport_bottom = viewport->WorkPos.y + viewport->WorkSize.y;
+
+        constexpr float margin = 12.0f;
+        float target_y = orig_y;
+
+        if (projected_bottom_y > viewport_bottom)
+        {
+            float const overflow = projected_bottom_y - viewport_bottom;
+            target_y = std::max(viewport->WorkPos.y + margin, orig_y - overflow - margin);
+        }
+
+        if (std::abs(current_pos.y - target_y) > 0.5f)
+        {
+            ImGui::SetWindowPos(ImVec2(current_pos.x, target_y));
         }
 
         ImGui::EndPopup();
@@ -520,15 +666,25 @@ void FiltersView::RenderFilter(Graphite::Common::Utility::UniqueID const& owning
     UIHelpers::Styles::PopRedButton();
 
     ImGui::SameLine();
-    if (UIHelpers::ColorsPicker(
-            "##FG", filter.colors, filter.colors.foreground, "Lorem ipsum dolor sit amet"))
+    if (UIHelpers::ColorsPicker<UIHelpers::EColorPickerType::Foreground>(
+            "##FG",
+            filter.colors,
+            m_application->GetApplicationState().filters.colors_swatches,
+            filter.colors.foreground,
+            "Lorem ipsum dolor sit amet",
+            false))
     {
         m_application->GetApplicationState().filters.id_to_metadata[filter.id].colors = filter.colors;
         MarkFiltersMetadataNotSavedOnDisk();
     }
     ImGui::SameLine();
-    if (UIHelpers::ColorsPicker(
-            "##BG", filter.colors, filter.colors.background, "Lorem ipsum dolor sit amet"))
+    if (UIHelpers::ColorsPicker<UIHelpers::EColorPickerType::Background>(
+            "##BG",
+            filter.colors,
+            m_application->GetApplicationState().filters.colors_swatches,
+            filter.colors.background,
+            "Lorem ipsum dolor sit amet",
+            true))
     {
         m_application->GetApplicationState().filters.id_to_metadata[filter.id].colors = filter.colors;
         MarkFiltersMetadataNotSavedOnDisk();

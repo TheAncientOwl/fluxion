@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.18
+/// @version 0.19
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -29,6 +29,36 @@
 
 DEFINE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
 USE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
+
+// ImVec4 serialization
+inline void to_json(nlohmann::json& j, ImVec4 const& v)
+{
+    j = nlohmann::json{{"x", v.x}, {"y", v.y}, {"z", v.z}, {"w", v.w}};
+}
+
+inline void from_json(nlohmann::json const& j, ImVec4& v)
+{
+    j.at("x").get_to(v.x);
+    j.at("y").get_to(v.y);
+    j.at("z").get_to(v.z);
+    j.at("w").get_to(v.w);
+}
+
+// Highlight serialization (must be in namespace Fluxion::API::Data::Common)
+namespace Fluxion::API::Data::Common {
+
+inline void to_json(nlohmann::json& j, Highlight const& h)
+{
+    j = nlohmann::json{{"foreground", h.foreground}, {"background", h.background}};
+}
+
+inline void from_json(nlohmann::json const& j, Highlight& h)
+{
+    j.at("foreground").get_to(h.foreground);
+    j.at("background").get_to(h.background);
+}
+
+} // namespace Fluxion::API::Data::Common
 
 namespace Fluxion::Application {
 
@@ -54,12 +84,20 @@ FluxionApplication::~FluxionApplication()
 std::filesystem::path FluxionApplication::GetHomePath() const
 {
     const char* home_env = std::getenv("HOME");
-    if (!home_env)
+    if (home_env != nullptr)
     {
-        std::filesystem::path(home_env) / ".fluxion";
-        LOG_ERROR("HOME environment variable not set");
+        auto path = std::filesystem::path(home_env) / ".fluxion";
+        if (!std::filesystem::exists(path))
+        {
+            std::filesystem::create_directories(path);
+        }
+        return path;
     }
-    return std::filesystem::current_path();
+
+    LOG_ERROR("::GetHomePath(): HOME environment variable not set, falling back to current path");
+    auto fallback_path = std::filesystem::current_path() / ".fluxion";
+    std::filesystem::create_directories(fallback_path);
+    return fallback_path;
 }
 
 void FluxionApplication::OnInit()
@@ -73,6 +111,7 @@ void FluxionApplication::OnInit()
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     LoadAppOptions();
+    LoadFiltersSwatches();
     SetupFonts();
 
     // Load previously used plugin path from configuration
@@ -162,6 +201,7 @@ void FluxionApplication::OnShutdown()
     {
         m_app_state.logs_plugin->OnDisable({});
     }
+    SaveFiltersSwatches();
 }
 
 void FluxionApplication::LoadAppOptions()
@@ -243,6 +283,51 @@ void FluxionApplication::ResetImportedLogsData()
     m_app_state.logs.visible.SyncFrontBufferSwap();
     m_app_state.logs.visible.UpdateBackBufferSwap(
         [](auto&) {}, [](Fluxion::Application::Data::Logs::VisibleLogs& back) { back.logs.clear(); });
+}
+
+void FluxionApplication::SaveFiltersSwatches() const
+{
+    LOG_SCOPE("::SaveFiltersSwatches()");
+    Graphite::Settings::PersistentSettings settings{GetHomePath(), "swatches"};
+    settings.SetJsonValue("swatches", m_app_state.filters.colors_swatches);
+    settings.Save();
+}
+
+void FluxionApplication::LoadFiltersSwatches()
+{
+    LOG_SCOPE("::LoadFiltersSwatches()");
+    Graphite::Settings::PersistentSettings settings{GetHomePath(), "swatches"};
+    auto& swatches{m_app_state.filters.colors_swatches};
+
+    if (auto const json_val = settings.GetJsonValue("swatches"))
+    {
+        swatches = json_val->get<std::vector<Fluxion::API::Data::Common::Highlight>>();
+    }
+    else
+    {
+        // clang-format off
+        swatches = {
+            // --- Standard Severity ---
+            {ImVec4(1.00f, 0.35f, 0.35f, 1.0f), ImVec4(0.45f, 0.05f, 0.05f, 0.35f)}, // Soft Red (Error / Critical)
+            {ImVec4(1.00f, 0.75f, 0.20f, 1.0f), ImVec4(0.45f, 0.25f, 0.00f, 0.35f)}, // Warm Amber (Warning)
+            {ImVec4(0.30f, 0.80f, 1.00f, 1.0f), ImVec4(0.05f, 0.25f, 0.45f, 0.35f)}, // Cyan (Info)
+            {ImVec4(0.35f, 0.90f, 0.45f, 1.0f), ImVec4(0.05f, 0.35f, 0.10f, 0.35f)}, // Mint Green (Success / OK)
+            {ImVec4(0.70f, 0.70f, 0.70f, 1.0f), ImVec4(0.20f, 0.20f, 0.20f, 0.30f)}, // Neutral Gray (Muted / Verbose)
+
+            // --- Extended Spectrum ---
+            {ImVec4(1.00f, 0.90f, 0.20f, 1.0f), ImVec4(0.40f, 0.35f, 0.00f, 0.35f)}, // Bright Gold (Search Matches / Focus)
+            {ImVec4(0.20f, 0.90f, 0.85f, 1.0f), ImVec4(0.00f, 0.30f, 0.30f, 0.35f)}, // Teal / Turquoise (Network / IO)
+            {ImVec4(0.40f, 0.60f, 1.00f, 1.0f), ImVec4(0.10f, 0.15f, 0.45f, 0.35f)}, // Electric Blue (System / Core)
+            {ImVec4(0.75f, 0.50f, 1.00f, 1.0f), ImVec4(0.25f, 0.10f, 0.35f, 0.35f)}, // Lavender (Special / Highlight)
+            {ImVec4(1.00f, 0.40f, 0.75f, 1.0f), ImVec4(0.40f, 0.05f, 0.25f, 0.35f)}, // Hot Pink (Fatal / Assertion)
+            {ImVec4(0.70f, 0.95f, 0.20f, 1.0f), ImVec4(0.25f, 0.35f, 0.00f, 0.35f)}, // Lime Green (Performance / Metrics)
+            {ImVec4(1.00f, 0.55f, 0.40f, 1.0f), ImVec4(0.45f, 0.15f, 0.10f, 0.35f)}, // Coral / Salmon (Memory / Resources)
+            {ImVec4(1.00f, 0.80f, 0.65f, 1.0f), ImVec4(0.35f, 0.20f, 0.15f, 0.35f)}, // Peach / Cream (User Interaction)
+            {ImVec4(0.95f, 0.30f, 0.50f, 1.0f), ImVec4(0.35f, 0.05f, 0.15f, 0.35f)}  // Deep Rose (Security / Audit)
+        };
+        // clang-format on
+        SaveFiltersSwatches();
+    }
 }
 
 } // namespace Fluxion::Application
