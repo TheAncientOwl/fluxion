@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.19
+/// @version 0.20
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -173,7 +173,11 @@ void MainMenuView::OnRender()
 {
     LOG_SCOPE("::OnRender()");
 
+    ImGui::BeginDisabled(
+        m_application->GetApplicationState().logs_progress.operation !=
+        Fluxion::Application::ELogsOperation::None);
     m_file_dialog.Render();
+    ImGui::EndDisabled();
 
     RenderMenu();
 }

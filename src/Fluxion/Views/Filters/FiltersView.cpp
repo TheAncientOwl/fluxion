@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.42
+/// @version 0.43
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -238,7 +238,10 @@ void FiltersView::OnRender()
         &app_state.views_active.filters,
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+    ImGui::BeginDisabled(
+        app_state.logs_progress.operation == Fluxion::Application::ELogsOperation::Filter);
     RenderTabs();
+    ImGui::EndDisabled();
 
     ImGui::End();
 }

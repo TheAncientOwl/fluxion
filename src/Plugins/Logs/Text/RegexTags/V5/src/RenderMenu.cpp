@@ -5,7 +5,7 @@
 ///
 /// @file RenderMenu.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.3
+/// @version 5.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -121,6 +121,7 @@ void RegexTags::RenderMenu()
     ImGui::SameLine();
     Utility::RenderRegexTagsPreview(m_regex_tags.GetFront());
 
+    ImGui::BeginDisabled(m_logs_operation_progress != 0);
     if (ImGui::BeginTable(
             "##regex-configurator", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX))
     {
@@ -327,6 +328,7 @@ void RegexTags::RenderMenu()
             ImGui::EndTable();
         }
     }
+    ImGui::EndDisabled();
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V5

@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -49,6 +49,8 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
             ? "Select Logs Plugin :D"
             : app_state.selected_logs_plugin_path.filename().string();
 
+    ImGui::BeginDisabled(
+        app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None);
     if (ImGui::BeginCombo("##plugin-selection", current_display_name.c_str()))
     {
         for (int i = 0; i < static_cast<int>(m_available_plugins.size()); ++i)
@@ -183,6 +185,7 @@ void LogsPluginRenderer::RenderPluginSelection(Fluxion::Application::AppState& a
         }
         ImGui::EndCombo();
     }
+    ImGui::EndDisabled();
 }
 
 void LogsPluginRenderer::RenderMenu(Fluxion::Application::AppState& app_state)
