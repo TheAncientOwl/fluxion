@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.20
+/// @version 0.21
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -17,6 +17,7 @@
 #include "Fluxion.hpp"
 #include "Fluxion/SentinelPlugins/Logs/SentinelLogsPlugin.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
+#include "Graphite/Common/Utility/ThemeSerializer.hpp"
 #include "Graphite/Logger.hpp"
 #include "Views/BaseView.hpp"
 #include "Views/Dev/DevView.hpp"
@@ -25,8 +26,10 @@
 #include "Views/LogsProgress/LogsProgressView.hpp"
 #include "Views/LogsTable/LogsTableView.hpp"
 #include "Views/MainMenuView.hpp"
+#include "Views/Settings/Modules/Theme.hpp"
 #include "Views/Settings/SettingsView.hpp"
 
+//
 DEFINE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
 USE_LOG_SCOPE(Fluxion::Application::FluxionApplication);
 
@@ -109,6 +112,8 @@ void FluxionApplication::OnInit()
     LoadFiltersFromDisk();
 
     SetupFonts();
+    Fluxion::Application::Views::Modules::SettingsView::SetupImGuiDarkStyle();
+    Graphite::Common::Utility::Theme::LoadThemeFromJson(GetHomePath() / "theme.json");
 
     // Load previously used plugin path from configuration
     LoadPluginPathFromDisk();
@@ -201,6 +206,8 @@ void FluxionApplication::OnShutdown()
     }
     m_app_state.logs_plugin.reset();
     m_app_state.loaded_plugin_library.reset();
+
+    Graphite::Common::Utility::Theme::SaveThemeToJson(GetHomePath() / "theme.json");
 }
 
 void FluxionApplication::LoadAppOptionsFromDisk()

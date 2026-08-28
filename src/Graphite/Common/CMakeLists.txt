@@ -5,12 +5,17 @@ target_include_directories(graphite_common_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_link_libraries(graphite_common_interface INTERFACE
+    external_nlohmann_json
+)
+
 # --- 2. Implementation ---
 add_library(graphite_common_impl STATIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueID.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ImGuiHelpers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DynamicLibrary.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ThemeSerializer.cpp
 )
 
 set_target_properties(graphite_common_impl PROPERTIES
@@ -27,6 +32,7 @@ target_link_libraries(graphite_common_impl PRIVATE
     external_icons_codicons
     graphite_common_interface
     graphite_logger_interface
+    external_nlohmann_json
 )
 
 target_include_directories(graphite_common_impl PRIVATE
