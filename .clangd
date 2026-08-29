@@ -1,0 +1,8 @@
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - -std=c++23
+    - -DGRAPHITE_USE_VULKAN_API
+    - -D_WINDOWS
+    - -DWIN32
+    - -DO_NONBLOCK=0

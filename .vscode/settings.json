@@ -10,7 +10,6 @@
     "external/MIOCSV/*": true,
     "external/nlohmann_json/*": true
   },
-  "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.arguments": [
     "-j=2",
     "--compile-commands-dir=build",
@@ -18,5 +17,9 @@
     "--completion-style=bundled",
     "--limit-results=50",
     "--header-insertion=never"
-  ]
+  ],
+  "clangd.path": "${workspaceFolder}/.vscode/clangd/clangd.exe",
+  "material-icon-theme.folders.associations": {
+    "clangd": "include"
+  }
 }
