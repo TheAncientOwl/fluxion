@@ -5,7 +5,7 @@
 ///
 /// @file Creator.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Implementation of @see Creator.hpp
 ///
 
@@ -31,7 +31,8 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
         !m_database.Execute("PRAGMA journal_mode=OFF;") ||
         !m_database.Execute("PRAGMA synchronous=OFF;") ||
         !m_database.Execute("PRAGMA locking_mode=EXCLUSIVE;") ||
-        !m_database.Execute("PRAGMA cache_size=-64000;"))
+        !m_database.Execute("PRAGMA cache_size=-64000;") ||
+        !m_database.Execute("PRAGMA temp_store=MEMORY;"))
     {
         LOG_ERROR(
             "::CreateTables(): Failed to set performance pragmas: {}",
