@@ -5,7 +5,7 @@
 ///
 /// @file ConnectionManager.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.1
+/// @version 4.2
 /// @brief Implementation of @see ConnectionManager.hpp
 ///
 
@@ -73,6 +73,11 @@ bool ConnectionManager::OpenDatabase(std::filesystem::path const& path)
 
     m_db.reset(raw_db);
     return true;
+}
+
+void ConnectionManager::Close()
+{
+    m_db.reset(nullptr);
 }
 
 DatabaseRef ConnectionManager::GetDatabaseRef() const
