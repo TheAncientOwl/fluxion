@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.5
+/// @version 5.6
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -13,7 +13,6 @@
 #include <condition_variable>
 #include <cstdio>
 #include <cstring>
-#include <fcntl.h>
 #include <filesystem>
 #include <future>
 #include <memory>
@@ -23,8 +22,18 @@
 #include <sqlite3.h>
 #include <string>
 #include <string_view>
+
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -69,19 +78,30 @@ struct MappedFile
 
         void operator()(const char* ptr) const
         {
-            if (ptr && ptr != MAP_FAILED)
+            if (ptr)
             {
-                ::munmap(const_cast<char*>(ptr), size);
+#if defined(_WIN32)
+                ::UnmapViewOfFile(static_cast<LPCVOID>(ptr));
+#else
+                if (ptr != MAP_FAILED)
+                {
+                    ::munmap(const_cast<char*>(ptr), size);
+                }
+#endif
             }
         }
     };
 
-    std::unique_ptr<const char, Deleter> data{nullptr};
+    std::unique_ptr<const char, Deleter> data{nullptr, Deleter{}};
     std::size_t size{0};
 
     [[nodiscard]] bool IsValid() const
     {
+#if defined(_WIN32)
+        return data != nullptr && size > 0;
+#else
         return data != nullptr && data.get() != MAP_FAILED && size > 0;
+#endif
     }
 
     [[nodiscard]] const char* get() const { return data.get(); }
@@ -90,6 +110,61 @@ struct MappedFile
 MappedFile MapFile(std::filesystem::path const& path)
 {
     LOG_SCOPE("::MapFile()");
+
+#if defined(_WIN32)
+    HANDLE hFile = ::CreateFileW(
+        path.c_str(),
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        return {};
+    }
+
+    LARGE_INTEGER file_size_li;
+    if (!::GetFileSizeEx(hFile, &file_size_li) || file_size_li.QuadPart == 0)
+    {
+        ::CloseHandle(hFile);
+        return {};
+    }
+
+    auto const file_size = static_cast<std::size_t>(file_size_li.QuadPart);
+
+    HANDLE hMapping = ::CreateFileMappingW(hFile, nullptr, PAGE_READONLY, 0, 0, nullptr);
+
+    ::CloseHandle(hFile);
+
+    if (!hMapping)
+    {
+        return {};
+    }
+
+    void* mapped_ptr = ::MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
+
+    ::CloseHandle(hMapping);
+
+    if (!mapped_ptr)
+    {
+        return {};
+    }
+
+    // Windows equivalent of madvise(..., MADV_WILLNEED/SEQUENTIAL)
+    WIN32_MEMORY_RANGE_ENTRY rangeEntry;
+    rangeEntry.VirtualAddress = mapped_ptr;
+    rangeEntry.NumberOfBytes = file_size;
+    ::PrefetchVirtualMemory(::GetCurrentProcess(), 1, &rangeEntry, 0);
+
+    return MappedFile{
+        .data = std::unique_ptr<const char, MappedFile::Deleter>(
+            static_cast<const char*>(mapped_ptr), MappedFile::Deleter{file_size}),
+        .size = file_size};
+
+#else
     int const fd = ::open(path.c_str(), O_RDONLY);
     if (fd == -1)
     {
@@ -114,12 +189,12 @@ MappedFile MapFile(std::filesystem::path const& path)
     }
 
     ::madvise(mapped_ptr, file_size, MADV_SEQUENTIAL);
-    // ::madvise(mapped_ptr, file_size, MADV_WILLNEED);
 
     return MappedFile{
         .data = std::unique_ptr<const char, MappedFile::Deleter>(
             static_cast<const char*>(mapped_ptr), MappedFile::Deleter{file_size}),
         .size = file_size};
+#endif
 }
 
 namespace Multithreading {
@@ -270,7 +345,7 @@ private:
 void RegexTags::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path.c_str());
+    LOG_INFO("Importing {}", path);
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const tags{m_regex_tags.GetFront()};
@@ -303,7 +378,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto mapped_file = Utility::MapFile(path);
     if (!mapped_file.IsValid())
     {
-        LOG_ERROR("::ImportLogs(): Failed to map file or file is empty: {}", path.c_str());
+        LOG_ERROR("::ImportLogs(): Failed to map file or file is empty: {}", path);
         return;
     }
 
@@ -316,6 +391,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
     {
         LOG_SCOPE("::CreateDatabase()");
+        m_sqlite_connection.Close();
         auto const database_path{MakeDatabasePath(path)};
         [[maybe_unused]] std::error_code ec{};
         std::filesystem::remove(database_path);

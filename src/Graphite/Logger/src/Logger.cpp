@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.15
+/// @version 1.16
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <print>
 #include <sstream>
 
 #include "IconsCodicons.h"
@@ -106,18 +107,33 @@ void Logger::LoadConfig()
     }
 }
 
-std::filesystem::path Logger::GetConfigFilePath()
+static std::filesystem::path ResolveHomeDirectory()
 {
     const char* home = std::getenv("HOME");
-    if (!home)
+    if (home && home[0] != '\0')
     {
-        home = std::getenv("USERPROFILE");
-        if (!home)
-        {
-            throw std::runtime_error("Cannot determine home directory for config file");
-        }
+        return std::filesystem::path(home);
     }
-    std::filesystem::path config_dir = std::filesystem::path(home) / ".fluxion";
+
+    home = std::getenv("USERPROFILE");
+    if (home && home[0] != '\0')
+    {
+        return std::filesystem::path(home);
+    }
+
+    const char* home_drive = std::getenv("HOMEDRIVE");
+    const char* home_path = std::getenv("HOMEPATH");
+    if (home_drive && home_drive[0] != '\0' && home_path && home_path[0] != '\0')
+    {
+        return std::filesystem::path(home_drive) / home_path;
+    }
+
+    throw std::runtime_error("Cannot determine home directory for config file");
+}
+
+std::filesystem::path Logger::GetConfigFilePath()
+{
+    std::filesystem::path config_dir = ResolveHomeDirectory() / ".fluxion";
     std::error_code ec;
     std::filesystem::create_directories(config_dir, ec);
     if (ec)
@@ -266,16 +282,7 @@ Logger::~Logger()
 
 std::filesystem::path Logger::GetLogFilePath()
 {
-    const char* home = std::getenv("HOME");
-    if (!home)
-    {
-        home = std::getenv("USERPROFILE");
-        if (!home)
-        {
-            throw std::runtime_error("Cannot determine home directory for log file");
-        }
-    }
-    std::filesystem::path log_dir = std::filesystem::path(home) / ".fluxion";
+    std::filesystem::path log_dir = ResolveHomeDirectory() / ".fluxion";
     std::error_code ec;
     std::filesystem::create_directories(log_dir, ec);
     if (ec)
@@ -291,20 +298,7 @@ Logger::Logger()
     , m_log_file{Logger::GetLogFilePath(), std::ios::trunc}
     , m_worker{}
     , m_global_level_mask{GetDefaultScopeFlags().GetStorage()}
-    , m_settings{
-          []() {
-              const char* home = std::getenv("HOME");
-              if (!home)
-              {
-                  home = std::getenv("USERPROFILE");
-                  if (!home)
-                  {
-                      throw std::runtime_error("Cannot determine home directory for settings");
-                  }
-              }
-              return std::filesystem::path(home) / ".fluxion";
-          }(),
-          "app.graphite.logger"}
+    , m_settings{ResolveHomeDirectory() / ".fluxion", "app.graphite.logger"}
 {
     if (!m_log_file.is_open())
     {

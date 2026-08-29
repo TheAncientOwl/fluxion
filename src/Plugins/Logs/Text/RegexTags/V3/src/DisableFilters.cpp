@@ -5,7 +5,7 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.5
+/// @version 3.6
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -42,7 +42,7 @@ void RegexTags::DisableFilters()
     auto const database_path = MakeDatabasePath(*m_last_imported_logs_path);
     if (std::filesystem::file_size(database_path, ec) == 0 || ec)
     {
-        LOG_WARN("::DisableFilters(): Database file {} is 0 bytes or locked.", database_path.string());
+        LOG_WARN("::DisableFilters(): Database file {} is 0 bytes or locked.", database_path);
         return;
     }
 

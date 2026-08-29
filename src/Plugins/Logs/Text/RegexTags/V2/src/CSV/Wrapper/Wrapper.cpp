@@ -1,4 +1,3 @@
-
 /// --------------------------------------------------------------------------
 ///                     Copyright (c) by Fluxion 2026
 /// --------------------------------------------------------------------------
@@ -6,7 +5,7 @@
 ///
 /// @file Wrapper.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.0
+/// @version 2.1
 /// @brief CSV wrapper implementation for miocsv Reader and Writer
 ///
 
@@ -26,8 +25,8 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V2::CSV {
 class Reader::Impl
 {
 public:
-    Impl(std::string const& file_path, char delimiter)
-        : m_reader(file_path, delimiter)
+    Impl(std::filesystem::path const& file_path, char delimiter)
+        : m_reader(file_path.string(), delimiter)
         , m_current_iter(m_reader.begin())
         , m_end_iter(m_reader.end())
         , m_current_row()
@@ -114,7 +113,7 @@ std::vector<std::string> const& Reader::Iterator::operator*() const
 // Reader Implementation
 // ============================================================================
 
-Reader::Reader(std::string const& file_path, char delimiter)
+Reader::Reader(std::filesystem::path const& file_path, char delimiter)
     : m_impl(std::make_unique<Impl>(file_path, delimiter))
 {
 }
@@ -158,11 +157,13 @@ std::vector<std::string> const& Reader::get_current_row() const
 class Writer::Impl
 {
 public:
-    Impl(const std::string& file_path, char delimiter) : m_writer(file_path, delimiter) {}
+    Impl(const std::filesystem::path& file_path, char delimiter)
+        : m_writer(file_path.string(), delimiter)
+    {
+    }
 
     void write_row(const std::vector<std::string>& row)
     {
-        // Convert std::vector to miocsv::Row
         miocsv::Row csv_row;
         for (const auto& field : row)
         {
@@ -175,7 +176,7 @@ private:
     miocsv::Writer m_writer;
 };
 
-Writer::Writer(const std::string& file_path, char delimiter)
+Writer::Writer(const std::filesystem::path& file_path, char delimiter)
     : m_impl(std::make_unique<Impl>(file_path, delimiter))
 {
 }

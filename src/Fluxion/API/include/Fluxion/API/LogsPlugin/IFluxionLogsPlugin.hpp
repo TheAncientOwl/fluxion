@@ -5,7 +5,7 @@
 ///
 /// @file IFluxionLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Plugin interface of Fluxion logs logic (parse/select/filter/...).
 ///
 
@@ -29,6 +29,7 @@ class IFluxionLogsPlugin
 {
 public:
     virtual std::string_view GetDisplayName() const = 0;
+    virtual std::string_view GetDirectoryName() const = 0;
 
     virtual void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) = 0;
     virtual void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) = 0;

@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.0
+/// @version 2.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -20,9 +20,17 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V2);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V2 {
 
+RegexTags::RegexTags() = default;
+RegexTags::~RegexTags() = default;
+
 std::string_view RegexTags::GetDisplayName() const
 {
     return "Text::RegexTags::V2";
+}
+
+std::string_view RegexTags::GetDirectoryName() const
+{
+    return "Text_RegexTags_V2";
 }
 
 std::filesystem::path RegexTags::MakeConvertedLogsPath(std::filesystem::path const& raw_logs_path) const

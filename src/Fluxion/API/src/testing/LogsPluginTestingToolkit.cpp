@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -238,6 +238,11 @@ TestResult LogsPluginTester::TestMetadataAndHeader()
     if (logs_plugin.GetDisplayName().empty())
     {
         return {ETestState::Failed, "GetDisplayName() returned an empty string_view"};
+    }
+
+    if (logs_plugin.GetDirectoryName().empty())
+    {
+        return {ETestState::Failed, "GetDirectoryName() returned an empty string_view"};
     }
 
     auto const table_header = logs_plugin.GetTableHeader();

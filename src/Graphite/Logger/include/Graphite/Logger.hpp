@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.15
+/// @version 1.16
 /// @brief Logging utilities
 ///
 
@@ -44,6 +44,19 @@
 #define GRAPHITE_LOGGER_API
 #endif
 #endif
+
+namespace std {
+
+template <>
+struct formatter<std::filesystem::path> : formatter<std::string_view>
+{
+    auto format(const std::filesystem::path& p, format_context& ctx) const
+    {
+        return formatter<std::string_view>::format(p.string(), ctx);
+    }
+};
+
+} // namespace std
 
 namespace Graphite::Logger {
 
@@ -106,7 +119,7 @@ struct StringHash
     }
 };
 
-class Logger
+class GRAPHITE_LOGGER_API Logger
 {
 public: // Types
     using ScopeEnabledMap =
@@ -190,7 +203,7 @@ private:
     Graphite::Settings::PersistentSettings m_settings;
 };
 
-class ScopeLogger
+class GRAPHITE_LOGGER_API ScopeLogger
 {
 public:
     // Scope can be string_view because __PRETTY_FUNCTION__ has static lifetime.

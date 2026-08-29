@@ -6,7 +6,9 @@
     "**/.DS_Store": true
   },
   "search.exclude": {
-    "external/imgui/*": true
+    "external/imgui/*": true,
+    "external/MIOCSV/*": true,
+    "external/nlohmann_json/*": true
   },
   "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.arguments": [

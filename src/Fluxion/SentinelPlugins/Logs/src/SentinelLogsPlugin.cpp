@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Do nothing...
 ///
 
@@ -38,6 +38,11 @@ void SentinelLogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData
 }
 
 std::string_view SentinelLogsPlugin::GetDisplayName() const
+{
+    return "SentinelLogsPlugin";
+}
+
+std::string_view SentinelLogsPlugin::GetDirectoryName() const
 {
     return "SentinelLogsPlugin";
 }

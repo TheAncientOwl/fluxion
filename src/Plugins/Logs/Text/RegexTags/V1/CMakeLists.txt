@@ -23,6 +23,10 @@ add_library(fluxion_logs_plugin__text__regex_tags__v1 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Progress.cpp
 )
 
+target_compile_definitions(fluxion_logs_plugin__text__regex_tags__v1 PRIVATE
+    GRAPHITE_EXPORTS
+)
+
 set_target_properties(fluxion_logs_plugin__text__regex_tags__v1 PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugins/logs"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugins/logs"
@@ -48,17 +52,17 @@ target_include_directories(fluxion_logs_plugin__text__regex_tags__v1 PRIVATE
 
 # --- 3. Install to ~/.fluxion/plugins/logs ---
 add_custom_command(TARGET fluxion_logs_plugin__text__regex_tags__v1 POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v1> $ENV{HOME}/.fluxion/plugins/logs
-    COMMENT "Copying logs plugin to ~/.fluxion/plugins/logs"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v1> "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMENT "Copying logs plugin to ${FLUXION_PLUGIN_INSTALL_DIR}"
 )
 
 # Also install on every cmake configure to ensure plugin is available even if not rebuilt
-add_custom_target(install_regex_text_v1_plugin ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v1> $ENV{HOME}/.fluxion/plugins/logs
+add_custom_target(install_regextags_v1_plugin ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v1> "${FLUXION_PLUGIN_INSTALL_DIR}"
     DEPENDS fluxion_logs_plugin__text__regex_tags__v1
-    COMMENT "Installing logs plugin to ~/.fluxion/plugins/logs"
+    COMMENT "Installing logs plugin to ${FLUXION_PLUGIN_INSTALL_DIR}"
 )
 
 add_subdirectory(test)

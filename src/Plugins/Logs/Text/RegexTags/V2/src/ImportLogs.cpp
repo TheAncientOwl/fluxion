@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.2
+/// @version 2.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -64,7 +64,7 @@ size_t CountLines(const std::filesystem::path& filepath)
 void RegexTags::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path.c_str());
+    LOG_INFO("Importing {}", path);
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const& tags{m_regex_tags.GetFront()};
@@ -96,17 +96,17 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     std::ifstream raw_logs_file{path};
     if (!raw_logs_file.is_open())
     {
-        LOG_WARN("::ImportLogs(): Could not open file {}", path.c_str());
+        LOG_WARN("::ImportLogs(): Could not open file {}", path);
         return;
     }
 
     auto const output_converted_path{MakeConvertedLogsPath(path)};
     auto converted_writer = CSV::Writer{output_converted_path};
-    LOG_INFO("Output converted CSV file {}", output_converted_path.string());
+    LOG_INFO("Output converted CSV file {}", output_converted_path);
 
     auto const output_filtered_path{MakeFilteredLogsPath(path)};
     auto filtered_writer = CSV::Writer{output_filtered_path};
-    LOG_INFO("Output filtered CSV file {}", output_filtered_path.string());
+    LOG_INFO("Output filtered CSV file {}", output_filtered_path);
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 
     std::string line{};

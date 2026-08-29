@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -61,8 +61,7 @@ void RegexTags::GetLogs(
     if (std::filesystem::file_size(db_path, ec) == 0 || ec)
     {
         LOG_WARN(
-            "::GetLogs(): Database file {} is currently 0 bytes or locked. Skipping read.",
-            db_path.string());
+            "::GetLogs(): Database file {} is currently 0 bytes or locked. Skipping read.", db_path);
         return;
     }
 

@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief Implementation of @see DummyLogsPlugin.hpp
 ///
 
@@ -129,6 +129,11 @@ std::string_view DummyLogsPlugin::GetDisplayName() const
     return "DummyLogsPlugin";
 }
 
+std::string_view DummyLogsPlugin::GetDirectoryName() const
+{
+    return "DummyLogsPlugin";
+}
+
 void DummyLogsPlugin::RenderMenu()
 {
     // No UI to render for dummy plugin
@@ -137,7 +142,7 @@ void DummyLogsPlugin::RenderMenu()
 void DummyLogsPlugin::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("ImportLogs");
-    LOG_INFO("::ImportLogs(): Importing {}", path.c_str());
+    LOG_INFO("::ImportLogs(): Importing {}", path);
 }
 
 void DummyLogsPlugin::ApplyFilters(

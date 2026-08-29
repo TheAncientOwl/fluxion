@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -13,9 +13,11 @@
 
 #include <array>
 #include <memory>
+#include <print>
 #include <string>
 #include <string_view>
 #include <vector>
+
 
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 

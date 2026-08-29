@@ -28,6 +28,7 @@ target_link_libraries(graphite_logger_impl PRIVATE
     graphite_common_interface
     graphite_settings_interface
     graphite_settings_impl
+    $<$<BOOL:${MINGW}>:stdc++exp>
 )
 
 target_include_directories(graphite_logger_impl
@@ -35,3 +36,6 @@ target_include_directories(graphite_logger_impl
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/external
 )
+
+target_compile_definitions(graphite_logger_impl PRIVATE GRAPHITE_LOGGER_EXPORTS)
+target_compile_definitions(graphite_logger_impl PRIVATE GRAPHITE_LOGGER_BUILD)

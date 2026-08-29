@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.5
+/// @version 3.6
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -68,7 +68,7 @@ size_t CountLines(const std::filesystem::path& filepath)
 void RegexTags::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path.c_str());
+    LOG_INFO("Importing {}", path);
 
     m_logs_operation_progress = 0;
     m_logs_operation_target = Utility::CountLines(path);
@@ -103,10 +103,11 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     std::ifstream raw_logs_file{path};
     if (!raw_logs_file.is_open())
     {
-        LOG_WARN("::ImportLogs(): Could not open file {}", path.c_str());
+        LOG_WARN("::ImportLogs(): Could not open file {}", path);
         return;
     }
 
+    m_sqlite_connection.Close();
     auto const database_path{MakeDatabasePath(path)};
     [[maybe_unused]] std::error_code ec{};
     std::filesystem::remove(database_path);

@@ -5,7 +5,7 @@
 ///
 /// @file FileDialog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see Graphite/Common/UI/FileDialog.hpp
 ///
 
@@ -15,6 +15,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <system_error>
 
 #include "IconsCodicons.h"

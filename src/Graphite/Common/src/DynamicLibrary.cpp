@@ -5,7 +5,7 @@
 ///
 /// @file DynamicLibrary.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.2
+/// @version 1.3
 /// @brief Implementation of @see DynamicLibrary.hpp.
 ///
 
@@ -37,7 +37,8 @@ DynamicLibrary::DynamicLibrary(std::string_view const path) : DynamicLibrary(pat
 {
 }
 
-DynamicLibrary::DynamicLibrary(const std::filesystem::path& path) : DynamicLibrary(path.c_str())
+DynamicLibrary::DynamicLibrary(const std::filesystem::path& path)
+    : DynamicLibrary(std::string_view(path.string()))
 {
 }
 

@@ -11,3 +11,7 @@ target_link_libraries(test__fluxion_logs_plugin__text__regex_tags__v1 PUBLIC
     fluxion_logs_plugin__text__regex_tags__v1_interface
     fluxion_logs_plugin__text__regex_tags__v1
 )
+
+target_compile_definitions(fluxion_logs_plugin__text__regex_tags__v1 PRIVATE
+    GRAPHITE_EXPORTS
+)

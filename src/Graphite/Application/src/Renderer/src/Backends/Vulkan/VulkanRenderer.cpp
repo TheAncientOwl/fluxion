@@ -5,7 +5,7 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
@@ -432,9 +432,20 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
     {
-        std::cerr << "::Graphite::Application::Renderer::Backends::Vulkan::Vulkan(): "
-                     "[Critical] could not init glfw";
-        std::terminate();
+        std::string const msg =
+            "::Graphite::Application::Renderer::Backends::Vulkan::Vulkan(): [Critical] could not "
+            "initialize GLFW";
+        std::cerr << msg << std::endl;
+        throw std::runtime_error(msg);
+    }
+
+    if (!glfwVulkanSupported())
+    {
+        std::string const msg =
+            "GLFW reports that Vulkan is not supported on this machine. Please install the Vulkan "
+            "runtime/driver and try again.";
+        std::cerr << msg << std::endl;
+        throw std::runtime_error(msg);
     }
 
     // Create window with Vulkan context
@@ -447,10 +458,14 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
         window_configuration.title.c_str(),
         nullptr,
         nullptr);
-    if (!glfwVulkanSupported())
+    if (m_state.window == nullptr)
     {
-        printf("GLFW: Vulkan Not Supported\n");
-        std::terminate();
+        std::string const msg =
+            "Failed to create a GLFW window for the Vulkan renderer. This usually means the "
+            "display "
+            "environment is unavailable.";
+        std::cerr << msg << std::endl;
+        throw std::runtime_error(msg);
     }
 
     ImVector<const char*> extensions;

@@ -6,6 +6,7 @@ set(ABSL_PROPAGATE_CXX_STANDARD ON)
 set(ABSL_ENABLE_INSTALL OFF)
 FetchContent_Declare(
     absl
+    SYSTEM
     GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
     GIT_TAG        20260817.0
 )
@@ -15,6 +16,7 @@ set(RE2_BUILD_TESTING OFF)
 set(RE2_INSTALL OFF)
 FetchContent_Declare(
     re2
+    SYSTEM
     GIT_REPOSITORY https://github.com/google/re2.git
     GIT_TAG        main
 )
@@ -23,6 +25,7 @@ FetchContent_MakeAvailable(re2)
 # --- 0.2. SQLite ---
 FetchContent_Declare(
     sqlite3
+    SYSTEM
     GIT_REPOSITORY https://github.com/sjinks/sqlite3-cmake.git
     GIT_TAG        master
 )
@@ -70,6 +73,10 @@ add_library(fluxion_logs_plugin__text__regex_tags__v3 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Progress.cpp
 )
 
+target_compile_definitions(fluxion_logs_plugin__text__regex_tags__v3 PRIVATE
+    GRAPHITE_EXPORTS
+)
+
 set_target_properties(fluxion_logs_plugin__text__regex_tags__v3 PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugins/logs"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugins/logs"
@@ -98,17 +105,17 @@ target_include_directories(fluxion_logs_plugin__text__regex_tags__v3 PRIVATE
 
 # --- 3. Install to ~/.fluxion/plugins/logs ---
 add_custom_command(TARGET fluxion_logs_plugin__text__regex_tags__v3 POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v3> $ENV{HOME}/.fluxion/plugins/logs
-    COMMENT "Copying logs plugin to ~/.fluxion/plugins/logs"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v3> "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMENT "Copying logs plugin to ${FLUXION_PLUGIN_INSTALL_DIR}"
 )
 
 # Also install on every cmake configure to ensure plugin is available even if not rebuilt
-add_custom_target(install_regex_text_v3_plugin ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v3> $ENV{HOME}/.fluxion/plugins/logs
+add_custom_target(install_regextags_v3_plugin ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v3> "${FLUXION_PLUGIN_INSTALL_DIR}"
     DEPENDS fluxion_logs_plugin__text__regex_tags__v3
-    COMMENT "Installing logs plugin to ~/.fluxion/plugins/logs"
+    COMMENT "Installing logs plugin to ${FLUXION_PLUGIN_INSTALL_DIR}"
 )
 
 add_subdirectory(test)

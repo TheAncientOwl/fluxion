@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.21
+/// @version 0.22
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -80,21 +80,38 @@ FluxionApplication::~FluxionApplication()
 
 std::filesystem::path FluxionApplication::GetHomePath() const
 {
-    const char* home_env = std::getenv("HOME");
-    if (home_env != nullptr)
-    {
-        auto path = std::filesystem::path(home_env) / ".fluxion";
-        if (!std::filesystem::exists(path))
+    auto resolve_home = []() -> std::filesystem::path {
+        const char* home_env = std::getenv("HOME");
+        if (home_env != nullptr && home_env[0] != '\0')
         {
-            std::filesystem::create_directories(path);
+            return std::filesystem::path(home_env);
         }
-        return path;
-    }
 
-    LOG_ERROR("::GetHomePath(): HOME environment variable not set, falling back to current path");
-    auto fallback_path = std::filesystem::current_path() / ".fluxion";
-    std::filesystem::create_directories(fallback_path);
-    return fallback_path;
+        home_env = std::getenv("USERPROFILE");
+        if (home_env != nullptr && home_env[0] != '\0')
+        {
+            return std::filesystem::path(home_env);
+        }
+
+        const char* home_drive = std::getenv("HOMEDRIVE");
+        const char* home_path = std::getenv("HOMEPATH");
+        if (home_drive != nullptr && home_drive[0] != '\0' && home_path != nullptr &&
+            home_path[0] != '\0')
+        {
+            return std::filesystem::path(home_drive) / home_path;
+        }
+
+        return std::filesystem::current_path();
+    };
+
+    auto path = resolve_home() / ".fluxion";
+    std::error_code ec;
+    std::filesystem::create_directories(path, ec);
+    if (ec)
+    {
+        LOG_ERROR("::GetHomePath(): failed to create {}: {}", path.string(), ec.message());
+    }
+    return path;
 }
 
 void FluxionApplication::OnInit()
@@ -137,8 +154,7 @@ void FluxionApplication::OnInit()
                 if (factory != nullptr)
                 {
                     LOG_INFO(
-                        "Loading saved logs plugin from: {}",
-                        m_app_state.selected_logs_plugin_path.string());
+                        "Loading saved logs plugin from: {}", m_app_state.selected_logs_plugin_path);
                     auto plugin_ptr{factory()};
                     if (plugin_ptr != nullptr)
                     {
@@ -160,7 +176,7 @@ void FluxionApplication::OnInit()
                         LOG_ERROR(
                             "::RenderPluginSelection(): Failed to create the plugin from "
                             "{}",
-                            m_app_state.selected_logs_plugin_path.string());
+                            m_app_state.selected_logs_plugin_path);
                     }
                 }
             }

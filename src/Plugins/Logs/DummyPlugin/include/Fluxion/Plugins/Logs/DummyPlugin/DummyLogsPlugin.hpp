@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Dummy implementation of a LogsPlugin
 ///
 
@@ -17,13 +17,14 @@
 
 namespace Fluxion::Plugins::Logs::DummyLogsPlugin {
 
-class DummyLogsPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
+class GRAPHITE_EXPORT DummyLogsPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
     DummyLogsPlugin();
 
 public:
     std::string_view GetDisplayName() const override final;
+    std::string_view GetDirectoryName() const override final;
 
     void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override final;
     void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override final;

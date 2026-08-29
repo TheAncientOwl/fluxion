@@ -5,7 +5,7 @@
 ///
 /// @file ConnectionManager.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.0
+/// @version 3.1
 /// @brief Implementation of @see ConnectionManager.hpp
 ///
 
@@ -60,7 +60,7 @@ bool ConnectionManager::OpenDatabase(std::filesystem::path const& path)
         char const* err_msg = raw_db ? sqlite3_errmsg(raw_db) : "unknown error";
         LOG_ERROR(
             "::OpenDatabase(): Failed to open db at \"{}\", error code {}, message: {}",
-            path.string(),
+            path,
             return_code,
             err_msg);
 

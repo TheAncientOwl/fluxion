@@ -5,7 +5,7 @@
 ///
 /// @file ConnectionManager.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Wrapper for SQLite open/close operations
 ///
 
@@ -49,6 +49,7 @@ public: // Public API
      * @return true if opened successfully, false otherwise
      */
     [[nodiscard]] bool OpenDatabase(std::filesystem::path const& path);
+    void Close();
 
     [[nodiscard]] bool IsOpen() const;
 

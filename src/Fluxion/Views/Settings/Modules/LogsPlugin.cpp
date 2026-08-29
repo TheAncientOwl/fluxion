@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -64,7 +64,7 @@ void LogsPluginRenderer::RenderPluginSelection()
             ImGui::PushID(i);
             if (ImGui::Selectable(display_name.c_str(), is_selected))
             {
-                LOG_INFO("::RenderPluginSelection(): Selected plugin: {}", plugin_path.string());
+                LOG_INFO("::RenderPluginSelection(): Selected plugin: {}", plugin_path);
 
                 m_selected_plugin_index = i;
 
@@ -72,8 +72,8 @@ void LogsPluginRenderer::RenderPluginSelection()
                 {
                     LOG_INFO(
                         "::RenderPluginSelection(): Selected plugin changed from {} to {}",
-                        app_state.selected_logs_plugin_path.c_str(),
-                        plugin_path.c_str());
+                        app_state.selected_logs_plugin_path,
+                        plugin_path);
 
                     LOG_INFO("::RenderPluginSelection(): Disabling current plugin");
                     app_state.logs_plugin->OnDisable({});
@@ -126,7 +126,7 @@ void LogsPluginRenderer::RenderPluginSelection()
 
                                 enable_data.plugin_home_path =
                                     m_application->As<FluxionApplication>()->GetHomePath() /
-                                    std::string(app_state.logs_plugin->GetDisplayName());
+                                    std::string(app_state.logs_plugin->GetDirectoryName());
                                 std::filesystem::create_directories(enable_data.plugin_home_path);
 
                                 app_state.logs_plugin->OnEnable(enable_data);
@@ -138,7 +138,7 @@ void LogsPluginRenderer::RenderPluginSelection()
                                 LOG_ERROR(
                                     "::RenderPluginSelection(): Failed to create the plugin from "
                                     "{}",
-                                    plugin_path.string());
+                                    plugin_path);
                             }
                         }
                         else
@@ -146,14 +146,14 @@ void LogsPluginRenderer::RenderPluginSelection()
                             LOG_ERROR(
                                 "::RenderPluginSelection(): Failed to load CreateFluxionLogsPlugin "
                                 "symbol from {}",
-                                plugin_path.c_str());
+                                plugin_path);
                         }
                     }
                     else
                     {
                         LOG_ERROR(
                             "::RenderPluginSelection(): Failed to load plugin library at {}",
-                            plugin_path.c_str());
+                            plugin_path);
                     }
 
                     // Fall back to DummyPlugin if loading failed

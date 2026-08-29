@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.2
+/// @version 2.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -108,11 +108,11 @@ void RegexTags::ApplyFilters(
     }
     auto const output_filtered_path{MakeFilteredLogsPath(*m_last_imported_logs_path)};
     auto filtered_logs_writer = CSV::Writer{output_filtered_path};
-    LOG_INFO("::ApplyFilters(): Output filtered CSV file {}", output_filtered_path.string());
+    LOG_INFO("::ApplyFilters(): Output filtered CSV file {}", output_filtered_path);
 
     auto const input_logs_path{MakeConvertedLogsPath(*m_last_imported_logs_path)};
     auto converted_logs_reader = CSV::Reader{input_logs_path};
-    LOG_INFO("::ApplyFilters(): Converted CSV file {}", input_logs_path.string());
+    LOG_INFO("::ApplyFilters(): Converted CSV file {}", input_logs_path);
 
     std::size_t total_filtered_logs{0};
     m_logs_operation_progress = 0;

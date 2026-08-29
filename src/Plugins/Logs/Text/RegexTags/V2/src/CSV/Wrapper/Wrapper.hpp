@@ -6,12 +6,13 @@
 ///
 /// @file Wrapper.hpp
 /// @author Alexandru Delegeanu
-/// @version 2.0
+/// @version 2.1
 /// @brief CSV wrapper for miocsv Reader and Writer
 ///
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,7 +39,7 @@ public:
     };
 
     Reader() = delete;
-    explicit Reader(std::string const& file_path, char delimiter = ',');
+    explicit Reader(std::filesystem::path const& file_path, char delimiter = ',');
     ~Reader();
 
     Reader(Reader const&) = delete;
@@ -76,7 +77,7 @@ class Writer
 {
 public:
     Writer() = delete;
-    explicit Writer(std::string const& file_path, char delimiter = ',');
+    explicit Writer(std::filesystem::path const& file_path, char delimiter = ',');
     ~Writer();
 
     Writer(Writer const&) = delete;

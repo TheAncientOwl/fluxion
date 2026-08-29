@@ -14,13 +14,28 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Static linking for MinGW/GCC on Windows
-if(WIN32 AND NOT MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-endif()
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+if(WIN32)
+    set(FLUXION_USER_HOME "$ENV{USERPROFILE}")
+    if(NOT FLUXION_USER_HOME)
+        set(FLUXION_USER_HOME "$ENV{HOMEDRIVE}$ENV{HOMEPATH}")
+    endif()
+else()
+    set(FLUXION_USER_HOME "$ENV{HOME}")
+endif()
+
+if(NOT FLUXION_USER_HOME)
+    set(FLUXION_USER_HOME "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+set(FLUXION_PLUGIN_INSTALL_DIR "${FLUXION_USER_HOME}/.fluxion/plugins/logs")
+
+# Compiler compatibility fixes
+if (WIN32 AND NOT MSVC)
+    add_compile_definitions(O_NONBLOCK=0)
 endif()
 
 # --- 2. Build Logic & Subdirectories ---
@@ -64,6 +79,7 @@ set_target_properties(fluxion PROPERTIES
 target_link_libraries(fluxion PRIVATE
     project_compile_options
     fluxion_app
+    $<$<BOOL:${MINGW}>:stdc++exp>
 )
 
 # --- 5. Asset Handling ---

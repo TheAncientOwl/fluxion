@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.21
+/// @version 0.22
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -56,7 +56,7 @@ void MainMenuView::OnAdd()
     m_file_dialog.SetSelectionCallback([this](const Graphite::Common::UI::FileDialogResult& result) {
         if (result.was_selected)
         {
-            LOG_INFO("Selected log file: \"{}\"", result.path.string());
+            LOG_INFO("Selected log file: \"{}\"", result.path);
 
             m_last_file_dialog_path = result.path.parent_path();
 
@@ -73,7 +73,7 @@ void MainMenuView::OnAdd()
                 });
 
             auto worker = std::thread{[this, file_path = std::move(result.path)]() {
-                LOG_INFO("Importing Selected log file: \"{}\"", file_path.string());
+                LOG_INFO("Importing Selected log file: \"{}\"", file_path);
 
                 auto& app_state{m_application->GetApplicationState()};
 

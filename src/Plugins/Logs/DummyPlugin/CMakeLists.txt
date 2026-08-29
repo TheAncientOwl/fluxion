@@ -22,9 +22,14 @@ target_link_libraries(fluxion_logs_plugin__dummy_plugin PUBLIC
     external_miocsv
     graphite_interface
     graphite_impl
+    graphite_logger_impl
     fluxion_api_interface
     fluxion_api_impl
     fluxion_logs_plugin__dummy_plugin_interface
+)
+
+target_compile_definitions(fluxion_logs_plugin__dummy_plugin PRIVATE
+    GRAPHITE_EXPORTS
 )
 
 target_include_directories(fluxion_logs_plugin__dummy_plugin PRIVATE
@@ -35,15 +40,15 @@ target_include_directories(fluxion_logs_plugin__dummy_plugin PRIVATE
 
 # --- 3. Install to ~/.fluxion/plugins/logs ---
 add_custom_command(TARGET fluxion_logs_plugin__dummy_plugin POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__dummy_plugin> $ENV{HOME}/.fluxion/plugins/logs
-    COMMENT "Copying logs plugin to ~/.fluxion/plugins/logs"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__dummy_plugin> "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMENT "Copying logs plugin to ${FLUXION_PLUGIN_INSTALL_DIR}"
 )
 
 # Also install on every cmake configure to ensure plugin is available even if not rebuilt
 add_custom_target(install_dummy_plugin_plugin ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.fluxion/plugins/logs
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__dummy_plugin> $ENV{HOME}/.fluxion/plugins/logs
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__dummy_plugin> "${FLUXION_PLUGIN_INSTALL_DIR}"
     DEPENDS fluxion_logs_plugin__dummy_plugin
-    COMMENT "Installing logs plugin to ~/.fluxion/plugins/logs"
+    COMMENT "Installing logs plugin to ${FLUXION_PLUGIN_INSTALL_DIR}"
 )

@@ -39,8 +39,8 @@
         "D:/msys64/mingw64/include",
         "D:/msys64/mingw64/include/c++/15.2.0"
       ],
-      "intelliSenseMode": "gcc-x64",
-      "compilerPath": "D:/msys64/mingw64/bin/g++.exe"
+      "intelliSenseMode": "windows-clang-x64",
+      "compilerPath": "D:/msys64/ucrt64/bin/clang++.exe"
     }
   ],
   "version": 4

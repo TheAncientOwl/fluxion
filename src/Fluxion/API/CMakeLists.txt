@@ -52,4 +52,5 @@ target_link_libraries(fluxion_api_testing_impl PRIVATE
     graphite_logger_interface
     graphite_common_interface
     fluxion_api_testing_interface
+    $<$<BOOL:${MINGW}>:stdc++exp>
 )

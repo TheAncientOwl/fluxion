@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.2
+/// @version 4.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -19,11 +19,15 @@
 #include <re2/stringpiece.h>
 #include <sqlite3.h>
 #include <string>
+#include <thread>
+#include <vector>
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <thread>
 #include <unistd.h>
-#include <vector>
+#endif
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V4/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -88,14 +92,53 @@ std::size_t CountLinesParallel(const char* data, std::size_t size)
 void RegexTags::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path.c_str());
+    LOG_INFO("Importing {}", path);
 
     m_last_imported_logs_path = path;
 
+    const char* file_data = nullptr;
+    std::size_t file_size = 0;
+
+#if defined(_WIN32)
+    HANDLE hFile = ::CreateFileW(
+        path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        LOG_ERROR("::ImportLogs(): Failed to open file handle: {}", path);
+        return;
+    }
+
+    LARGE_INTEGER fileSizeLi;
+    if (!::GetFileSizeEx(hFile, &fileSizeLi) || fileSizeLi.QuadPart == 0)
+    {
+        ::CloseHandle(hFile);
+        LOG_ERROR("::ImportLogs(): Empty file or size query failure: {}", path);
+        return;
+    }
+    file_size = static_cast<std::size_t>(fileSizeLi.QuadPart);
+
+    HANDLE hMapping = ::CreateFileMappingW(hFile, nullptr, PAGE_READONLY, 0, 0, nullptr);
+    ::CloseHandle(hFile); // Mapping maintains reference
+    if (!hMapping)
+    {
+        LOG_ERROR("::ImportLogs(): CreateFileMapping failed for path: {}", path);
+        return;
+    }
+
+    void* mapped_ptr = ::MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
+    ::CloseHandle(hMapping); // View maintains reference
+
+    if (!mapped_ptr)
+    {
+        LOG_ERROR("::ImportLogs(): MapViewOfFile failed for path: {}", path);
+        return;
+    }
+    file_data = static_cast<const char*>(mapped_ptr);
+#else
     int const fd = ::open(path.c_str(), O_RDONLY);
     if (fd == -1)
     {
-        LOG_ERROR("::ImportLogs(): Failed to open log file descriptor: {}", path.c_str());
+        LOG_ERROR("::ImportLogs(): Failed to open log file descriptor: {}", path);
         return;
     }
 
@@ -103,22 +146,23 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     if (::fstat(fd, &sb) == -1 || sb.st_size == 0)
     {
         ::close(fd);
-        LOG_ERROR("::ImportLogs(): Empty file or stat failure: {}", path.c_str());
+        LOG_ERROR("::ImportLogs(): Empty file or stat failure: {}", path);
         return;
     }
 
-    std::size_t const file_size = static_cast<std::size_t>(sb.st_size);
+    file_size = static_cast<std::size_t>(sb.st_size);
     void* mapped_ptr = ::mmap(nullptr, file_size, PROT_READ, MAP_SHARED, fd, 0);
     ::close(fd);
 
     if (mapped_ptr == MAP_FAILED)
     {
-        LOG_ERROR("::ImportLogs(): mmap failed for path: {}", path.c_str());
+        LOG_ERROR("::ImportLogs(): mmap failed for path: {}", path);
         return;
     }
 
-    const char* const file_data = static_cast<const char*>(mapped_ptr);
+    file_data = static_cast<const char*>(mapped_ptr);
     ::madvise(mapped_ptr, file_size, MADV_WILLNEED | MADV_SEQUENTIAL);
+#endif
 
     m_logs_operation_progress = 0;
     m_logs_operation_target = Utility::CountLinesParallel(file_data, file_size);
@@ -146,10 +190,15 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     if (!line_regex->ok())
     {
         LOG_WARN("Invalid regex: {}", line_regex->error());
+#if defined(_WIN32)
+        ::UnmapViewOfFile(mapped_ptr);
+#else
         ::munmap(mapped_ptr, file_size);
+#endif
         return;
     }
 
+    m_sqlite_connection.Close();
     auto const database_path{MakeDatabasePath(path)};
     [[maybe_unused]] std::error_code ec{};
     std::filesystem::remove(database_path);
@@ -158,14 +207,22 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     if (!m_sqlite_connection.OpenDatabase(database_path))
     {
+#if defined(_WIN32)
+        ::UnmapViewOfFile(mapped_ptr);
+#else
         ::munmap(mapped_ptr, file_size);
+#endif
         return;
     }
 
     auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
     if (!SQLite::Creator{m_sqlite_connection.GetDatabaseRef()}.CreateTables(fields_ids))
     {
+#if defined(_WIN32)
+        ::UnmapViewOfFile(mapped_ptr);
+#else
         ::munmap(mapped_ptr, file_size);
+#endif
         return;
     }
 
@@ -236,7 +293,11 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         sqlite_writer.Flush();
     }
 
+#if defined(_WIN32)
+    ::UnmapViewOfFile(mapped_ptr);
+#else
     ::munmap(mapped_ptr, file_size);
+#endif
 
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
 

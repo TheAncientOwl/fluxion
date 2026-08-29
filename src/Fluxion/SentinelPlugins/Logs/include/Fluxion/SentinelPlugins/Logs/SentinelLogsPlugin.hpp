@@ -5,7 +5,7 @@
 ///
 /// @file SentinelLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Do nothing...
 ///
 
@@ -24,6 +24,7 @@ public:
 
 public:
     std::string_view GetDisplayName() const override final;
+    std::string_view GetDirectoryName() const override final;
 
     void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override final;
     void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override final;

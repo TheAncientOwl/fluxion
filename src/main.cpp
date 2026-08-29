@@ -5,10 +5,12 @@
 ///
 /// @file main.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief ImGui entry point.
 ///
 
+#include <exception>
+#include <print>
 #include <stdlib.h>
 
 #include "Fluxion/Fluxion.hpp"
@@ -28,12 +30,19 @@ int main()
     window_configuration.height = 750;
     window_configuration.title = "Fluxion";
 
-    auto app =
-        Graphite::Application::TGraphiteApplication<Fluxion::Application::AppState, Fluxion::Application::EFluxionAction>::
-            CreateApplication<Fluxion::Application::FluxionApplication>(
-                std::move(window_configuration), Fluxion::Application::DefaultState::Make());
+    try
+    {
+        auto app = Graphite::Application::
+            TGraphiteApplication<Fluxion::Application::AppState, Fluxion::Application::EFluxionAction>::
+                CreateApplication<Fluxion::Application::FluxionApplication>(
+                    std::move(window_configuration), Fluxion::Application::DefaultState::Make());
 
-    app->Run();
+        app->Run();
+    }
+    catch (std::exception& e)
+    {
+        std::println("Runtime exception: {}", e.what());
+    }
 
     Graphite::Logger::GetLogger().SaveConfig();
 

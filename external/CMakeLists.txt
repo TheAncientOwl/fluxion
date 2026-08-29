@@ -18,6 +18,12 @@ endif()
 
 add_library(external_imgui SHARED ${IMGUI_SOURCES})
 
+set_target_properties(external_imgui PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
 target_include_directories(external_imgui SYSTEM PUBLIC ${IMGUI_DIR})
 
 include(FetchContent)

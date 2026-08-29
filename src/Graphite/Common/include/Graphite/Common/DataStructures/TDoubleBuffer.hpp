@@ -5,7 +5,7 @@
 ///
 /// @file TDoubleBuffer.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief A thread-safe double-buffering data structure.
 ///
 
@@ -13,6 +13,7 @@
 
 #include <atomic>
 #include <concepts>
+#include <functional>
 #include <mutex>
 #include <utility>
 
