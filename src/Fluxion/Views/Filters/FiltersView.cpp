@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.45
+/// @version 0.46
 /// @brief Implementation of @see FiltersView.hpp.
 ///
 
@@ -535,7 +535,7 @@ void FiltersView::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
 {
     GRAPHITE_ASSERT(tab_ptr != nullptr, "Received tab::nullptr for rendering...");
     GRAPHITE_ASSERT(
-        tab_ptr->id != Graphite::Common::Utility::UniqueID::Default(),
+        tab_ptr->id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "Received tab with default ID for rendering...");
 
     auto& tab{*tab_ptr};
@@ -597,10 +597,10 @@ void FiltersView::RenderTab(std::shared_ptr<Filters::Tab> tab_ptr)
 void FiltersView::RenderFilter(Graphite::Common::Utility::UniqueID const& owning_tab_id, Filters::Filter& filter)
 {
     GRAPHITE_ASSERT(
-        filter.id != Graphite::Common::Utility::UniqueID::Default(),
+        filter.id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "Received filter with default ID for rendering...");
     GRAPHITE_ASSERT(
-        owning_tab_id != Graphite::Common::Utility::UniqueID::Default(),
+        owning_tab_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "Received owning_tab as default ID for rendering...");
 
     LOG_SCOPE("::RenderFilter(): ID: \"{}\" | \"{}\"", filter.id, filter.name);
@@ -784,13 +784,13 @@ void FiltersView::RenderCondition(
     Filters::Condition& condition)
 {
     GRAPHITE_ASSERT(
-        condition.id != Graphite::Common::Utility::UniqueID::Default(),
+        condition.id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "Received condition with default ID for rendering...");
     GRAPHITE_ASSERT(
-        owning_tab_id != Graphite::Common::Utility::UniqueID::Default(),
+        owning_tab_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "Received owning_tab_id as default ID for rendering...");
     GRAPHITE_ASSERT(
-        owning_filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        owning_filter_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "Received owning_filter_id as default ID for rendering...");
 
     LOG_SCOPE("::RenderCondition(): ID: \"{}\"", condition.id);

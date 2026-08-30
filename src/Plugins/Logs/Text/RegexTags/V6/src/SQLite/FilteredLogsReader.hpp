@@ -5,19 +5,20 @@
 ///
 /// @file FilteredLogsReader.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
-/// @brief Wrapper for SQLite read operations over logs & filtered_logs tables
+/// @version 6.1
+/// @brief Wrapper for SQLite read operations over logs table and in-memory filtered logs navigation.
 ///
 
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/Plugins/Logs/Text/RegexTags/V6/Data.hpp"
+#include "Graphite/Common/Utility/UniqueID.hpp"
 #include "Wrapper/DatabaseRef.hpp"
 #include "Wrapper/Statement.hpp"
 
@@ -37,48 +38,37 @@ public: // Lifecycle
 
 public: // Public API
     /**
-     * @brief Prepares a SQL query targeting specific row ranges using filtered_view_index.
-     * @param ranges Vector of ranges [begin, end) to fetch.
+     * @brief Prepares a SQL query targeting raw log fields by log ID.
+     * @param log_ids Vector of log IDs (primary keys in the logs table) to fetch.
+     * @param fields Column field names to select from the logs table.
      * @return Statement managing the prepared statement lifetime.
      */
-    Statement PrepareGetRangesQuery(
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
+    Statement PrepareGetLogsByIDsQuery(
+        std::vector<std::uint64_t> const& log_ids,
         std::vector<std::string> const& fields);
 
     /**
-     * @brief Fetches the next row, populating log fields, metadata, and the view index.
-     * @param statement The active Statement wrapper.
-     * @param out_fields Vector to populate with the dynamic log fields (0..N-1).
-     * @param out_filter_id Output string for filter_id.
-     * @param out_highlight_id Output string for highlight_filter_id.
-     * @param out_view_index Output value for filtered_view_index.
-     * @return true if a row was read successfully, false if no more rows exist.
-     */
-    bool NextFilteredRow(
-        Statement& statement,
-        std::vector<std::string>& out_fields,
-        std::string& out_filter_id,
-        std::string& out_highlight_id,
-        std::size_t& out_view_index);
-
-    /**
      * @brief Finds the next view index matching the given filter ID, with wrap-around.
-     * @param filter_id_str String representation of the UniqueID to search for.
+     * @param filtered_logs In-memory vector containing filtered log entries.
+     * @param target_filter_id UniqueID filter to search for across filter and highlight fields.
      * @param current_index The current 0-based view index.
      * @return std::optional containing the next matching view index if found.
      */
     [[nodiscard]] std::optional<std::size_t> GetNextFilteredIndex(
-        std::string_view filter_id_str,
+        std::vector<Data::FilteredLog> const& filtered_logs,
+        Graphite::Common::Utility::UniqueID const& target_filter_id,
         std::size_t current_index);
 
     /**
      * @brief Finds the previous view index matching the given filter ID, with wrap-around.
-     * @param filter_id_str String representation of the UniqueID to search for.
+     * @param filtered_logs In-memory vector containing filtered log entries.
+     * @param target_filter_id UniqueID filter to search for across filter and highlight fields.
      * @param current_index The current 0-based view index.
      * @return std::optional containing the previous matching view index if found.
      */
     [[nodiscard]] std::optional<std::size_t> GetPrevFilteredIndex(
-        std::string_view filter_id_str,
+        std::vector<Data::FilteredLog> const& filtered_logs,
+        Graphite::Common::Utility::UniqueID const& target_filter_id,
         std::size_t current_index);
 
 private:

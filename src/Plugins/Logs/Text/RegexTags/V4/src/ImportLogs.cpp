@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.3
+/// @version 4.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -299,7 +299,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     ::munmap(mapped_ptr, file_size);
 #endif
 
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
+    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
 
     LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};

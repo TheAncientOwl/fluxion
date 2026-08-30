@@ -5,7 +5,7 @@
 ///
 /// @file LogsWriter.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 6.2
 /// @brief Direct SQLite writer executing chunk-level transactions without double-buffering
 ///
 
@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "Fluxion/Plugins/Logs/Text/RegexTags/V6/Data.hpp"
 #include "Wrapper/DatabaseRef.hpp"
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite {
@@ -32,13 +33,15 @@ public: // Lifecycle
     LogsWriter& operator=(LogsWriter&&) noexcept = default;
 
 public: // Public API
-    bool WriteChunk(std::vector<std::vector<std::string_view>> const& rows, std::size_t const active_rows);
+    bool WriteChunk(
+        std::vector<std::vector<std::string_view>> const& rows,
+        std::size_t const active_rows,
+        std::vector<Data::FilteredLog>& out_filtered_logs);
 
 private:
     DatabaseRef m_database;
     std::int64_t m_log_id{-1};
     Statement m_logs_statement{};
-    Statement m_filtered_logs_statement{};
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite

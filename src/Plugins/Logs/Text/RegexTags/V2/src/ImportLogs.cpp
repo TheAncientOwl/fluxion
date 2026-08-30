@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.3
+/// @version 2.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -107,7 +107,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto const output_filtered_path{MakeFilteredLogsPath(path)};
     auto filtered_writer = CSV::Writer{output_filtered_path};
     LOG_INFO("Output filtered CSV file {}", output_filtered_path);
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
+    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
 
     std::string line{};
     line.reserve(1024);

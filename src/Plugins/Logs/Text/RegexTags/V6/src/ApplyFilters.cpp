@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 6.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,7 +18,6 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-#include "SQLite/BufferedFilteredLogsWriter.hpp"
 #include "SQLite/LogsReader.hpp"
 #include "SQLite/Utility.hpp"
 #include "SQLite/Wrapper/Transaction.hpp"
@@ -105,6 +104,8 @@ void RegexTags::ApplyFilters(
     LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
     LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
+    m_filtered_logs.clear();
+
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
         LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
@@ -126,17 +127,10 @@ void RegexTags::ApplyFilters(
         return;
     }
 
-    auto filtered_logs_writer{
-        SQLite::BufferedFilteredLogsWriter{m_sqlite_connection.GetDatabaseRef(), 5000}};
-    if (!filtered_logs_writer.ClearTable())
-    {
-        return;
-    }
-
     std::size_t log_id{0};
     std::vector<std::string> row{};
 
-    std::size_t total_filtered_logs{0};
+    m_logs_operation_target = m_total_logs_imported;
     m_logs_operation_progress = 0;
     {
         LOG_SCOPE("::ApplyFilters(): filtering");
@@ -174,8 +168,6 @@ void RegexTags::ApplyFilters(
 
                 if (matches)
                 {
-                    ++total_filtered_logs;
-
                     Graphite::Common::Utility::UniqueID highlight_id{filter.id};
                     auto highlight_priority{filter.priority};
                     for (auto const& highlight_filter : highlight_only)
@@ -206,15 +198,12 @@ void RegexTags::ApplyFilters(
                         }
                     }
 
-                    auto& frame = filtered_logs_writer.NextFrame();
-                    frame.log_id = log_id;
-                    frame.filter_id = filter.id.ToString();
-                    frame.highlight_filter_id = highlight_id.ToString();
+                    m_filtered_logs.emplace_back(log_id, filter.id, highlight_id);
+
                     break;
                 }
             }
         }
-        filtered_logs_writer.Flush();
 
         if (!transaction.Commit())
         {
@@ -225,12 +214,10 @@ void RegexTags::ApplyFilters(
         }
     }
 
-    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", total_filtered_logs);
-    auto settings{GetConfig()};
-    settings.set("total_logs", total_filtered_logs);
-    settings.Save();
+    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", m_filtered_logs.size());
 
     m_logs_operation_progress = 0;
+    m_logs_operation_target = 0;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V6

@@ -5,7 +5,7 @@
 ///
 /// @file PluginBridgeData.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.13
+/// @version 0.14
 /// @brief General data.
 ///
 
@@ -71,8 +71,8 @@ struct Range
 
 struct LogRowMetadata
 {
-    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
-    Graphite::Common::Utility::UniqueID highlight_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::GetDefault()};
+    Graphite::Common::Utility::UniqueID highlight_id{Graphite::Common::Utility::UniqueID::GetDefault()};
 };
 
 struct LogRow

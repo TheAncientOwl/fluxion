@@ -5,7 +5,7 @@
 ///
 /// @file AppState.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Implementation of @see AppState.hpp.
 ///
 
@@ -50,7 +50,7 @@ std::vector<Fluxion::Application::Data::Filters::Tab::Ptr> MakeDefaultTabs()
     // Create the condition
     auto condition_ptr = std::make_shared<Condition>();
     condition_ptr->id = UniqueID::Generate();
-    condition_ptr->over_column_id = UniqueID::Default();
+    condition_ptr->over_column_id = UniqueID::GetDefault();
     condition_ptr->over_column_display_name = "None";
     (*condition_ptr)[EConditionFlag::IsEquals] = true;
 

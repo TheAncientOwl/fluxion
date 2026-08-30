@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.9
+/// @version 1.10
 /// @brief UniqueID abstraction.
 ///
 
@@ -41,8 +41,14 @@ public: // public API
 
     ///
     /// @brief Self explanatory
+    /// @deprecated Use @see GetDefault(). This will be moved to private
     ///
-    static UniqueID Default();
+    static UniqueID MakeDefault();
+
+    ///
+    /// @brief Self explanatory
+    ///
+    static UniqueID GetDefault();
 
     ///
     /// @brief Self explanatory

@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.2
+/// @version 6.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -19,6 +19,15 @@ DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6::RegexTags);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6::RegexTags);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
+
+Data::FilteredLog::FilteredLog(std::size_t const log_id) : log_id{log_id} {};
+Data::FilteredLog::FilteredLog(
+    std::size_t const log_id,
+    Graphite::Common::Utility::UniqueID const& filter_id,
+    Graphite::Common::Utility::UniqueID const& highlight_filter_id)
+    : log_id{log_id}, filter_id{filter_id}, highlight_filter_id{highlight_filter_id}
+{
+}
 
 RegexTags::RegexTags() = default;
 RegexTags::~RegexTags() = default;

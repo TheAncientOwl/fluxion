@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Data structs
 ///
 
@@ -54,5 +54,19 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     available_batches_per_worker,
     rows_per_transaction,
     file_target_slice_mb)
+
+struct FilteredLog
+{
+    std::size_t log_id{0};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::GetDefault()};
+    Graphite::Common::Utility::UniqueID highlight_filter_id{
+        Graphite::Common::Utility::UniqueID::GetDefault()};
+
+    FilteredLog(std::size_t const log_id);
+    FilteredLog(
+        std::size_t const log_id,
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        Graphite::Common::Utility::UniqueID const& highlight_filter_id);
+};
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::Data

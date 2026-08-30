@@ -5,7 +5,7 @@
 ///
 /// @file Creator.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.2
+/// @version 5.3
 /// @brief Implementation of @see Creator.hpp
 ///
 
@@ -22,9 +22,9 @@ Creator::Creator(DatabaseRef db) : m_database{db}
 {
 }
 
-bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
+bool Creator::CreateTable(std::vector<std::string> const& fields_ids)
 {
-    LOG_SCOPE("::CreateTables()");
+    LOG_SCOPE("::CreateTable()");
 
     // 1. Setup PRAGMAs
     if (!m_database.Execute("PRAGMA page_size=65536;") ||
@@ -35,7 +35,7 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
         !m_database.Execute("PRAGMA temp_store=MEMORY;"))
     {
         LOG_ERROR(
-            "::CreateTables(): Failed to set performance pragmas: {}",
+            "::CreateTable(): Failed to set performance pragmas: {}",
             m_database.GetLastErrorMessage());
         return false;
     }
@@ -61,39 +61,15 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
 
     std::string err_msg{};
     {
-        LOG_SCOPE("::CreateTables(): logs table");
+        LOG_SCOPE("::CreateTable(): logs table");
         if (!m_database.Execute(logs_table_sql, &err_msg))
         {
             LOG_ERROR(
-                "::CreateTables(): Failed to create logs table: {}",
+                "::CreateTable(): Failed to create logs table: {}",
                 err_msg.empty() ? "unknown error" : err_msg);
             return false;
         }
     }
-
-    // 3. Create filtered_logs table
-    char const* filtered_logs_table_sql =
-        "CREATE TABLE filtered_logs ("
-        "    view_index INTEGER PRIMARY KEY,"
-        "    log_id INTEGER NOT NULL,"
-        "    filter_id TEXT,"
-        "    highlight_filter_id TEXT,"
-        "    FOREIGN KEY(log_id) REFERENCES logs(id)"
-        ");";
-
-    err_msg.clear();
-    {
-        LOG_SCOPE("::CreateTables(): filtered_logs table");
-        if (!m_database.Execute(filtered_logs_table_sql, &err_msg))
-        {
-            LOG_ERROR(
-                "::CreateTables(): Failed to create filtered_logs table: {}",
-                err_msg.empty() ? "unknown error" : err_msg);
-            return false;
-        }
-    }
-
-    LOG_INFO("::CreateTables(): Tables created successfully.");
 
     if (!transaction.Commit())
     {
@@ -101,6 +77,8 @@ bool Creator::CreateTables(std::vector<std::string> const& fields_ids)
             "::ExecuteFlush(): Failed to commit transaction: {}", m_database.GetLastErrorMessage());
         return false;
     }
+
+    LOG_INFO("::CreateTable(): Tables created successfully.");
 
     return true;
 }

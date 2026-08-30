@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.6
+/// @version 3.7
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -125,7 +125,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         return;
     }
 
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::Default().ToString()};
+    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
 
     std::string line{};
     line.reserve(1024);

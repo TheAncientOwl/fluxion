@@ -5,15 +5,17 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 6.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <filesystem>
+#include <sstream>
 #include <system_error>
+#include <unordered_map>
+#include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V6/RegexTags.hpp"
-#include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 #include "SQLite/FilteredLogsReader.hpp"
 #include "SQLite/Utility.hpp"
@@ -29,6 +31,11 @@ void RegexTags::GetLogs(
 {
     LOG_SCOPE("::GetLogs()");
 
+    if (m_filtered_logs.empty())
+    {
+        return;
+    }
+
     if (!m_sqlite_connection.IsOpen() &&
         !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
@@ -37,7 +44,7 @@ void RegexTags::GetLogs(
     }
 
     std::stringstream ss{};
-    for (auto range : ranges)
+    for (auto const& range : ranges)
     {
         ss << "[" << range.begin << ", " << range.end << "), ";
     }
@@ -46,13 +53,6 @@ void RegexTags::GetLogs(
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
         LOG_INFO("::GetLogs(): No logs were imported before");
-        return;
-    }
-
-    auto const total_logs_opt{GetConfig().get<std::size_t>("total_logs")};
-    if (!static_cast<bool>(total_logs_opt))
-    {
-        LOG_WARN("::GetLogs(): total_logs is not set in config");
         return;
     }
 
@@ -71,36 +71,61 @@ void RegexTags::GetLogs(
         return;
     }
 
-    auto reader{SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}};
-    auto query_handle{reader.PrepareGetRangesQuery(
-        ranges, SQLite::Utility::MakeFieldsIDs(m_imported_logs_header))};
-    if (!query_handle.IsValid())
+    std::vector<std::uint64_t> log_ids_to_fetch;
+    std::unordered_map<std::uint64_t, std::vector<std::size_t>> log_id_to_view_indices;
+
+    for (auto const& range : ranges)
     {
-        LOG_ERROR("::GetLogs(): Failed to prepare ranges query.");
+        for (std::size_t view_idx = range.begin;
+             view_idx < range.end && view_idx < m_filtered_logs.size();
+             ++view_idx)
+        {
+            auto const& filtered_item = m_filtered_logs[view_idx];
+
+            auto& target_row = out_logs[view_idx];
+            target_row.metadata = {
+                .filter_id = filtered_item.filter_id,
+                .highlight_id = filtered_item.highlight_filter_id};
+
+            log_id_to_view_indices[filtered_item.log_id].push_back(view_idx);
+            log_ids_to_fetch.push_back(filtered_item.log_id);
+        }
+    }
+
+    if (log_ids_to_fetch.empty())
+    {
         return;
     }
 
-    std::vector<std::string> row_fields;
-    std::string filter_id_str;
-    std::string highlight_id_str;
-    std::size_t view_index = 0;
+    auto reader = SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()};
+    auto query_handle = reader.PrepareGetLogsByIDsQuery(
+        log_ids_to_fetch, SQLite::Utility::MakeFieldsIDs(m_imported_logs_header));
 
-    while (reader.NextFilteredRow(query_handle, row_fields, filter_id_str, highlight_id_str, view_index))
+    if (!query_handle.IsValid())
     {
-        if (view_index > *total_logs_opt)
+        LOG_ERROR("::GetLogs(): Failed to prepare logs query.");
+        return;
+    }
+
+    while (query_handle.Step() == SQLite::EStepResult::Row)
+    {
+        auto const log_id = static_cast<std::uint64_t>(query_handle.GetColumnInt64(0));
+        auto const col_count = static_cast<std::size_t>(query_handle.GetColumnCount());
+
+        std::vector<std::string> fields(col_count - 1);
+        for (std::size_t i = 1; i < col_count; ++i)
         {
-            break;
+            const char* text = query_handle.GetColumnText(static_cast<int>(i));
+            fields[i - 1] = text ? text : "";
         }
 
-        auto& target_row = out_logs[view_index];
-
-        target_row.data = row_fields;
-
-        target_row.metadata = {
-            .filter_id = Graphite::Common::Utility::UniqueID{filter_id_str},
-            .highlight_id = Graphite::Common::Utility::UniqueID{highlight_id_str}};
-
-        row_fields.clear();
+        if (auto it = log_id_to_view_indices.find(log_id); it != log_id_to_view_indices.end())
+        {
+            for (std::size_t view_index : it->second)
+            {
+                out_logs[view_index].data = fields;
+            }
+        }
     }
 }
 

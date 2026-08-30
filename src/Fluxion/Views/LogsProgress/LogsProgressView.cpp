@@ -5,7 +5,7 @@
 ///
 /// @file LogsProgressView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Main view responsible for rendering import progress.
 ///
 
@@ -84,15 +84,16 @@ void LogsProgressView::OnRender()
         break;
 
     case Fluxion::Application::ELogsOperation::Filter:
-        render_progress(ICON_CI_WAND, "Filtered", app_state.logs_plugin->GetTotalLogs());
+        render_progress(ICON_CI_WAND, "Filtered", app_state.logs_plugin->GetLogsOperationTarget());
         break;
 
     case Fluxion::Application::ELogsOperation::DisableFilter:
-        render_progress(ICON_CI_WAND, "Removed filters", app_state.logs_plugin->GetTotalLogs());
+        render_progress(
+            ICON_CI_WAND, "Removed filters", app_state.logs_plugin->GetLogsOperationTarget());
         break;
 
     case Fluxion::Application::ELogsOperation::Search:
-        render_progress(ICON_CI_SEARCH, "Searched", app_state.logs_plugin->GetTotalLogs());
+        render_progress(ICON_CI_SEARCH, "Searched", app_state.logs_plugin->GetLogsOperationTarget());
         break;
 
     default:

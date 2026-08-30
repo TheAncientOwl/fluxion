@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.23
+/// @version 0.24
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -602,13 +602,13 @@ void handle<EFilterActionType::MoveFilter>(AppState& application_state, Payloads
 {
     LOG_SCOPE("::handle<MoveFilter>()");
     GRAPHITE_ASSERT(
-        payload.tab_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.tab_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "tab_id should not be default for MoveFilter payload");
     GRAPHITE_ASSERT(
-        payload.filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.filter_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "filter_id should not be default for MoveFilter payload");
     GRAPHITE_ASSERT(
-        payload.target_filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.target_filter_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "target_filter_id should not be default for MoveFilter payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {
@@ -650,16 +650,16 @@ void handle<EFilterActionType::MoveCondition>(
 {
     LOG_SCOPE("::handle<MoveCondition>()");
     GRAPHITE_ASSERT(
-        payload.tab_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.tab_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "tab_id should not be default for MoveCondition payload");
     GRAPHITE_ASSERT(
-        payload.filter_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.filter_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "filter_id should not be default for MoveCondition payload");
     GRAPHITE_ASSERT(
-        payload.condition_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.condition_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "condition_id should not be default for MoveCondition payload");
     GRAPHITE_ASSERT(
-        payload.target_condition_id != Graphite::Common::Utility::UniqueID::Default(),
+        payload.target_condition_id != Graphite::Common::Utility::UniqueID::GetDefault(),
         "target_condition_id should not be default for MoveCondition payload");
 
     application_state.filters.tabs.UpdateBackBufferCopy([&](auto& tabs_back) {

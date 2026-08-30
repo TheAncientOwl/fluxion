@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -268,10 +268,11 @@ TestResult LogsPluginTester::TestNavigationAPI()
     using namespace std::string_literals;
     auto& logs_plugin{m_logs_plugin_test_wrapper->GetLogsPlugin()};
 
-    Graphite::Common::Utility::UniqueID const empty_filter_id{};
+    Graphite::Common::Utility::UniqueID const filter_id{
+        Graphite::Common::Utility::UniqueID::GetDefault()};
 
     // Forward navigation test
-    auto next_index = logs_plugin.GetNextLog(empty_filter_id, 0);
+    auto next_index = logs_plugin.GetNextLog(filter_id, 0);
     if (!next_index.has_value())
     {
         return {ETestState::Failed, "GetNextLog failed to find next entry from index 0"};
@@ -286,7 +287,7 @@ TestResult LogsPluginTester::TestNavigationAPI()
 
     // Edge case: Beyond bounds forward navigation
     const std::size_t last_index = logs_plugin.GetTotalLogs();
-    auto out_of_bounds_next = logs_plugin.GetNextLog(empty_filter_id, last_index);
+    auto out_of_bounds_next = logs_plugin.GetNextLog(filter_id, last_index);
     if (out_of_bounds_next != 0)
     {
         return {
@@ -295,7 +296,7 @@ TestResult LogsPluginTester::TestNavigationAPI()
     }
 
     // Backward navigation test
-    auto prev_index = logs_plugin.GetPrevLog(empty_filter_id, last_index);
+    auto prev_index = logs_plugin.GetPrevLog(filter_id, last_index);
     if (!prev_index.has_value())
     {
         return {ETestState::Failed, "GetPrevLog failed to find previous entry from last index"};
@@ -309,7 +310,7 @@ TestResult LogsPluginTester::TestNavigationAPI()
     }
 
     // Edge case: Backward navigation from index 0
-    auto out_of_bounds_prev = logs_plugin.GetPrevLog(empty_filter_id, 0);
+    auto out_of_bounds_prev = logs_plugin.GetPrevLog(filter_id, 0);
     if (out_of_bounds_prev != logs_plugin.GetTotalLogs() - 1)
     {
         return {

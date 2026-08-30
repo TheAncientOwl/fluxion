@@ -5,7 +5,7 @@
 ///
 /// @file UniqueID.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.8
+/// @version 1.9
 /// @brief Implementation of @see UniqueID.hpp.
 ///
 
@@ -119,11 +119,16 @@ UniqueID UniqueID::Generate()
     return out;
 }
 
-UniqueID UniqueID::Default()
+UniqueID UniqueID::MakeDefault()
 {
     UniqueID out{};
     out.m_data.fill('0');
     return out;
+}
+
+UniqueID UniqueID::GetDefault()
+{
+    return s_default;
 }
 
 [[nodiscard]] std::string UniqueID::ToString() const
@@ -248,6 +253,6 @@ std::size_t UniqueID::Hash::operator()(UniqueID const& id) const
     return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
 }
 
-const UniqueID UniqueID::s_default = UniqueID::Default();
+const UniqueID UniqueID::s_default = UniqueID::MakeDefault();
 
 } // namespace Graphite::Common::Utility

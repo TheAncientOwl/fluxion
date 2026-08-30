@@ -5,7 +5,7 @@
 ///
 /// @file LogsWriter.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.2
+/// @version 6.3
 /// @brief Implementation of @see LogsWriter.hpp
 ///
 
@@ -38,18 +38,16 @@ LogsWriter::LogsWriter(DatabaseRef db, std::vector<std::string> const& fields) :
         }
     }
 
-    // Prepare statements
+    // Prepare statement
     std::string const logs_sql =
         "INSERT INTO logs (id, " + fields_sql + ") VALUES (?, " + fields_sql_placeholders + ");";
     m_logs_statement = m_database.Prepare(logs_sql);
-
-    char const* filtered_sql =
-        "INSERT INTO filtered_logs (view_index, log_id, filter_id, highlight_filter_id) VALUES (?, "
-        "?, NULL, NULL);";
-    m_filtered_logs_statement = m_database.Prepare(filtered_sql);
 }
 
-bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& rows, std::size_t const active_rows)
+bool LogsWriter::WriteChunk(
+    std::vector<std::vector<std::string_view>> const& rows,
+    std::size_t const active_rows,
+    std::vector<Data::FilteredLog>& out_filtered_logs)
 {
     LOG_SCOPE("::WriteChunk()");
 
@@ -58,9 +56,9 @@ bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& ro
         return true;
     }
 
-    if (!m_logs_statement.IsValid() || !m_filtered_logs_statement.IsValid())
+    if (!m_logs_statement.IsValid())
     {
-        LOG_ERROR("::WriteChunk(): Invalid statements: {}", m_database.GetLastErrorMessage());
+        LOG_ERROR("::WriteChunk(): Invalid statement: {}", m_database.GetLastErrorMessage());
         return false;
     }
 
@@ -84,18 +82,9 @@ bool LogsWriter::WriteChunk(std::vector<std::vector<std::string_view>> const& ro
             continue;
         }
 
-        m_filtered_logs_statement.BindInt64(1, m_log_id);
-        m_filtered_logs_statement.BindInt64(2, m_log_id);
-
-        if (m_filtered_logs_statement.Step() != EStepResult::Done)
-        {
-            LOG_ERROR(
-                "::WriteChunk(): Failed to insert into filtered_logs: {}",
-                m_database.GetLastErrorMessage());
-        }
+        out_filtered_logs.emplace_back(m_log_id);
 
         m_logs_statement.Reset();
-        m_filtered_logs_statement.Reset();
     }
 
     return true;

@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 0.7
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -52,24 +52,24 @@ struct FiltersDataModify
 
 struct SearchLog
 {
-    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::GetDefault()};
 };
 
 struct MoveFilter
 {
-    Graphite::Common::Utility::UniqueID tab_id{Graphite::Common::Utility::UniqueID::Default()};
-    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID tab_id{Graphite::Common::Utility::UniqueID::GetDefault()};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::GetDefault()};
     Graphite::Common::Utility::UniqueID target_filter_id{
-        Graphite::Common::Utility::UniqueID::Default()};
+        Graphite::Common::Utility::UniqueID::GetDefault()};
 };
 
 struct MoveCondition
 {
-    Graphite::Common::Utility::UniqueID tab_id{Graphite::Common::Utility::UniqueID::Default()};
-    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::Default()};
-    Graphite::Common::Utility::UniqueID condition_id{Graphite::Common::Utility::UniqueID::Default()};
+    Graphite::Common::Utility::UniqueID tab_id{Graphite::Common::Utility::UniqueID::GetDefault()};
+    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::GetDefault()};
+    Graphite::Common::Utility::UniqueID condition_id{Graphite::Common::Utility::UniqueID::GetDefault()};
     Graphite::Common::Utility::UniqueID target_condition_id{
-        Graphite::Common::Utility::UniqueID::Default()};
+        Graphite::Common::Utility::UniqueID::GetDefault()};
 };
 
 struct ApplyFilters

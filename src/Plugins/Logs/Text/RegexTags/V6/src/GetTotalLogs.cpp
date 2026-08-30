@@ -5,7 +5,7 @@
 ///
 /// @file GetTotalLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 6.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -20,8 +20,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
 
 std::size_t RegexTags::GetTotalLogs() const
 {
-    auto const total_logs_opt{GetConfig().get<std::size_t>("total_logs")};
-    return static_cast<bool>(total_logs_opt) ? *total_logs_opt : 0;
+    return m_filtered_logs.size();
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V6

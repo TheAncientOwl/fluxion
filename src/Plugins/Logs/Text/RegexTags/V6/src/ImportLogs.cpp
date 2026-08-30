@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.6
+/// @version 6.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -346,6 +346,9 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     LOG_SCOPE("::ImportLogs()");
     LOG_INFO("Importing {}", path);
 
+    m_filtered_logs.clear();
+    m_total_logs_imported = 0;
+
     m_regex_tags.SyncFrontBufferCopy();
     auto const tags{m_regex_tags.GetFront()};
     std::string line_regex_pattern{};
@@ -397,7 +400,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         std::filesystem::remove(database_path.string() + "-wal", ec);
         std::filesystem::remove(database_path.string() + "-shm", ec);
         if (!m_sqlite_connection.OpenDatabase(database_path) ||
-            !SQLite::Creator{m_sqlite_connection.GetDatabaseRef()}.CreateTables(fields_ids))
+            !SQLite::Creator{m_sqlite_connection.GetDatabaseRef()}.CreateTable(fields_ids))
         {
             return;
         }
@@ -420,7 +423,6 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         row_fields_count);
 
     // 1. Single Writer Thread: Consumes chunks sequentially per slice index
-    std::size_t total_logs{0};
     auto writer_future = std::async(std::launch::async, [&]() {
         LOG_SCOPE("::ImportLogs(): writer_thread");
 
@@ -441,10 +443,9 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                     break;
                 }
 
-                sqlite_writer.WriteChunk(chunk->rows, chunk->active_populated_rows);
+                sqlite_writer.WriteChunk(chunk->rows, chunk->active_populated_rows, m_filtered_logs);
 
                 m_logs_operation_progress += chunk->chunk_size_bytes;
-                total_logs += chunk->active_populated_rows;
 
                 rows_in_current_transaction += chunk->active_populated_rows;
                 if (rows_in_current_transaction >=
@@ -580,12 +581,8 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     writer_future.wait();
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
-
-    auto settings{GetConfig()};
-    settings.set("total_logs", total_logs);
-    settings.set("total_logs_imported", total_logs);
-    settings.Save();
+    m_total_logs_imported = m_filtered_logs.size();
+    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_total_logs_imported);
 
     m_logs_operation_target = 0;
     m_logs_operation_progress = 0;

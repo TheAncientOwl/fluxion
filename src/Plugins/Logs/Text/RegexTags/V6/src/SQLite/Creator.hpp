@@ -5,7 +5,7 @@
 ///
 /// @file Creator.hpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 5.1
 /// @brief Wrapper for SQLite create operations
 ///
 
@@ -28,12 +28,6 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite {
 // ...
 // field_<field-idN> | string
 // --------------------------------------------------
-// [filtered_logs]
-// view_index         | number | PK
-// log_id             | number | FK references logs:id
-// filter_id          | string
-// highligh_filter_id | string
-// --------------------------------------------------
 
 class Creator
 {
@@ -47,7 +41,7 @@ public: // Lifecycle
     Creator& operator=(Creator&&) noexcept = default;
 
 public: // Public API
-    bool CreateTables(std::vector<std::string> const& fields_ids);
+    bool CreateTable(std::vector<std::string> const& fields_ids);
 
 private:
     DatabaseRef m_database;

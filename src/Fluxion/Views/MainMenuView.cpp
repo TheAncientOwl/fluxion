@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.22
+/// @version 0.23
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -110,7 +110,7 @@ void MainMenuView::OnAdd()
                         return out;
                     }()};
 
-                    static auto const s_default_id = Graphite::Common::Utility::UniqueID::Default();
+                    static auto const s_default_id = Graphite::Common::Utility::UniqueID::GetDefault();
                     bool any_condition_changed{false};
                     app_state.filters.tabs.UpdateBackBufferCopy(
                         [&column_lookup,

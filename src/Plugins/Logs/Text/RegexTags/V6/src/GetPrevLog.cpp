@@ -5,7 +5,7 @@
 ///
 /// @file GetPrevLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.0
+/// @version 6.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -24,15 +24,13 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
 {
     LOG_SCOPE("::GetPrevLog()");
 
-    if (!m_sqlite_connection.IsOpen() &&
-        !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
+    if (m_filtered_logs.empty())
     {
-        LOG_WARN("::GetPrevLog(): SQLite connection is closed and could not be opened");
         return std::nullopt;
     }
 
     return SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}.GetPrevFilteredIndex(
-        filter_id.ToString(), current_index);
+        m_filtered_logs, filter_id, current_index);
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V6

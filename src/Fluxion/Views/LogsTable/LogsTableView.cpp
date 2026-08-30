@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.26
+/// @version 0.27
 /// @brief Implementation of @see LogsTableView.hpp.
 ///
 
@@ -232,7 +232,7 @@ void LogsTableView::RenderLogsTable()
                 {
                     auto const& row{it->second};
                     auto const& highlight{
-                        row.metadata.highlight_id != Graphite::Common::Utility::UniqueID::Default()
+                        row.metadata.highlight_id != Graphite::Common::Utility::UniqueID::GetDefault()
                             ? app_state.filters.id_to_metadata[row.metadata.highlight_id]
                             : Data::Logs::SharedFilterMetadata{}};
 
