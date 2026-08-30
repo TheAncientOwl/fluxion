@@ -5,7 +5,7 @@
 ///
 /// @file ImGuiHelpers.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Implementation of @see Graphite/Common/UI/ImGuiHelpers.hpp
 ///
 
@@ -39,15 +39,39 @@ void VerticalSeparator(float height, float thickness, float reserved_width)
     ImGui::SameLine();
 }
 
-void ProgressBar(float const current_percent)
+void ProgressBar(float const current_percent, float const width, const char* const overlay)
 {
     auto const percent = std::clamp(current_percent, 0.0f, 100.0f);
     auto const fraction = percent / 100.0f;
 
-    char overlay_buf[32];
-    std::snprintf(overlay_buf, sizeof(overlay_buf), "%.1f%%", static_cast<double>(percent));
+    char default_overlay_buf[32];
+    if (!overlay)
+    {
+        std::snprintf(
+            default_overlay_buf, sizeof(default_overlay_buf), "%.1f%%", static_cast<double>(percent));
+    }
+    const char* const text_to_render = overlay ? overlay : default_overlay_buf;
 
-    ImGui::ProgressBar(fraction, ImVec2(-1.0f, 0.0f), overlay_buf);
+    // 1. Render progress bar frame
+    ImGui::ProgressBar(fraction, ImVec2(width, 0.0f), "");
+
+    // 2. Get bounding box
+    ImVec2 const min = ImGui::GetItemRectMin();
+    ImVec2 const max = ImGui::GetItemRectMax();
+
+    // 3. Center overlay text
+    ImVec2 const text_size = ImGui::CalcTextSize(text_to_render);
+    ImVec2 const text_pos = ImVec2(
+        min.x + (max.x - min.x - text_size.x) * 0.5f, min.y + (max.y - min.y - text_size.y) * 0.5f);
+
+    auto* draw_list = ImGui::GetWindowDrawList();
+
+    // 4. Subtle 1px drop-shadow (keeps icon/font clean without heavy border distortion)
+    draw_list->AddText(
+        ImVec2(text_pos.x + 1.0f, text_pos.y + 1.0f), IM_COL32(0, 0, 0, 200), text_to_render);
+
+    // 5. Crisp primary text
+    draw_list->AddText(text_pos, ImGui::GetColorU32(ImGuiCol_Text), text_to_render);
 }
 
 } // namespace Graphite::Common::UI

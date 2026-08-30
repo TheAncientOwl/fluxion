@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.22
+/// @version 0.23
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -23,7 +23,6 @@
 #include "Views/Dev/DevView.hpp"
 #include "Views/Filters/FiltersView.hpp"
 #include "Views/Filters/FiltersViewActions.hpp"
-#include "Views/LogsProgress/LogsProgressView.hpp"
 #include "Views/LogsTable/LogsTableView.hpp"
 #include "Views/MainMenuView.hpp"
 #include "Views/Settings/Modules/Theme.hpp"
@@ -205,7 +204,6 @@ void FluxionApplication::OnInit()
     AddView<Views::SettingsView>(shared_from_this(), 2);
     AddView<Views::LogsTableView>(shared_from_this(), 10);
     AddView<Views::FiltersView>(shared_from_this(), 20);
-    AddView<Views::LogsProgressView>(shared_from_this(), 100);
 }
 
 void FluxionApplication::OnShutdown()

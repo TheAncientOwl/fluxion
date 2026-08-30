@@ -5,14 +5,16 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.23
+/// @version 0.24
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
 #include <filesystem>
 #include <unordered_map>
 
+#include "Fluxion/Common/Utility/Math.hpp"
 #include "Graphite/Application/Views/TSoftCloseableView.hpp"
+#include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Common/Utility/Time.hpp"
 #include "Graphite/Logger.hpp"
 #include "MainMenuView.hpp"
@@ -247,41 +249,108 @@ void MainMenuView::RenderMenu()
             ImGui::EndMenu();
         }
 
-        // --- Right Side Stats ---
-        // 1. Calculate how much space the FPS text will take
+        auto& app_state{m_application->GetApplicationState()};
+
+        // --- 1. Compute Right Side Stats Width Upfront ---
         char fps_text[16];
-        snprintf(
+        std::snprintf(
             fps_text, sizeof(fps_text), "%.1f FPS", static_cast<double>(ImGui::GetIO().Framerate));
 
-        auto const& app_state{m_application->GetApplicationState()};
+        std::string duration_text{};
+        float right_side_width = ImGui::CalcTextSize(fps_text).x;
+
         if (static_cast<bool>(app_state.logs_progress.start_time))
         {
             auto const end_time{
                 static_cast<bool>(app_state.logs_progress.end_time)
                     ? *app_state.logs_progress.end_time
                     : std::chrono::steady_clock::now()};
-            auto const duration_text =
+
+            duration_text =
                 std::string(ICON_CI_CLOCKFACE) +
                 (static_cast<bool>(app_state.logs_progress.end_time) ? " Took " : " Elapsed ") +
                 Graphite::Common::Utility::Time::FormatDuration(
                     *app_state.logs_progress.start_time, end_time);
 
             auto const spacing = ImGui::GetStyle().ItemSpacing.x * 2.0f;
-            auto const fps_width = ImGui::CalcTextSize(fps_text).x;
-            auto const duration_width = ImGui::CalcTextSize(duration_text.data()).x;
-            auto const total_width = duration_width + fps_width + spacing;
-
-            ImGui::SetCursorPosX(
-                ImGui::GetWindowWidth() - total_width - ImGui::GetStyle().ItemSpacing.x);
-
-            ImGui::TextDisabled("%s", duration_text.data());
-            ImGui::SameLine();
+            right_side_width += ImGui::CalcTextSize(duration_text.c_str()).x + spacing;
         }
-        else
-        {
-            auto const fps_width = ImGui::CalcTextSize(fps_text).x;
 
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() - fps_width - ImGui::GetStyle().ItemSpacing.x);
+        float const right_side_x =
+            ImGui::GetWindowWidth() - right_side_width - ImGui::GetStyle().ItemSpacing.x;
+
+        // --- 2. Render Progress Section (Spanning to right_side_x) ---
+        if (app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None)
+        {
+            auto render_progress = [&,
+                                    operation =
+                                        app_state.logs_plugin->GetLogsOperationUnit() ==
+                                                Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+                                            ? "bytes"
+                                            : "logs"](
+                                       const char* icon, const char* action_name, std::size_t total) {
+                auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};
+                auto const percentage{Fluxion::Common::Utility::Math::Percentage(processed, total)};
+
+                char overlay_buf[128];
+                std::snprintf(
+                    overlay_buf,
+                    sizeof(overlay_buf),
+                    "%s %s %zu/%zu %s (%.1f%%)",
+                    icon,
+                    action_name,
+                    processed,
+                    total,
+                    operation,
+                    static_cast<double>(percentage));
+
+                ImGui::SameLine();
+                auto const padding_side{10.0f};
+                float const remaining_width = right_side_x - ImGui::GetCursorPosX() -
+                                              ImGui::GetStyle().ItemSpacing.x - padding_side * 2;
+
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + padding_side);
+                Graphite::Common::UI::ProgressBar(
+                    percentage, std::max(1.0f, remaining_width), overlay_buf);
+            };
+
+            switch (app_state.logs_progress.operation)
+            {
+            case Fluxion::Application::ELogsOperation::Import:
+                render_progress(
+                    ICON_CI_ROCKET, "Imported", app_state.logs_plugin->GetLogsOperationTarget());
+                break;
+
+            case Fluxion::Application::ELogsOperation::Filter:
+                render_progress(
+                    ICON_CI_WAND, "Filtered", app_state.logs_plugin->GetLogsOperationTarget());
+                break;
+
+            case Fluxion::Application::ELogsOperation::DisableFilter:
+                render_progress(
+                    ICON_CI_WAND, "Removed filters", app_state.logs_plugin->GetLogsOperationTarget());
+                break;
+
+            case Fluxion::Application::ELogsOperation::Search:
+                render_progress(
+                    ICON_CI_SEARCH, "Searched", app_state.logs_plugin->GetLogsOperationTarget());
+                break;
+
+            default:
+                LOG_WARN(
+                    "Not handled Fluxion::Application::ELogsOperation::{}",
+                    static_cast<std::uint8_t>(app_state.logs_progress.operation));
+                break;
+            }
+        }
+
+        // --- 3. Render Right Side Stats at right_side_x ---
+        ImGui::SetCursorPosX(right_side_x);
+
+        if (!duration_text.empty())
+        {
+            ImGui::TextDisabled("%s", duration_text.c_str());
+            ImGui::SameLine();
         }
 
         ImGui::TextColored(ImVec4(0.15f, 0.55f, 0.38f, 1.00f), "%s", fps_text);
