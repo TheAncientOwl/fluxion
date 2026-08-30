@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.23
+/// @version 0.24
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -227,7 +227,7 @@ void FluxionApplication::OnShutdown()
 void FluxionApplication::LoadAppOptionsFromDisk()
 {
     LOG_SCOPE("::LoadAppOptions()");
-    Graphite::Settings::PersistentSettings options{GetHomePath(), "options.json"};
+    Graphite::Settings::PersistentSettings options{GetHomePath(), "options"};
     auto& app_options{m_app_state.app_options};
     {
         auto opt{options.get<bool>("show-logs-table-idx")};

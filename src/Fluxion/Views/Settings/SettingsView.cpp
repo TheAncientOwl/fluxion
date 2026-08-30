@@ -5,7 +5,7 @@
 ///
 /// @file SettingsView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Implementation of @see SettingsView.hpp.
 ///
 
@@ -96,7 +96,7 @@ void SettingsView::OnRender()
             Modules::SettingsView::RenderOptions(
                 app_state.app_options,
                 m_application->As<Fluxion::Application::FluxionApplication>()->GetHomePath(),
-                "options.json");
+                "options");
             ImGui::EndTabItem();
         }
 
