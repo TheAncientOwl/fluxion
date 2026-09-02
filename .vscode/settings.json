@@ -17,5 +17,13 @@
     "--completion-style=bundled",
     "--limit-results=50",
     "--header-insertion=never"
+  ],
+  "material-icon-theme.folders.customClones": [
+    {
+      "name": "scrolls",
+      "base": "scripts",
+      "color": "#B84A28",
+      "folderNames": ["Scrolls"]
+    }
   ]
 }

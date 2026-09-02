@@ -18,9 +18,7 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-#include "SQLite/LogsReader.hpp"
-#include "SQLite/Utility.hpp"
-#include "SQLite/Wrapper/Transaction.hpp"
+#include "Scrolls/Scribe.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::ApplyFilters);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::ApplyFilters);
@@ -106,50 +104,41 @@ void RegexTags::ApplyFilters(
 
     m_filtered_logs.clear();
 
-    if (!static_cast<bool>(m_last_imported_logs_path))
+    if (m_scrolls.GetTotalLinesCount() == 0)
     {
         LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
         return;
     }
 
-    if (!m_sqlite_connection.IsOpen() &&
-        !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
-    {
-        LOG_WARN("::ApplyFilters(): SQLite connection is closed and could not be opened");
-        return;
-    }
-
-    auto logs_reader{SQLite::LogsReader{m_sqlite_connection.GetDatabaseRef()}};
-    auto statement =
-        logs_reader.PrepareGetAllLogsQuery(SQLite::Utility::MakeFieldsIDs(m_imported_logs_header));
-    if (!statement.IsValid())
-    {
-        return;
-    }
-
+    auto cursor = m_scrolls.GetCursor();
     std::size_t log_id{0};
-    std::vector<std::string> row{};
+    Scrolls::Papyrus::Line row{};
 
-    m_logs_operation_target = m_total_logs_imported;
+    m_logs_operation_target = m_scrolls.GetTotalLinesCount();
     m_logs_operation_progress = 0;
+
     {
         LOG_SCOPE("::ApplyFilters(): filtering");
-        SQLite::Transaction transaction{m_sqlite_connection.GetDatabaseRef()};
-        if (!transaction.IsActive())
+
+        while (cursor.HasNext())
         {
-            LOG_ERROR(
-                "::ApplyFilters(): Failed to begin transaction: {}",
-                m_sqlite_connection.GetDatabaseRef().GetLastErrorMessage());
-            return;
-        }
-        while (logs_reader.NextRow(statement, log_id, row))
-        {
+            if (!cursor.ReadNext(row))
+            {
+                ++log_id;
+                continue;
+            }
+
             ++m_logs_operation_progress;
             for (auto const& filter : filters)
             {
                 bool matches{true};
                 for (auto const& condition : filter.conditions)
                 {
+                    if (condition.column_index >= row.size())
+                    {
+                        matches = false;
+                        break;
+                    }
                     auto const& target{row[condition.column_index]};
 
                     bool const equals =
@@ -175,6 +164,11 @@ void RegexTags::ApplyFilters(
                         bool highlight_matches{true};
                         for (auto const& condition : highlight_filter.conditions)
                         {
+                            if (condition.column_index >= row.size())
+                            {
+                                highlight_matches = false;
+                                break;
+                            }
                             auto const& target{row[condition.column_index]};
 
                             bool const equals =
@@ -199,18 +193,10 @@ void RegexTags::ApplyFilters(
                     }
 
                     m_filtered_logs.emplace_back(log_id, filter.id, highlight_id);
-
                     break;
                 }
             }
-        }
-
-        if (!transaction.Commit())
-        {
-            LOG_ERROR(
-                "::ApplyFilters(): Failed to commit transaction: {}",
-                m_sqlite_connection.GetDatabaseRef().GetLastErrorMessage());
-            return;
+            ++log_id;
         }
     }
 

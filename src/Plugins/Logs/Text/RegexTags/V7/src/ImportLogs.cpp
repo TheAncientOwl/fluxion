@@ -41,10 +41,6 @@
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
 
-#include "SQLite/Creator.hpp"
-#include "SQLite/LogsWriter.hpp"
-#include "SQLite/Utility.hpp"
-
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::ImportLogs);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::ImportLogs);
 
@@ -390,18 +386,19 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
     m_logs_operation_target = mapped_file.size;
 
-    auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
     {
         LOG_SCOPE("::CreateDatabase()");
-        m_sqlite_connection.Close();
+        m_scrolls.Close();
         auto const database_path{MakeDatabasePath(path)};
         [[maybe_unused]] std::error_code ec{};
-        std::filesystem::remove(database_path);
-        std::filesystem::remove(database_path.string() + "-wal", ec);
-        std::filesystem::remove(database_path.string() + "-shm", ec);
-        if (!m_sqlite_connection.OpenDatabase(database_path) ||
-            !SQLite::Creator{m_sqlite_connection.GetDatabaseRef()}.CreateTable(fields_ids))
+        std::filesystem::remove_all(database_path, ec);
+        if (auto const status = m_scrolls.OpenWrite(
+                database_path, 1, mapped_file.size, m_imported_logs_header.size());
+            status != Scrolls::Papyrus::EWriteStatus::Success)
         {
+            LOG_ERROR(
+                "::ImportLogs(): failed to open scrolls, status {}",
+                static_cast<std::uint64_t>(status));
             return;
         }
     }
@@ -426,11 +423,10 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto writer_future = std::async(std::launch::async, [&]() {
         LOG_SCOPE("::ImportLogs(): writer_thread");
 
-        std::ignore = m_sqlite_connection.GetDatabaseRef().Execute("BEGIN TRANSACTION;");
+        auto scroll_writers{m_scrolls.GetWriters()};
+        auto& scroll_writer{scroll_writers.front()};
 
-        SQLite::LogsWriter sqlite_writer{m_sqlite_connection.GetDatabaseRef(), fields_ids};
-
-        std::size_t rows_in_current_transaction{0};
+        std::size_t idx{0};
 
         for (std::size_t slice_idx = 0; slice_idx < total_slices; ++slice_idx)
         {
@@ -443,25 +439,18 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                     break;
                 }
 
-                sqlite_writer.WriteChunk(chunk->rows, chunk->active_populated_rows, m_filtered_logs);
+                for (std::size_t row_idx = 0; row_idx < chunk->active_populated_rows; ++row_idx)
+                {
+                    std::ignore = scroll_writer.Write(chunk->rows[row_idx]);
+                    m_filtered_logs.emplace_back(idx++);
+                }
 
                 m_logs_operation_progress += chunk->chunk_size_bytes;
-
-                rows_in_current_transaction += chunk->active_populated_rows;
-                if (rows_in_current_transaction >=
-                    static_cast<std::size_t>(m_settings.import_params.rows_per_transaction))
-                {
-                    std::ignore =
-                        m_sqlite_connection.GetDatabaseRef().Execute("COMMIT; BEGIN TRANSACTION;");
-                    rows_in_current_transaction = 0;
-                }
 
                 queue.RecycleChunk(std::move(chunk));
                 ++expected_chunk_idx;
             }
         }
-
-        std::ignore = m_sqlite_connection.GetDatabaseRef().Execute("COMMIT;");
     });
 
     // 2. Parallel Worker Threads using shared RE2 instance
@@ -586,6 +575,8 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     m_logs_operation_target = 0;
     m_logs_operation_progress = 0;
+
+    std::ignore = m_scrolls.DowngradeReadOnly();
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V7

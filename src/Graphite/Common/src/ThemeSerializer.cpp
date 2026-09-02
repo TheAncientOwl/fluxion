@@ -42,24 +42,31 @@ bool LoadThemeFromJson(std::filesystem::path const& path)
     if (!file.is_open())
         return false;
 
-    nlohmann::json j;
-    file >> j;
-    if (!j.contains("colors"))
-        return false;
-
-    ImGuiStyle& style = ImGui::GetStyle();
-
-    for (int i = 0; i < ImGuiCol_COUNT; ++i)
+    try
     {
-        const char* name = ImGui::GetStyleColorName(i);
-        if (j["colors"].contains(name))
+        nlohmann::json j;
+        file >> j;
+        if (!j.contains("colors"))
+            return false;
+
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        for (int i = 0; i < ImGuiCol_COUNT; ++i)
         {
-            auto& col = j["colors"][name];
-            style.Colors[i] = ImVec4(
-                col[0].get<float>(), col[1].get<float>(), col[2].get<float>(), col[3].get<float>());
+            const char* name = ImGui::GetStyleColorName(i);
+            if (j["colors"].contains(name))
+            {
+                auto& col = j["colors"][name];
+                style.Colors[i] = ImVec4(
+                    col[0].get<float>(), col[1].get<float>(), col[2].get<float>(), col[3].get<float>());
+            }
         }
+        return true;
     }
-    return true;
+    catch (nlohmann::json::exception const&)
+    {
+        return false;
+    }
 }
 
 } // namespace Graphite::Common::Utility::Theme

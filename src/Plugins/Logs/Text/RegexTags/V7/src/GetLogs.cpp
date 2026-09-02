@@ -9,16 +9,12 @@
 /// @brief Implementation @see RegexTags.hpp
 ///
 
-#include <filesystem>
-#include <sstream>
-#include <system_error>
+#include <algorithm>
 #include <unordered_map>
 #include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V7/RegexTags.hpp"
 #include "Graphite/Logger.hpp"
-#include "SQLite/FilteredLogsReader.hpp"
-#include "SQLite/Utility.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetLogs);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetLogs);
@@ -31,48 +27,14 @@ void RegexTags::GetLogs(
 {
     LOG_SCOPE("::GetLogs()");
 
-    if (m_filtered_logs.empty())
+    if (m_filtered_logs.empty() || ranges.empty() || m_imported_logs_header.empty())
     {
         return;
     }
 
-    if (!m_sqlite_connection.IsOpen() &&
-        !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
-    {
-        LOG_WARN("::GetLogs(): SQLite connection is closed and could not be opened");
-        return;
-    }
-
-    std::stringstream ss{};
-    for (auto const& range : ranges)
-    {
-        ss << "[" << range.begin << ", " << range.end << "), ";
-    }
-    LOG_INFO("::GetLogs(): Requested ranges: {}", ss.str());
-
-    if (!static_cast<bool>(m_last_imported_logs_path))
-    {
-        LOG_INFO("::GetLogs(): No logs were imported before");
-        return;
-    }
-
-    std::error_code ec;
-    auto const db_path = MakeDatabasePath(*m_last_imported_logs_path);
-    if (std::filesystem::file_size(db_path, ec) == 0 || ec)
-    {
-        LOG_WARN(
-            "::GetLogs(): Database file {} is currently 0 bytes or locked. Skipping read.", db_path);
-        return;
-    }
-
-    if (m_imported_logs_header.empty())
-    {
-        LOG_WARN("::GetLogs(): m_imported_logs_header is empty.");
-        return;
-    }
-
-    std::vector<std::uint64_t> log_ids_to_fetch;
-    std::unordered_map<std::uint64_t, std::vector<std::size_t>> log_id_to_view_indices;
+    std::size_t const expected_fields_count = m_imported_logs_header.size();
+    std::unordered_map<std::size_t, std::vector<std::size_t>> log_id_to_view_indices;
+    std::vector<std::size_t> requested_log_ids;
 
     for (auto const& range : ranges)
     {
@@ -87,43 +49,55 @@ void RegexTags::GetLogs(
                 .filter_id = filtered_item.filter_id,
                 .highlight_id = filtered_item.highlight_filter_id};
 
-            log_id_to_view_indices[filtered_item.log_id].push_back(view_idx);
-            log_ids_to_fetch.push_back(filtered_item.log_id);
+            // Pre-allocate empty column slots matching the header size
+            target_row.data.assign(expected_fields_count, "");
+
+            std::size_t const log_id = filtered_item.log_id;
+            log_id_to_view_indices[log_id].push_back(view_idx);
+            requested_log_ids.push_back(log_id);
         }
     }
 
-    if (log_ids_to_fetch.empty())
+    if (requested_log_ids.empty())
     {
         return;
     }
 
-    auto reader = SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()};
-    auto query_handle = reader.PrepareGetLogsByIDsQuery(
-        log_ids_to_fetch, SQLite::Utility::MakeFieldsIDs(m_imported_logs_header));
+    std::sort(requested_log_ids.begin(), requested_log_ids.end());
+    requested_log_ids.erase(
+        std::unique(requested_log_ids.begin(), requested_log_ids.end()), requested_log_ids.end());
 
-    if (!query_handle.IsValid())
+    std::vector<Scrolls::Scribe::Range> scroll_ranges;
+    for (std::size_t const id : requested_log_ids)
     {
-        LOG_ERROR("::GetLogs(): Failed to prepare logs query.");
-        return;
+        if (scroll_ranges.empty() || id != scroll_ranges.back().end)
+        {
+            scroll_ranges.push_back({.begin = id, .end = id + 1});
+        }
+        else
+        {
+            scroll_ranges.back().end = id + 1;
+        }
     }
 
-    while (query_handle.Step() == SQLite::EStepResult::Row)
+    std::unordered_map<std::size_t, Scrolls::Papyrus::Line> line_buffer_pool{};
+
+    m_scrolls.ReadRanges(
+        scroll_ranges, [&line_buffer_pool](std::size_t const index) -> Scrolls::Papyrus::Line& {
+            return line_buffer_pool[index];
+        });
+
+    for (auto const& [log_id, view_indices] : log_id_to_view_indices)
     {
-        auto const log_id = static_cast<std::uint64_t>(query_handle.GetColumnInt64(0));
-        auto const col_count = static_cast<std::size_t>(query_handle.GetColumnCount());
-
-        std::vector<std::string> fields(col_count - 1);
-        for (std::size_t i = 1; i < col_count; ++i)
+        if (auto const it = line_buffer_pool.find(log_id); it != line_buffer_pool.end())
         {
-            const char* text = query_handle.GetColumnText(static_cast<int>(i));
-            fields[i - 1] = text ? text : "";
-        }
-
-        if (auto it = log_id_to_view_indices.find(log_id); it != log_id_to_view_indices.end())
-        {
-            for (std::size_t view_index : it->second)
+            auto const& line = it->second;
+            for (std::size_t const view_idx : view_indices)
             {
-                out_logs[view_index].data = fields;
+                if (!line.empty())
+                {
+                    out_logs[view_idx].data.assign(line.begin(), line.end());
+                }
             }
         }
     }

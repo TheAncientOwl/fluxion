@@ -11,7 +11,6 @@
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V7/RegexTags.hpp"
 #include "Graphite/Logger.hpp"
-#include "SQLite/FilteredLogsReader.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetNextLog);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetNextLog);
@@ -29,8 +28,29 @@ std::optional<std::size_t> RegexTags::GetNextLog(
         return std::nullopt;
     }
 
-    return SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}.GetNextFilteredIndex(
-        m_filtered_logs, filter_id, current_index);
+    auto matches = [&](Data::FilteredLog const& item) {
+        return item.filter_id == filter_id || item.highlight_filter_id == filter_id;
+    };
+
+    // Forward search from current_index + 1
+    for (std::size_t i = current_index + 1; i < m_filtered_logs.size(); ++i)
+    {
+        if (matches(m_filtered_logs[i]))
+        {
+            return i;
+        }
+    }
+
+    // Wrap around to start
+    for (std::size_t i = 0; i <= current_index && i < m_filtered_logs.size(); ++i)
+    {
+        if (matches(m_filtered_logs[i]))
+        {
+            return i;
+        }
+    }
+
+    return std::nullopt;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V7

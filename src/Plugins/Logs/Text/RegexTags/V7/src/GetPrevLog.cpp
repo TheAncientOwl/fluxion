@@ -11,7 +11,6 @@
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V7/RegexTags.hpp"
 #include "Graphite/Logger.hpp"
-#include "SQLite/FilteredLogsReader.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetPrevLog);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetPrevLog);
@@ -29,8 +28,40 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
         return std::nullopt;
     }
 
-    return SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}.GetPrevFilteredIndex(
-        m_filtered_logs, filter_id, current_index);
+    auto matches = [&](Data::FilteredLog const& item) {
+        return item.filter_id == filter_id || item.highlight_filter_id == filter_id;
+    };
+
+    // Backward search from current_index - 1
+    if (current_index > 0)
+    {
+        for (std::size_t i = current_index - 1;; --i)
+        {
+            if (matches(m_filtered_logs[i]))
+            {
+                return i;
+            }
+            if (i == 0)
+            {
+                break;
+            }
+        }
+    }
+
+    // Wrap around to end
+    for (std::size_t i = m_filtered_logs.size() - 1; i >= current_index; --i)
+    {
+        if (matches(m_filtered_logs[i]))
+        {
+            return i;
+        }
+        if (i == 0)
+        {
+            break;
+        }
+    }
+
+    return std::nullopt;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V7

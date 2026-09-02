@@ -18,7 +18,7 @@
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Plugin/GraphiteExport.hpp"
 #include "Graphite/Settings/PersistentSettings.hpp"
-#include "Wrapper/ConnectionManager.hpp"
+#include "Scribe.hpp"
 
 #include "Data.hpp"
 
@@ -87,7 +87,7 @@ private:
     Fluxion::API::LogsPlugin::Data::ELogsOperationUnit m_logs_operation_unit{
         Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs};
 
-    SQLite::ConnectionManager m_sqlite_connection{};
+    Scrolls::Scribe m_scrolls{};
     std::vector<Data::FilteredLog> m_filtered_logs{};
     std::size_t m_total_logs_imported{0};
 

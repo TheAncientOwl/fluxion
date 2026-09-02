@@ -36,8 +36,7 @@ add_library(fluxion_logs_plugin__text__regex_tags__v7_interface INTERFACE)
 
 target_include_directories(fluxion_logs_plugin__text__regex_tags__v7_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Import
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Scrolls
 )
 
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v7_interface INTERFACE
@@ -47,17 +46,9 @@ target_link_libraries(fluxion_logs_plugin__text__regex_tags__v7_interface INTERF
 
 # --- 2. Implementation ---
 add_library(fluxion_logs_plugin__text__regex_tags__v7 SHARED
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Wrapper/ConnectionManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Wrapper/DatabaseRef.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Wrapper/Statement.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Wrapper/Transaction.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/BufferedFilteredLogsWriter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/LogsWriter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Creator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/FilteredLogsReader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/LogsReader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Utility.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Scrolls/MappedBinaryStringsFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Scrolls/Papyrus.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Scrolls/Scribe.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ApplyFilters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DisableFilters.cpp
