@@ -26,31 +26,25 @@ target_link_libraries(fluxion_api_impl PRIVATE
     fluxion_api_interface
 )
 
-# --- 1. Interface ---
+# --- 1. Testing Interface ---
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  SYSTEM
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.18.0
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
 add_library(fluxion_api_testing_interface INTERFACE)
 
 target_include_directories(fluxion_api_testing_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    ${googletest_SOURCE_DIR}/googletest/include
 )
 
-# -- 2. Implementation ---
-add_library(fluxion_api_testing_impl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/testing/LogsPluginTestingToolkit.cpp
-)
-
-set_target_properties(fluxion_api_testing_impl PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-# target_precompile_headers(fluxion_api_testing_impl REUSE_FROM fluxion_pch)
-
-target_link_libraries(fluxion_api_testing_impl PRIVATE
-    external_imgui
-    project_compile_options
-    graphite_logger_interface
-    graphite_common_interface
-    fluxion_api_testing_interface
-    $<$<BOOL:${MINGW}>:stdc++exp>
+target_link_libraries(fluxion_api_testing_interface INTERFACE
+    gtest
+    gtest_main
 )

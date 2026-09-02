@@ -5,13 +5,12 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
-/// @brief Logs::Text::RegexTags::V7 Plugin test
+/// @version 7.1
+/// @brief Logs::Text::RegexTags::V7 Google Test Suite
 ///
 
 #include <fstream>
-#include <memory>
-#include <thread>
+#include <gtest/gtest.h>
 
 #include "Fluxion/API/testing/LogsPluginTestingToolkit.hpp"
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V7/RegexTags.hpp"
@@ -162,16 +161,4 @@ private:
     std::ofstream m_raw_logs_file{};
 };
 
-int main()
-{
-    auto logs_plugin_tester{LogsPluginTester(
-        std::make_unique<LogsPluginWrapper>(), TestConfiguration{.logs_count = 200})};
-
-    logs_plugin_tester.RunTests();
-
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(2s);
-    logs_plugin_tester.PrintTestResults();
-
-    return logs_plugin_tester.AllPassed();
-}
+FLUXION_DEFINE_LOGS_PLUGIN_TESTS(LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});

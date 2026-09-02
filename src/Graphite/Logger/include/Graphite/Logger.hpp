@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.16
+/// @version 1.17
 /// @brief Logging utilities
 ///
 
@@ -216,6 +216,15 @@ private:
     std::string m_tag;
     std::chrono::high_resolution_clock::time_point m_start;
 };
+
+inline void DisableAllScopes()
+{
+    auto& logger = Graphite::Logger::GetLogger();
+    for (auto const& level_info : Graphite::Logger::Logger::GetLevels())
+    {
+        logger.SetLevelState(level_info.value, false);
+    }
+}
 
 } // namespace Graphite::Logger
 

@@ -5,7 +5,7 @@
 ///
 /// @file ScrollsTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Logs::Text::RegexTags::V7::Scrolls unit tests
 ///
 
@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
+#include "Graphite/Logger.hpp"
 #include "Scrolls/MappedBinaryStringsFile.hpp"
 
 using namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Scrolls;
@@ -22,6 +23,8 @@ struct WriteableMappedFileTest : public ::testing::Test
 protected:
     void SetUp() override
     {
+        Graphite::Logger::DisableAllScopes();
+
         auto const* info = ::testing::UnitTest::GetInstance()->current_test_info();
         std::string filename =
             std::string("test_") + info->test_suite_name() + "_" + info->name() + ".bin";

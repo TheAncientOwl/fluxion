@@ -5,7 +5,7 @@
 ///
 /// @file ScrollsTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Logs::Text::RegexTags::V7::Scrolls unit tests
 ///
 
@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Graphite/Logger.hpp"
 #include "Scrolls/Scribe.hpp"
 
 using namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Scrolls;
@@ -24,6 +25,8 @@ struct ScribeTest : public ::testing::Test
 protected:
     void SetUp() override
     {
+        Graphite::Logger::DisableAllScopes();
+
         auto const* info = ::testing::UnitTest::GetInstance()->current_test_info();
         std::string const dir_name =
             std::string("test_dir_") + info->test_suite_name() + "_" + info->name();
