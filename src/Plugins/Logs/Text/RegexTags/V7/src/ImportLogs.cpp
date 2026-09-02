@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -19,7 +19,6 @@
 #include <mutex>
 #include <re2/re2.h>
 #include <re2/stringpiece.h>
-#include <sqlite3.h>
 #include <string>
 #include <string_view>
 
@@ -196,27 +195,24 @@ namespace Multithreading {
 
 struct FileSlice
 {
-    std::size_t slice_id{0};
-    const char* start{nullptr};
+    const char* begin{nullptr};
     const char* end{nullptr};
 };
 
-inline std::vector<FileSlice> SplitFile(
-    const char* const file_data,
-    std::size_t const file_size,
+inline std::vector<FileSlice> SplitFileSlice(
+    FileSlice const& slice,
     std::size_t const target_slice_bytes = 4 * 1024 * 1024,
     char const target_char = '\n')
 {
-    LOG_SCOPE("::SplitFile()");
+    LOG_SCOPE("::SplitFileSlice()");
     std::vector<FileSlice> slices{};
-    if (file_size == 0)
+    if (!slice.begin || !slice.end || slice.begin >= slice.end)
     {
         return slices;
     }
 
-    const char* current_ptr{file_data};
-    const char* const file_end{file_data + file_size};
-    std::size_t slice_id{0};
+    const char* current_ptr{slice.begin};
+    const char* const file_end{slice.end};
 
     while (current_ptr < file_end)
     {
@@ -230,7 +226,7 @@ inline std::vector<FileSlice> SplitFile(
             end_ptr = newline ? newline + 1 : file_end;
         }
 
-        slices.push_back(FileSlice{slice_id++, current_ptr, end_ptr});
+        slices.push_back(FileSlice{current_ptr, end_ptr});
         current_ptr = end_ptr;
     }
     return slices;
@@ -239,7 +235,7 @@ inline std::vector<FileSlice> SplitFile(
 struct LogChunk
 {
     std::size_t slice_id{0};
-    std::size_t chunk_index{0}; // Local sequence within slice
+    std::size_t chunk_index{0};
     std::vector<std::vector<std::string_view>> rows;
     std::size_t active_populated_rows{0};
     std::size_t chunk_size_bytes{0};
@@ -255,14 +251,17 @@ class DynamicChunkQueue
 public:
     DynamicChunkQueue(
         std::size_t const total_slices,
-        std::size_t const total_chunks,
+        std::size_t const initial_total_chunks,
         std::size_t const capacity_per_chunk,
         std::size_t const field_count)
-        : m_ready_chunks(total_slices), m_slice_done(total_slices, false)
+        : m_capacity_per_chunk(capacity_per_chunk)
+        , m_field_count(field_count)
+        , m_ready_chunks(total_slices)
+        , m_slice_done(total_slices, false)
     {
         LOG_SCOPE("::DynamicChunkQueue()");
-        m_free_pool.reserve(total_chunks);
-        for (std::size_t chunk_idx = 0; chunk_idx < total_chunks; ++chunk_idx)
+        m_free_pool.reserve(initial_total_chunks);
+        for (std::size_t chunk_idx = 0; chunk_idx < initial_total_chunks; ++chunk_idx)
         {
             m_free_pool.emplace_back(std::make_unique<LogChunk>(capacity_per_chunk, field_count));
         }
@@ -271,10 +270,21 @@ public:
     std::unique_ptr<LogChunk> AcquireFreeChunk(std::size_t const slice_id)
     {
         std::unique_lock<std::mutex> lock{m_mutex};
-        m_cv_free.wait(lock, [this] { return !m_free_pool.empty(); });
-        auto chunk = std::move(m_free_pool.back());
-        m_free_pool.pop_back();
+        if (!m_free_pool.empty())
+        {
+            auto chunk = std::move(m_free_pool.back());
+            m_free_pool.pop_back();
+            lock.unlock();
 
+            chunk->slice_id = slice_id;
+            chunk->active_populated_rows = 0;
+            chunk->chunk_size_bytes = 0;
+            return chunk;
+        }
+        lock.unlock();
+
+        // Fallback allocation: prevents pool starvation and deadlocks
+        auto chunk = std::make_unique<LogChunk>(m_capacity_per_chunk, m_field_count);
         chunk->slice_id = slice_id;
         chunk->active_populated_rows = 0;
         chunk->chunk_size_bytes = 0;
@@ -319,18 +329,227 @@ public:
     void RecycleChunk(std::unique_ptr<LogChunk> chunk)
     {
         std::unique_lock<std::mutex> lock{m_mutex};
-        m_free_pool.push_back(std::move(chunk));
-        m_cv_free.notify_one();
+        // TODO: Move Free pool max size to settings
+        if (m_free_pool.size() < 64)
+        {
+            m_free_pool.push_back(std::move(chunk));
+        }
     }
 
 private:
     std::mutex m_mutex{};
-    std::condition_variable m_cv_free{};
     std::condition_variable m_cv_writer{};
+
+    std::size_t m_capacity_per_chunk{};
+    std::size_t m_field_count{};
 
     std::vector<std::unique_ptr<LogChunk>> m_free_pool{};
     std::vector<std::unordered_map<std::size_t, std::unique_ptr<LogChunk>>> m_ready_chunks{};
     std::vector<bool> m_slice_done{};
+};
+
+class LogsImporter
+{
+public:
+    LogsImporter(
+        FileSlice const& file_slice,
+        re2::RE2 const& shared_regex,
+        std::size_t const row_fields_count,
+        Scrolls::Scribe::PapyrusWriter& scroll_writer,
+        std::size_t const workers_count,
+        std::size_t const available_batches_per_worker,
+        std::size_t const batch_capacity,
+        std::size_t const target_slice_bytes,
+        std::atomic<std::size_t>& logs_operation_progress)
+        : m_file_slice(file_slice)
+        , m_shared_regex(shared_regex)
+        , m_row_fields_count(row_fields_count)
+        , m_scroll_writer(scroll_writer)
+        , m_workers_count(workers_count)
+        , m_available_batches_per_worker(available_batches_per_worker)
+        , m_batch_capacity(batch_capacity)
+        , m_target_slice_bytes(target_slice_bytes)
+        , m_logs_operation_progress(logs_operation_progress)
+    {
+    }
+
+    void Run()
+    {
+        LOG_SCOPE("::LogsImporter::Run()");
+
+        auto file_slices = SplitFileSlice(m_file_slice, m_target_slice_bytes);
+        auto const total_slices = file_slices.size();
+        if (total_slices == 0)
+        {
+            return;
+        }
+
+        std::size_t const total_chunks =
+            static_cast<std::size_t>(m_workers_count * m_available_batches_per_worker);
+
+        DynamicChunkQueue queue(total_slices, total_chunks, m_batch_capacity, m_row_fields_count);
+
+        auto writer_future = std::async(std::launch::async, [&]() {
+            LOG_SCOPE("::LogsImporter::writer_thread");
+            for (std::size_t slice_idx = 0; slice_idx < total_slices; ++slice_idx)
+            {
+                std::size_t expected_chunk_idx{0};
+                while (true)
+                {
+                    auto chunk = queue.PopNextChunk(slice_idx, expected_chunk_idx);
+                    if (!chunk)
+                    {
+                        break;
+                    }
+
+                    for (std::size_t row_idx = 0; row_idx < chunk->active_populated_rows; ++row_idx)
+                    {
+                        auto const write_result = m_scroll_writer.Write(chunk->rows[row_idx]);
+                        if (write_result.status != Scrolls::Papyrus::EWriteStatus::Success)
+                        {
+                            LOG_CRITICAL(
+                                "::LogsImporter::Run(): Failed to write line, reason {}",
+                                static_cast<std::uint64_t>(write_result.status));
+                        }
+                    }
+
+                    m_logs_operation_progress += chunk->chunk_size_bytes;
+
+                    queue.RecycleChunk(std::move(chunk));
+                    ++expected_chunk_idx;
+                }
+            }
+        });
+
+        std::vector<std::thread> workers{};
+        {
+            LOG_SCOPE("::ParserWorkerThreadsCreation()");
+            workers.reserve(m_workers_count);
+            std::atomic<std::size_t> next_slice_idx{0};
+            auto const num_captures =
+                static_cast<std::size_t>(m_shared_regex.NumberOfCapturingGroups());
+
+            auto const importer_thread_id{std::this_thread::get_id()};
+            for (unsigned int worker_idx = 0; worker_idx < m_workers_count; ++worker_idx)
+            {
+                workers.emplace_back([&, num_captures]() {
+                    LOG_SCOPE(
+                        "::ParserWorkerThread::{}::{}()",
+                        importer_thread_id,
+                        std::this_thread::get_id());
+
+                    std::vector<re2::StringPiece> capture_results(num_captures);
+                    std::vector<re2::RE2::Arg> re2_args{};
+                    std::vector<re2::RE2::Arg*> re2_arg_ptrs{};
+                    re2_args.reserve(num_captures);
+                    re2_arg_ptrs.reserve(num_captures);
+
+                    for (std::size_t capture_idx = 0; capture_idx < num_captures; ++capture_idx)
+                    {
+                        re2_args.emplace_back(&capture_results[capture_idx]);
+                        re2_arg_ptrs.push_back(&re2_args.back());
+                    }
+
+                    while (true)
+                    {
+                        auto const slice_idx{next_slice_idx.fetch_add(1, std::memory_order_relaxed)};
+                        if (slice_idx >= total_slices)
+                        {
+                            break;
+                        }
+
+                        const char* ptr{file_slices[slice_idx].begin};
+                        const char* const slice_end{file_slices[slice_idx].end};
+
+                        std::size_t local_chunk_idx{0};
+                        auto current_chunk = queue.AcquireFreeChunk(slice_idx);
+                        current_chunk->chunk_index = local_chunk_idx++;
+
+                        while (ptr < slice_end)
+                        {
+                            const char* newline = static_cast<const char*>(
+                                std::memchr(ptr, '\n', static_cast<std::size_t>(slice_end - ptr)));
+
+                            const char* line_end = newline ? newline : slice_end;
+                            const char* next_ptr = newline ? newline + 1 : slice_end;
+
+                            current_chunk->chunk_size_bytes +=
+                                static_cast<std::size_t>(next_ptr - ptr);
+
+                            auto line_length = static_cast<std::size_t>(line_end - ptr);
+                            if (line_length > 0 && ptr[line_length - 1] == '\r')
+                            {
+                                --line_length;
+                            }
+
+                            re2::StringPiece const line_piece(ptr, line_length);
+                            if (re2::RE2::FullMatchN(
+                                    line_piece,
+                                    m_shared_regex,
+                                    re2_arg_ptrs.data(),
+                                    static_cast<int>(num_captures)))
+                            {
+                                auto& row =
+                                    current_chunk->rows[current_chunk->active_populated_rows++];
+
+                                for (std::size_t i = 0; i < num_captures && i < m_row_fields_count; ++i)
+                                {
+                                    if (capture_results[i].data() != nullptr)
+                                    {
+                                        row[i] = std::string_view(
+                                            capture_results[i].data(), capture_results[i].size());
+                                    }
+                                    else
+                                    {
+                                        row[i] = {};
+                                    }
+                                }
+
+                                if (current_chunk->active_populated_rows == m_batch_capacity)
+                                {
+                                    queue.SubmitFilledChunk(std::move(current_chunk));
+                                    current_chunk = queue.AcquireFreeChunk(slice_idx);
+                                    current_chunk->chunk_index = local_chunk_idx++;
+                                }
+                            }
+
+                            ptr = next_ptr;
+                        }
+
+                        if (current_chunk->active_populated_rows > 0 ||
+                            current_chunk->chunk_size_bytes > 0)
+                        {
+                            queue.SubmitFilledChunk(std::move(current_chunk));
+                        }
+                        else
+                        {
+                            queue.RecycleChunk(std::move(current_chunk));
+                        }
+
+                        queue.MarkSliceDone(slice_idx);
+                    }
+                });
+            }
+        }
+
+        for (auto& worker : workers)
+        {
+            worker.join();
+        }
+
+        writer_future.wait();
+    }
+
+private:
+    FileSlice m_file_slice;
+    re2::RE2 const& m_shared_regex;
+    std::size_t m_row_fields_count;
+    Scrolls::Scribe::PapyrusWriter& m_scroll_writer;
+    std::size_t m_workers_count;
+    std::size_t m_available_batches_per_worker;
+    std::size_t m_batch_capacity;
+    std::size_t m_target_slice_bytes;
+    std::atomic<std::size_t>& m_logs_operation_progress;
 };
 
 } // namespace Multithreading
@@ -386,14 +605,23 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
     m_logs_operation_target = mapped_file.size;
 
+    // TODO: Move to settings
+    static auto constexpr SLICE_SIZE_MB{512};
+    auto const whole_file_slice =
+        Utility::Multithreading::FileSlice{mapped_file.get(), mapped_file.get() + mapped_file.size};
+    auto const slices{
+        Utility::Multithreading::SplitFileSlice(whole_file_slice, SLICE_SIZE_MB * 1024 * 1024)};
+    LOG_INFO("::ImportLogs(): Generated {} slices of 512mb", slices.size());
+
     {
-        LOG_SCOPE("::CreateDatabase()");
+        LOG_SCOPE("::ImportLogs::OpenScrolls()");
         m_scrolls.Close();
         auto const database_path{MakeDatabasePath(path)};
         [[maybe_unused]] std::error_code ec{};
         std::filesystem::remove_all(database_path, ec);
+        // TODO: Move to settings
         if (auto const status = m_scrolls.OpenWrite(
-                database_path, 1, mapped_file.size, m_imported_logs_header.size());
+                database_path, slices.size(), 1024 * 1024 * 1024, m_imported_logs_header.size());
             status != Scrolls::Papyrus::EWriteStatus::Success)
         {
             LOG_ERROR(
@@ -403,180 +631,59 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
     }
 
-    auto const row_fields_count{m_imported_logs_header.size()};
-
-    auto const file_slices = Utility::Multithreading::SplitFile(
-        mapped_file.get(),
-        mapped_file.size,
-        static_cast<std::size_t>(m_settings.import_params.file_target_slice_mb) * 1024 * 1024);
-    auto const total_slices = file_slices.size();
-
-    Utility::Multithreading::DynamicChunkQueue queue(
-        total_slices,
-        static_cast<std::size_t>(
-            m_settings.import_params.workers_count *
-            m_settings.import_params.available_batches_per_worker),
-        static_cast<std::size_t>(m_settings.import_params.batch_capacity),
-        row_fields_count);
-
-    // 1. Single Writer Thread: Consumes chunks sequentially per slice index
-    auto writer_future = std::async(std::launch::async, [&]() {
-        LOG_SCOPE("::ImportLogs(): writer_thread");
-
-        auto scroll_writers{m_scrolls.GetWriters()};
-        auto& scroll_writer{scroll_writers.front()};
-
-        std::size_t idx{0};
-
-        for (std::size_t slice_idx = 0; slice_idx < total_slices; ++slice_idx)
-        {
-            std::size_t expected_chunk_idx{0};
-            while (true)
-            {
-                auto chunk = queue.PopNextChunk(slice_idx, expected_chunk_idx);
-                if (!chunk)
-                {
-                    break;
-                }
-
-                for (std::size_t row_idx = 0; row_idx < chunk->active_populated_rows; ++row_idx)
-                {
-                    std::ignore = scroll_writer.Write(chunk->rows[row_idx]);
-                    m_filtered_logs.emplace_back(idx++);
-                }
-
-                m_logs_operation_progress += chunk->chunk_size_bytes;
-
-                queue.RecycleChunk(std::move(chunk));
-                ++expected_chunk_idx;
-            }
-        }
-    });
-
-    // 2. Parallel Worker Threads using shared RE2 instance
-    std::vector<std::thread> workers{};
     {
-        LOG_SCOPE("::ParserWorkerThreadsCreation()");
-        workers.reserve(static_cast<std::size_t>(m_settings.import_params.workers_count));
-        std::atomic<std::size_t> next_slice_idx{0};
-        auto const num_captures = static_cast<std::size_t>(shared_regex.NumberOfCapturingGroups());
+        LOG_SCOPE("::ImportLogs()::SliceWorkers()");
 
-        for (unsigned int worker_idx = 0;
-             worker_idx < static_cast<std::size_t>(m_settings.import_params.workers_count);
-             ++worker_idx)
+        auto const row_fields_count{m_imported_logs_header.size()};
+        auto scroll_writers{m_scrolls.GetWriters()};
+
+        std::vector<std::thread> slice_workers{};
+        slice_workers.reserve(slices.size());
+
+        for (std::size_t slice_idx = 0; slice_idx < slices.size(); ++slice_idx)
         {
-            workers.emplace_back([&,
-                                  num_captures,
-                                  batch_capacity = m_settings.import_params.batch_capacity]() {
-                LOG_SCOPE("::ParserWorkerThread::{}()", std::this_thread::get_id());
+            slice_workers.emplace_back([&scroll_writer = scroll_writers[slice_idx],
+                                        slice_idx,
+                                        slice = slices[slice_idx],
+                                        &shared_regex,
+                                        row_fields_count,
+                                        this]() {
+                LOG_SCOPE("::LogsImporter::Slice::{}::()", slice_idx);
+                Utility::Multithreading::LogsImporter importer(
+                    slice,
+                    shared_regex,
+                    row_fields_count,
+                    scroll_writer,
+                    static_cast<std::size_t>(m_settings.import_params.workers_count),
+                    static_cast<std::size_t>(m_settings.import_params.available_batches_per_worker),
+                    static_cast<std::size_t>(m_settings.import_params.batch_capacity),
+                    static_cast<std::size_t>(m_settings.import_params.file_target_slice_mb) * 1024 * 1024,
+                    m_logs_operation_progress);
 
-                // Per-thread capture buffer reuse
-                std::vector<re2::StringPiece> capture_results(num_captures);
-                std::vector<re2::RE2::Arg> re2_args{};
-                std::vector<re2::RE2::Arg*> re2_arg_ptrs{};
-                re2_args.reserve(num_captures);
-                re2_arg_ptrs.reserve(num_captures);
-
-                for (std::size_t capture_idx = 0; capture_idx < num_captures; ++capture_idx)
-                {
-                    re2_args.emplace_back(&capture_results[capture_idx]);
-                    re2_arg_ptrs.push_back(&re2_args.back());
-                }
-
-                while (true)
-                {
-                    auto const slice_idx{next_slice_idx.fetch_add(1, std::memory_order_relaxed)};
-                    if (slice_idx >= total_slices)
-                    {
-                        break;
-                    }
-
-                    const char* ptr{file_slices[slice_idx].start};
-                    const char* const slice_end{file_slices[slice_idx].end};
-
-                    std::size_t local_chunk_idx{0};
-                    auto current_chunk = queue.AcquireFreeChunk(slice_idx);
-                    current_chunk->chunk_index = local_chunk_idx++;
-
-                    while (ptr < slice_end)
-                    {
-                        const char* newline = static_cast<const char*>(
-                            std::memchr(ptr, '\n', static_cast<std::size_t>(slice_end - ptr)));
-
-                        const char* line_end = newline ? newline : slice_end;
-                        const char* next_ptr = newline ? newline + 1 : slice_end;
-
-                        current_chunk->chunk_size_bytes += static_cast<std::size_t>(next_ptr - ptr);
-
-                        auto line_length = static_cast<std::size_t>(line_end - ptr);
-                        if (line_length > 0 && ptr[line_length - 1] == '\r')
-                        {
-                            --line_length;
-                        }
-
-                        re2::StringPiece const line_piece(ptr, line_length);
-                        if (re2::RE2::FullMatchN(
-                                line_piece,
-                                shared_regex,
-                                re2_arg_ptrs.data(),
-                                static_cast<int>(num_captures)))
-                        {
-                            auto& row = current_chunk->rows[current_chunk->active_populated_rows++];
-
-                            for (std::size_t i = 0; i < num_captures && i < row_fields_count; ++i)
-                            {
-                                if (capture_results[i].data() != nullptr)
-                                {
-                                    row[i] = std::string_view(
-                                        capture_results[i].data(), capture_results[i].size());
-                                }
-                                else
-                                {
-                                    row[i] = {};
-                                }
-                            }
-
-                            if (current_chunk->active_populated_rows ==
-                                static_cast<std::size_t>(batch_capacity))
-                            {
-                                queue.SubmitFilledChunk(std::move(current_chunk));
-                                current_chunk = queue.AcquireFreeChunk(slice_idx);
-                                current_chunk->chunk_index = local_chunk_idx++;
-                            }
-                        }
-
-                        ptr = next_ptr;
-                    }
-
-                    if (current_chunk->active_populated_rows > 0 || current_chunk->chunk_size_bytes > 0)
-                    {
-                        queue.SubmitFilledChunk(std::move(current_chunk));
-                    }
-                    else
-                    {
-                        queue.RecycleChunk(std::move(current_chunk));
-                    }
-
-                    queue.MarkSliceDone(slice_idx);
-                }
+                importer.Run();
             });
         }
+
+        for (auto& worker : slice_workers)
+        {
+            worker.join();
+        }
     }
 
-    for (auto& worker : workers)
+    std::ignore = m_scrolls.DowngradeReadOnly();
+
+    auto const total_logs{m_scrolls.GetTotalLinesCount()};
+    m_filtered_logs.reserve(total_logs);
+    for (std::size_t log_idx = 0; log_idx < total_logs; ++log_idx)
     {
-        worker.join();
+        m_filtered_logs.emplace_back(log_idx);
     }
-
-    writer_future.wait();
 
     m_total_logs_imported = m_filtered_logs.size();
     LOG_INFO("::ImportLogs(): Total matched logs: {}", m_total_logs_imported);
 
     m_logs_operation_target = 0;
     m_logs_operation_progress = 0;
-
-    std::ignore = m_scrolls.DowngradeReadOnly();
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V7

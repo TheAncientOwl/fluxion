@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -44,7 +44,7 @@ std::string_view RegexTags::GetDirectoryName() const
 
 std::filesystem::path RegexTags::MakeDatabasePath(std::filesystem::path const& raw_logs_path) const
 {
-    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".sqlite")};
+    auto const output_path{m_home_path / (raw_logs_path.filename().string() + ".scrolls")};
     return output_path;
 }
 

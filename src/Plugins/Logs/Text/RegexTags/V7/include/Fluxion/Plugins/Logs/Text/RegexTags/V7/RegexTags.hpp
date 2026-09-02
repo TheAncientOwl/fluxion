@@ -5,7 +5,7 @@
 ///
 /// @file RegexTags.hpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Use regex to split log txt line to columns. Store data to flat files
 ///
 
@@ -82,7 +82,7 @@ private:
     std::filesystem::path m_home_path{};
     std::optional<std::filesystem::path> m_last_imported_logs_path{};
     std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
-    std::size_t m_logs_operation_progress{0};
+    std::atomic<std::size_t> m_logs_operation_progress{0};
     std::size_t m_logs_operation_target{0};
     Fluxion::API::LogsPlugin::Data::ELogsOperationUnit m_logs_operation_unit{
         Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs};

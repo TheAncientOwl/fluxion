@@ -22,15 +22,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(re2)
 
-# --- 0.2. SQLite ---
-FetchContent_Declare(
-    sqlite3
-    SYSTEM
-    GIT_REPOSITORY https://github.com/sjinks/sqlite3-cmake.git
-    GIT_TAG        master
-)
-FetchContent_MakeAvailable(sqlite3)
-
 # --- 1. Interface ---
 add_library(fluxion_logs_plugin__text__regex_tags__v7_interface INTERFACE)
 
@@ -41,7 +32,6 @@ target_include_directories(fluxion_logs_plugin__text__regex_tags__v7_interface I
 
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v7_interface INTERFACE
     re2::re2
-    sqlite3
 )
 
 # --- 2. Implementation ---
@@ -84,7 +74,6 @@ target_link_libraries(fluxion_logs_plugin__text__regex_tags__v7 PUBLIC
     fluxion_api_impl
     fluxion_logs_plugin__text__regex_tags__v7_interface
     re2::re2
-    sqlite3
 )
 
 target_compile_options(fluxion_logs_plugin__text__regex_tags__v7 PRIVATE -Wno-nullability-extension)

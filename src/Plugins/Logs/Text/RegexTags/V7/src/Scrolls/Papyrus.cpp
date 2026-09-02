@@ -5,7 +5,7 @@
 ///
 /// @file Papyrus.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Implementation of @see Papyrus.hpp
 ///
 
@@ -70,7 +70,7 @@ bool Papyrus::DowngradeReadOnly()
         return false;
     }
 
-    return BuildLineIndex();
+    return true;
 }
 
 MappedBinaryStringsFile::WriteResult Papyrus::Write(Line const& line)
