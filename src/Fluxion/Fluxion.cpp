@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.24
+/// @version 0.25
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -163,7 +163,7 @@ void FluxionApplication::OnInit()
                         Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
 
                         enable_data.plugin_home_path =
-                            GetHomePath() / std::string(m_app_state.logs_plugin->GetDisplayName());
+                            GetHomePath() / std::string(m_app_state.logs_plugin->GetDirectoryName());
                         std::filesystem::create_directories(enable_data.plugin_home_path);
 
                         m_app_state.logs_plugin->OnEnable(enable_data);
