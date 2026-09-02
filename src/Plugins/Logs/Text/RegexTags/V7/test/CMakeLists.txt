@@ -30,11 +30,17 @@ add_executable(unit_tests__fluxion_logs_plugin__text__regex_tags__v7
     MappedBinaryStringsFileTest.cpp
     PapyrusTest.cpp
     ScribeTest.cpp
+
+    ../src/Scrolls/MappedBinaryStringsFile.cpp
+    ../src/Scrolls/Papyrus.cpp
+    ../src/Scrolls/Scribe.cpp
 )
 
 target_include_directories(unit_tests__fluxion_logs_plugin__text__regex_tags__v7 PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${PROJECT_SOURCE_DIR}/src/Graphite/Logger/include
+    ${PROJECT_SOURCE_DIR}/external/imgui
 )
 
 target_link_libraries(unit_tests__fluxion_logs_plugin__text__regex_tags__v7 PRIVATE
@@ -43,4 +49,7 @@ target_link_libraries(unit_tests__fluxion_logs_plugin__text__regex_tags__v7 PRIV
 )
 
 include(GoogleTest)
-gtest_discover_tests(unit_tests__fluxion_logs_plugin__text__regex_tags__v7)
+gtest_discover_tests(
+    unit_tests__fluxion_logs_plugin__text__regex_tags__v7
+    DISCOVERY_MODE PRE_TEST
+)
