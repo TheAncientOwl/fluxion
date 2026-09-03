@@ -5,7 +5,7 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.5
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
@@ -24,7 +24,14 @@ USE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
 #include "imgui.h"
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
+#if defined(_WIN32)
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <windows.h>
+#endif
 #include <GLFW/glfw3.h>
+#if defined(_WIN32)
+#include <GLFW/glfw3native.h>
+#endif
 
 // Volk headers
 #ifdef IMGUI_IMPL_VULKAN_USE_VOLK
@@ -467,6 +474,18 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
         std::cerr << msg << std::endl;
         throw std::runtime_error(msg);
     }
+
+#if defined(_WIN32)
+    HWND const window_handle = glfwGetWin32Window(m_state.window);
+    HICON const icon = static_cast<HICON>(LoadImageW(
+        GetModuleHandleW(nullptr), MAKEINTRESOURCEW(101), IMAGE_ICON, 32, 32, LR_DEFAULTSIZE));
+    HICON const small_icon = static_cast<HICON>(LoadImageW(
+        GetModuleHandleW(nullptr), MAKEINTRESOURCEW(101), IMAGE_ICON, 16, 16, LR_DEFAULTSIZE));
+    if (icon != nullptr)
+        SendMessageW(window_handle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(icon));
+    if (small_icon != nullptr)
+        SendMessageW(window_handle, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small_icon));
+#endif
 
     ImVector<const char*> extensions;
     uint32_t extensions_count = 0;

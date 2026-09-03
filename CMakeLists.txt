@@ -59,6 +59,9 @@ if(APPLE)
         MACOSX_BUNDLE_ICON_FILE fluxion725x725.icns
         RESOURCE "${MACOS_ICON}"
     )
+elseif(WIN32)
+    set(WINDOWS_ICON_RESOURCE ${CMAKE_SOURCE_DIR}/assets/icons/fluxion.rc)
+    add_executable(fluxion ${FLUXION_SOURCES} ${WINDOWS_ICON_RESOURCE})
 else()
     add_executable(fluxion ${FLUXION_SOURCES})
 endif()
