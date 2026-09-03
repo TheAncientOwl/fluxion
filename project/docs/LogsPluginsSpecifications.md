@@ -188,3 +188,10 @@ struct FilteredLog
 - Comparable speed in imports
 - `V8` faster filtering than `V7`
 - `V7` faster filtering disable than `V8`
+
+## 9. `Plugins/Logs/Text/RegexTags/V9`
+
+- Comparable performance to `Plugins/Logs/Text/RegexTags/Vb`
+- Regex engine: google RE2
+- Storage: SQLite3
+- Filtering done in parallel

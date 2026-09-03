@@ -5,10 +5,11 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
+#include <future>
 #include <memory>
 #include <re2/re2.h>
 #include <string>
@@ -100,8 +101,6 @@ void RegexTags::ApplyFilters(
     LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
     LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
-    m_filtered_logs.clear();
-
     if (m_sqlite_storages.empty())
     {
         LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
@@ -114,85 +113,121 @@ void RegexTags::ApplyFilters(
     {
         LOG_SCOPE("::ApplyFilters(): filtering");
 
+        using FilteredLogs = std::vector<Data::FilteredLog>;
+        using FilterResult = std::pair<bool, FilteredLogs>;
+        std::vector<std::future<FilterResult>> filter_tasks{};
+        filter_tasks.reserve(m_sqlite_storages.size());
+
         for (auto const& storage : m_sqlite_storages)
         {
-            if (!storage->ReadRows([&](std::size_t const log_id, std::vector<std::string> const& row) {
-                    ++m_logs_operation_progress;
-                    for (auto const& filter : filters)
-                    {
-                        bool matches{true};
-                        for (auto const& condition : filter.conditions)
-                        {
-                            if (condition.column_index >= row.size())
-                            {
-                                matches = false;
-                                break;
-                            }
-                            auto const& target{row[condition.column_index]};
-
-                            bool const equals =
-                                condition[EConditionFlag::IsRegex]
-                                    ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
-                                       re2::RE2::FullMatch(
-                                           target,
-                                           *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
-                                    : (target == std::get<std::string>(condition.condition));
-
-                            if (condition[EConditionFlag::IsEquals] != equals)
-                            {
-                                matches = false;
-                                break;
-                            }
-                        }
-
-                        if (matches)
-                        {
-                            Graphite::Common::Utility::UniqueID highlight_id{filter.id};
-                            auto highlight_priority{filter.priority};
-                            for (auto const& highlight_filter : highlight_only)
-                            {
-                                bool highlight_matches{true};
-                                for (auto const& condition : highlight_filter.conditions)
+            filter_tasks.emplace_back(
+                std::async(
+                    std::launch::async,
+                    [this, storage = storage.get(), &filters, &highlight_only]() -> FilterResult {
+                        LOG_SCOPE("::ApplyFilters::Thread::{}()", std::this_thread::get_id());
+                        FilteredLogs filtered_logs;
+                        bool const completed = storage->ReadRows(
+                            [this, &filters, &highlight_only, &filtered_logs](
+                                std::size_t const log_id, std::vector<std::string> const& row) {
+                                ++m_logs_operation_progress;
+                                for (auto const& filter : filters)
                                 {
-                                    if (condition.column_index >= row.size())
+                                    bool matches{true};
+                                    for (auto const& condition : filter.conditions)
                                     {
-                                        highlight_matches = false;
-                                        break;
+                                        if (condition.column_index >= row.size())
+                                        {
+                                            matches = false;
+                                            break;
+                                        }
+                                        auto const& target{row[condition.column_index]};
+
+                                        bool const equals =
+                                            condition[EConditionFlag::IsRegex]
+                                                ? (std::get<std::unique_ptr<re2::RE2>>(
+                                                       condition.condition) &&
+                                                   re2::RE2::FullMatch(
+                                                       target,
+                                                       *std::get<std::unique_ptr<re2::RE2>>(
+                                                           condition.condition)))
+                                                : (target ==
+                                                   std::get<std::string>(condition.condition));
+
+                                        if (condition[EConditionFlag::IsEquals] != equals)
+                                        {
+                                            matches = false;
+                                            break;
+                                        }
                                     }
-                                    auto const& target{row[condition.column_index]};
 
-                                    bool const equals =
-                                        condition[EConditionFlag::IsRegex]
-                                            ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
-                                               re2::RE2::FullMatch(
-                                                   target,
-                                                   *std::get<std::unique_ptr<re2::RE2>>(
-                                                       condition.condition)))
-                                            : (target == std::get<std::string>(condition.condition));
-
-                                    if (condition[EConditionFlag::IsEquals] != equals)
+                                    if (matches)
                                     {
-                                        highlight_matches = false;
+                                        Graphite::Common::Utility::UniqueID highlight_id{filter.id};
+                                        auto highlight_priority{filter.priority};
+                                        for (auto const& highlight_filter : highlight_only)
+                                        {
+                                            bool highlight_matches{true};
+                                            for (auto const& condition : highlight_filter.conditions)
+                                            {
+                                                if (condition.column_index >= row.size())
+                                                {
+                                                    highlight_matches = false;
+                                                    break;
+                                                }
+                                                auto const& target{row[condition.column_index]};
+
+                                                bool const equals =
+                                                    condition[EConditionFlag::IsRegex]
+                                                        ? (std::get<std::unique_ptr<re2::RE2>>(
+                                                               condition.condition) &&
+                                                           re2::RE2::FullMatch(
+                                                               target,
+                                                               *std::get<std::unique_ptr<re2::RE2>>(
+                                                                   condition.condition)))
+                                                        : (target == std::get<std::string>(
+                                                                         condition.condition));
+
+                                                if (condition[EConditionFlag::IsEquals] != equals)
+                                                {
+                                                    highlight_matches = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (highlight_matches &&
+                                                highlight_filter.priority > highlight_priority)
+                                            {
+                                                highlight_id = highlight_filter.id;
+                                                highlight_priority = highlight_filter.priority;
+                                            }
+                                        }
+
+                                        filtered_logs.emplace_back(log_id, filter.id, highlight_id);
                                         break;
                                     }
                                 }
-                                if (highlight_matches && highlight_filter.priority > highlight_priority)
-                                {
-                                    highlight_id = highlight_filter.id;
-                                    highlight_priority = highlight_filter.priority;
-                                }
-                            }
+                                return true;
+                            });
+                        return {completed, std::move(filtered_logs)};
+                    }));
+        }
 
-                            m_filtered_logs.emplace_back(log_id, filter.id, highlight_id);
-                            break;
-                        }
-                    }
-                    return true;
-                }))
+        FilteredLogs filtered_logs{};
+        filtered_logs.reserve(m_total_logs_imported);
+        for (auto& filter_task : filter_tasks)
+        {
+            auto [completed, storage_logs] = filter_task.get();
+            if (!completed)
             {
+                m_logs_operation_progress = 0;
+                m_logs_operation_target = 0;
                 return;
             }
+            filtered_logs.insert(
+                filtered_logs.end(),
+                std::make_move_iterator(storage_logs.begin()),
+                std::make_move_iterator(storage_logs.end()));
         }
+        m_filtered_logs = std::move(filtered_logs);
     }
 
     LOG_INFO("::ApplyFilters(): Total filtered logs: {}", m_filtered_logs.size());
