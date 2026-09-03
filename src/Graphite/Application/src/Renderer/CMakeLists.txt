@@ -52,6 +52,9 @@ if(NOT APPLE)
         graphite_logger_interface
         graphite_settings_interface
     )
+    if(WIN32)
+        target_link_libraries(graphite_renderer_impl PRIVATE dwmapi)
+    endif()
 else()
     target_link_libraries(graphite_renderer_impl PRIVATE 
         external_imgui

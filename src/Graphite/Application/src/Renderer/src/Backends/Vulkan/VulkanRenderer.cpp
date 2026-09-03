@@ -5,7 +5,7 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.5
+/// @version 1.6
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
@@ -26,6 +26,7 @@ USE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
 #define GLFW_INCLUDE_VULKAN
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
+#include <dwmapi.h>
 #include <windows.h>
 #endif
 #include <GLFW/glfw3.h>
@@ -485,6 +486,11 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
         SendMessageW(window_handle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(icon));
     if (small_icon != nullptr)
         SendMessageW(window_handle, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small_icon));
+
+    COLORREF const caption_color = RGB(45, 45, 48);
+    COLORREF const text_color = RGB(241, 241, 241);
+    DwmSetWindowAttribute(window_handle, DWMWA_CAPTION_COLOR, &caption_color, sizeof(caption_color));
+    DwmSetWindowAttribute(window_handle, DWMWA_TEXT_COLOR, &text_color, sizeof(text_color));
 #endif
 
     ImVector<const char*> extensions;
