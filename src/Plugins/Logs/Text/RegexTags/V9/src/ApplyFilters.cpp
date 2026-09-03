@@ -5,14 +5,16 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
+#include <cctype>
 #include <future>
 #include <memory>
 #include <re2/re2.h>
 #include <string>
+#include <string_view>
 #include <variant>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V9/RegexTags.hpp"
@@ -25,6 +27,33 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9::ApplyFilters);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
 namespace FilterImpl {
+
+inline std::string Lowercase(std::string_view value)
+{
+    std::string out{value};
+    for (auto& character : out)
+    {
+        character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+    }
+    return out;
+}
+
+inline bool equalsIgnoreCase(std::string_view const str, std::string_view const str_lowercase)
+{
+    if (str.size() != str_lowercase.size())
+    {
+        return false;
+    }
+
+    for (std::size_t index{0}; index < str.size(); ++index)
+    {
+        if (std::tolower(str[index]) != str_lowercase[index])
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
 struct ComputedCondition
     : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
@@ -77,7 +106,9 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
             }
             else
             {
-                out_condition.condition = std::move(condition.data);
+                out_condition.condition = condition[EConditionFlag::IsCaseSensitive]
+                                              ? std::move(condition.data)
+                                              : Lowercase(condition.data);
             }
         }
 
@@ -150,8 +181,11 @@ void RegexTags::ApplyFilters(
                                                        target,
                                                        *std::get<std::unique_ptr<re2::RE2>>(
                                                            condition.condition)))
-                                                : (target ==
-                                                   std::get<std::string>(condition.condition));
+                                            : condition[EConditionFlag::IsCaseSensitive]
+                                                ? (target == std::get<std::string>(condition.condition))
+                                                : FilterImpl::equalsIgnoreCase(
+                                                      target,
+                                                      std::get<std::string>(condition.condition));
 
                                         if (condition[EConditionFlag::IsEquals] != equals)
                                         {
@@ -184,8 +218,13 @@ void RegexTags::ApplyFilters(
                                                                target,
                                                                *std::get<std::unique_ptr<re2::RE2>>(
                                                                    condition.condition)))
-                                                        : (target == std::get<std::string>(
-                                                                         condition.condition));
+                                                    : condition[EConditionFlag::IsCaseSensitive]
+                                                        ? (target ==
+                                                           std::get<std::string>(condition.condition))
+                                                        : FilterImpl::equalsIgnoreCase(
+                                                              target,
+                                                              std::get<std::string>(
+                                                                  condition.condition));
 
                                                 if (condition[EConditionFlag::IsEquals] != equals)
                                                 {
