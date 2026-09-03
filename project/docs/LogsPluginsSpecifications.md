@@ -178,3 +178,13 @@ struct FilteredLog
            |  Papyrus 2 MappedFile | ---> Direct Pointer: Base + 0x41B0
            +-----------------------+      (Zero-copy string_view reads)
 ```
+
+## 8. `Plugins/Logs/Text/RegexTags/V8`
+
+- Comparable performance to `Plugins/Logs/Text/RegexTags/V7`
+- Regex engine: google RE2
+- Storage: SQLite3
+- Same architecture as `V7`, but this time using SQLite3 as storage
+- Comparable speed in imports
+- `V8` faster filtering than `V7`
+- `V7` faster filtering disable than `V8`

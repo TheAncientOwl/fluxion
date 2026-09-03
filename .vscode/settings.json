@@ -24,6 +24,39 @@
       "base": "scripts",
       "color": "#B84A28",
       "folderNames": ["Scrolls"]
+    },
+    {
+      "name": "graphite",
+      "base": "sandbox",
+      "color": "#4B4E53",
+      "folderNames": ["Graphite"]
+    },
+    {
+      "name": "fluxion",
+      "base": "pdm",
+      "color": "#6C2FA8",
+      "folderNames": ["Fluxion"]
+    },
+    {
+      "name": "dummy",
+      "base": "plugin",
+      "color": "#d946ef",
+      "folderNames": ["DummyPlugin"]
+    },
+    {
+      "name": "regex-tags",
+      "base": "mjml",
+      "color": "#a855f7",
+      "folderNames": ["RegexTags", "Text"]
+    },
+    {
+      "name": "regex-tags",
+      "base": "plugin",
+      "color": "#a855f7",
+      "folderNames": ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10"]
     }
-  ]
+  ],
+  "material-icon-theme.folders.associations": {
+    "SQLite": "database"
+  }
 }
