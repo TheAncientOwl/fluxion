@@ -46,6 +46,7 @@ target_link_libraries(fluxion_logs_plugin__text__regex_tags__v8_interface INTERF
 
 # --- 2. Implementation ---
 add_library(fluxion_logs_plugin__text__regex_tags__v8 SHARED
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/SQLiteStorage.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ApplyFilters.cpp

@@ -27,6 +27,8 @@ enable_testing()
 
 add_executable(unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage
     SQLiteStorageTest.cpp
+    ../src/Data.cpp
+    ../src/SQLite/SQLiteStorage.cpp
 )
 
 target_include_directories(unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage PRIVATE
