@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.1
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -96,6 +96,7 @@ protected:
         if (m_wrapper)
         {
             m_wrapper->Teardown();
+            m_wrapper.reset();
         }
         TeardownLogsData();
 

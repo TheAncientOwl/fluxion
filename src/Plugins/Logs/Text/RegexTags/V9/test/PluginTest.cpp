@@ -5,7 +5,7 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Logs::Text::RegexTags::V9 Google Test Suite
 ///
 
@@ -110,7 +110,7 @@ public:
     /**
      * @brief Cleanup
      */
-    void Teardown() final override {}
+    void Teardown() final override { m_plugin.OnDisable({}); }
 
     /**
      * @brief Used to generate input data file during @see LogsPluginTestSuite::Setup

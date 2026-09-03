@@ -63,7 +63,12 @@ if ($Run) {
 
     if ($ExePath -and (Test-Path $ExePath)) {
         Write-Host "==> Executing binary directly: $ExePath" -ForegroundColor Green
+        $BuildRoot = (Resolve-Path $BuildDir).Path
+        $env:Path = "$BuildRoot\bin;$BuildRoot\bin\plugins\logs;$env:Path"
         & "$ExePath" @ExtraArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "Test executable exited with code $LASTEXITCODE."
+        }
     } else {
         Write-Host "==> Binary not found directly, falling back to ctest..." -ForegroundColor Yellow
         ctest --test-dir "$BuildDir" -R "^${TargetName}$" --output-on-failure
