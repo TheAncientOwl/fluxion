@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.4
+/// @version 9.5
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -271,13 +271,19 @@ struct LogChunk
     std::size_t local_chunk_idx{0};
     bool is_last_in_task{false};
 
-    std::vector<std::vector<std::string_view>> rows;
+    std::vector<std::string_view> rows;
     std::size_t active_populated_rows{0};
     std::size_t chunk_size_bytes{0};
+    std::size_t field_count{0};
 
     LogChunk(std::size_t const capacity, std::size_t const field_count)
-        : rows(capacity, std::vector<std::string_view>(field_count))
+        : rows(capacity * field_count), field_count(field_count)
     {
+    }
+
+    [[nodiscard]] inline std::string_view* GetRow(std::size_t const row_index)
+    {
+        return rows.data() + (row_index * field_count);
     }
 };
 
@@ -439,7 +445,7 @@ public:
                         if (chunk->active_populated_rows > 0)
                         {
                             if (!m_sqlite_storages[shard_id]->WriteChunkSingleWriter(
-                                    chunk->rows, chunk->active_populated_rows))
+                                    chunk->rows, chunk->active_populated_rows, chunk->field_count))
                             {
                                 LOG_ERROR(
                                     "::GlobalLogsImporter: Failed to write chunk to shard {}",
@@ -525,18 +531,18 @@ public:
                                 re2_arg_ptrs.data(),
                                 static_cast<int>(num_captures)))
                         {
-                            auto& row = chunk->rows[chunk->active_populated_rows++];
+                            auto* row_base = chunk->GetRow(chunk->active_populated_rows++);
 
                             for (std::size_t i = 0; i < num_captures && i < m_row_fields_count; ++i)
                             {
                                 if (capture_results[i].data() != nullptr)
                                 {
-                                    row[i] = std::string_view(
+                                    row_base[i] = std::string_view(
                                         capture_results[i].data(), capture_results[i].size());
                                 }
                                 else
                                 {
-                                    row[i] = {};
+                                    row_base[i] = {};
                                 }
                             }
 

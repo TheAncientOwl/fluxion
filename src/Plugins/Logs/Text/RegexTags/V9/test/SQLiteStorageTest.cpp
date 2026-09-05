@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorageTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.5
+/// @version 9.6
 /// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
 ///
 
@@ -50,13 +50,12 @@ TEST_F(SQLiteStorageTest, WritesRowsWithConfiguredIdOffset)
 {
     OpenStorage(100);
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"first", "one"},
-        {"second", "two"},
-    };
+    // Flattened 1D vector (2 rows * 2 fields)
+    std::vector<std::string_view> rows{"first", "one", "second", "two"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
 
-    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 2, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     ASSERT_EQ(filtered_logs.size(), 2);
@@ -68,12 +67,10 @@ TEST_F(SQLiteStorageTest, WritesRowsWithSingleWriterPath)
 {
     OpenStorage(100);
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"first", "one"},
-        {"second", "two"},
-    };
+    std::vector<std::string_view> rows{"first", "one", "second", "two"};
+    std::size_t const field_count = 2;
 
-    ASSERT_TRUE(m_storage.WriteChunkSingleWriter(rows, rows.size()));
+    ASSERT_TRUE(m_storage.WriteChunkSingleWriter(rows, 2, field_count));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::size_t> ids;
@@ -92,13 +89,10 @@ TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
 {
     OpenStorage(100);
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"first", "one"},
-        {"second", "two"},
-        {"third", "three"},
-    };
+    std::vector<std::string_view> rows{"first", "one", "second", "two", "third", "three"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 3, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::string> second_row;
@@ -115,12 +109,10 @@ TEST_F(SQLiteStorageTest, ReadsRowsIntoExistingVectors)
 {
     OpenStorage(100);
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"first", "one"},
-        {"second", "two"},
-    };
+    std::vector<std::string_view> rows{"first", "one", "second", "two"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 2, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::string> output{"stale", "data"};
@@ -138,14 +130,10 @@ TEST_F(SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
 {
     OpenStorage();
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"zero", "0"},
-        {"one", "1"},
-        {"two", "2"},
-        {"three", "3"},
-    };
+    std::vector<std::string_view> rows{"zero", "0", "one", "1", "two", "2", "three", "3"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 4, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::string> one_row;
@@ -163,12 +151,10 @@ TEST_F(SQLiteStorageTest, ReadsAllRowsInIdOrder)
 {
     OpenStorage(50);
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"first", "one"},
-        {"second", "two"},
-    };
+    std::vector<std::string_view> rows{"first", "one", "second", "two"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 2, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::size_t> ids;
@@ -188,12 +174,10 @@ TEST_F(SQLiteStorageTest, WritesOnlyActiveRowsFromChunk)
 {
     OpenStorage();
 
-    std::vector<std::vector<std::string_view>> rows{
-        {"active", "row"},
-        {"ignored", "row"},
-    };
+    std::vector<std::string_view> rows{"active", "row", "ignored", "row"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk(rows, 1, filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 1, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::string> values;
@@ -212,9 +196,10 @@ TEST_F(SQLiteStorageTest, MissingIdsAreNotReturned)
 {
     OpenStorage();
 
-    std::vector<std::vector<std::string_view>> rows{{"only", "row"}};
+    std::vector<std::string_view> rows{"only", "row"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 1, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::string> output;
@@ -227,15 +212,16 @@ TEST_F(SQLiteStorageTest, ReopenReplacesPreviousDatabaseContents)
 {
     OpenStorage();
 
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk({{"old", "row"}}, 1, filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk({"old", "row"}, 1, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
     m_storage.Close();
 
     std::filesystem::remove(m_database_path);
     ASSERT_TRUE(m_storage.Open(m_database_path, {"field_a", "field_b"}, 200));
     ASSERT_TRUE(m_storage.BeginTransaction());
-    ASSERT_TRUE(m_storage.WriteChunk({{"new", "row"}}, 1, filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk({"new", "row"}, 1, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::size_t> ids;
@@ -254,8 +240,10 @@ TEST_F(SQLiteStorageTest, StreamsRowsAsStringViews)
 {
     OpenStorage(10);
 
+    std::vector<std::string_view> rows{"first", "one", "second", "two"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk({{"first", "one"}, {"second", "two"}}, 2, filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 2, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::size_t> ids;
@@ -275,8 +263,10 @@ TEST_F(SQLiteStorageTest, StreamingReadCanStopEarly)
 {
     OpenStorage();
 
+    std::vector<std::string_view> rows{"first", "one", "second", "two"};
+    std::size_t const field_count = 2;
     std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk({{"first", "one"}, {"second", "two"}}, 2, filtered_logs));
+    ASSERT_TRUE(m_storage.WriteChunk(rows, 2, field_count, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
     std::size_t rows_seen{0};

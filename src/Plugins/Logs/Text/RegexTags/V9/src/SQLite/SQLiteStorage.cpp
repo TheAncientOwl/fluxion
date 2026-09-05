@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.9
+/// @version 9.10
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -139,23 +139,26 @@ bool SQLiteStorage::Commit()
 }
 
 bool SQLiteStorage::WriteChunk(
-    std::vector<std::vector<std::string_view>> const& rows,
-    std::size_t const active_rows)
+    std::vector<std::string_view> const& rows,
+    std::size_t const active_rows,
+    std::size_t const field_count)
 {
-    return WriteChunk(rows, active_rows, nullptr);
+    return WriteChunk(rows, active_rows, field_count, nullptr);
 }
 
 bool SQLiteStorage::WriteChunk(
-    std::vector<std::vector<std::string_view>> const& rows,
+    std::vector<std::string_view> const& rows,
     std::size_t const active_rows,
+    std::size_t const field_count,
     std::vector<Data::FilteredLog>& out_filtered_logs)
 {
-    return WriteChunk(rows, active_rows, &out_filtered_logs);
+    return WriteChunk(rows, active_rows, field_count, &out_filtered_logs);
 }
 
 bool SQLiteStorage::WriteChunk(
-    std::vector<std::vector<std::string_view>> const& rows,
+    std::vector<std::string_view> const& rows,
     std::size_t const active_rows,
+    std::size_t const field_count,
     std::vector<Data::FilteredLog>* out_filtered_logs)
 {
     if (!IsOpen())
@@ -164,29 +167,32 @@ bool SQLiteStorage::WriteChunk(
     }
     std::lock_guard<std::mutex> lock{m_mutex};
 
-    return WriteChunkUnlocked(rows, active_rows, out_filtered_logs);
+    return WriteChunkUnlocked(rows, active_rows, field_count, out_filtered_logs);
 }
 
 bool SQLiteStorage::WriteChunkSingleWriter(
-    std::vector<std::vector<std::string_view>> const& rows,
-    std::size_t const active_rows)
+    std::vector<std::string_view> const& rows,
+    std::size_t const active_rows,
+    std::size_t const field_count)
 {
-    return WriteChunkUnlocked(rows, active_rows, nullptr);
+    return WriteChunkUnlocked(rows, active_rows, field_count, nullptr);
 }
 
 bool SQLiteStorage::WriteChunkUnlocked(
-    std::vector<std::vector<std::string_view>> const& rows,
+    std::vector<std::string_view> const& rows,
     std::size_t const active_rows,
+    std::size_t const field_count,
     std::vector<Data::FilteredLog>* out_filtered_logs)
 {
     for (std::size_t row_index = 0; row_index < active_rows; ++row_index)
     {
-        auto const& row = rows[row_index];
+        auto const* row_base = rows.data() + (row_index * field_count);
         auto const log_id = m_next_log_id;
+
         sqlite3_bind_int64(m_insert_statement.get(), 1, static_cast<sqlite3_int64>(log_id));
         for (std::size_t field_index = 0; field_index < m_fields.size(); ++field_index)
         {
-            auto const value = field_index < row.size() ? row[field_index] : std::string_view{};
+            auto const value = field_index < field_count ? row_base[field_index] : std::string_view{};
             sqlite3_bind_text(
                 m_insert_statement.get(),
                 static_cast<int>(field_index + 2),

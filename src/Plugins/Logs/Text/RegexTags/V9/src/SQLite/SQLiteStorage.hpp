@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.7
+/// @version 9.9
 /// @brief SQLite operations manager
 ///
 
@@ -135,39 +135,47 @@ public:
     bool Commit();
 
     ///
-    /// @brief Writes the active rows in a chunk.
+    /// @brief Writes the active rows in a flattened chunk.
     ///
-    /// @param rows Chunk rows to write.
+    /// @param rows Flattened 1D chunk rows to write.
     /// @param active_rows Number of valid rows in the chunk.
+    /// @param field_count Number of fields per row.
     /// @return True when every row is written successfully.
     ///
-    bool WriteChunk(std::vector<std::vector<std::string_view>> const& rows, std::size_t const active_rows);
+    bool WriteChunk(
+        std::vector<std::string_view> const& rows,
+        std::size_t const active_rows,
+        std::size_t const field_count);
 
     ///
-    /// @brief Writes a chunk and records the generated log IDs.
+    /// @brief Writes a flattened chunk and records the generated log IDs.
     ///
-    /// @param rows Chunk rows to write.
+    /// @param rows Flattened 1D chunk rows to write.
     /// @param active_rows Number of valid rows in the chunk.
+    /// @param field_count Number of fields per row.
     /// @param out_filtered_logs Receives the generated log IDs.
     /// @return True when every row is written successfully.
     ///
     bool WriteChunk(
-        std::vector<std::vector<std::string_view>> const& rows,
+        std::vector<std::string_view> const& rows,
         std::size_t const active_rows,
+        std::size_t const field_count,
         std::vector<Data::FilteredLog>& out_filtered_logs);
 
     ///
-    /// @brief Writes a chunk without locking for a dedicated single writer.
+    /// @brief Writes a flattened chunk without locking for a dedicated single writer.
     ///
     /// @warning The caller must guarantee exclusive access to this storage.
     ///
-    /// @param rows Chunk rows to write.
+    /// @param rows Flattened 1D chunk rows to write.
     /// @param active_rows Number of valid rows in the chunk.
+    /// @param field_count Number of fields per row.
     /// @return True when every row is written successfully.
     ///
     bool WriteChunkSingleWriter(
-        std::vector<std::vector<std::string_view>> const& rows,
-        std::size_t const active_rows);
+        std::vector<std::string_view> const& rows,
+        std::size_t const active_rows,
+        std::size_t const field_count);
 
     ///
     /// @brief Streams rows to a callback without materializing field strings.
@@ -212,21 +220,24 @@ private:
     bool Execute(char const* const sql) const;
 
     ///
-    /// @brief Writes a chunk and optionally records generated IDs.
+    /// @brief Writes a flattened chunk and optionally records generated IDs.
     ///
-    /// @param rows Chunk rows to write.
+    /// @param rows Flattened 1D chunk rows to write.
     /// @param active_rows Number of valid rows in the chunk.
+    /// @param field_count Number of fields per row.
     /// @param out_filtered_logs Optional output for generated log IDs.
     /// @return True when every row is written successfully.
     ///
     bool WriteChunk(
-        std::vector<std::vector<std::string_view>> const& rows,
+        std::vector<std::string_view> const& rows,
         std::size_t const active_rows,
+        std::size_t const field_count,
         std::vector<Data::FilteredLog>* out_filtered_logs);
 
     bool WriteChunkUnlocked(
-        std::vector<std::vector<std::string_view>> const& rows,
+        std::vector<std::string_view> const& rows,
         std::size_t const active_rows,
+        std::size_t const field_count,
         std::vector<Data::FilteredLog>* out_filtered_logs);
 
 private:
