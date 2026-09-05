@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -168,7 +168,7 @@ bool SQLiteStorage::WriteChunk(
                 static_cast<int>(field_index + 2),
                 value.data(),
                 static_cast<int>(value.size()),
-                SQLITE_TRANSIENT);
+                SQLITE_STATIC);
         }
 
         if (sqlite3_step(m_insert_statement.get()) != SQLITE_DONE)
