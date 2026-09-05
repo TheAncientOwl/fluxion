@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.7
+/// @version 9.8
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -206,42 +206,6 @@ bool SQLiteStorage::WriteChunkUnlocked(
         ++m_next_log_id;
     }
     return true;
-}
-
-bool SQLiteStorage::ReadRowsViews(RowViewCallback const callback) const
-{
-    if (!IsOpen() || !callback)
-    {
-        return false;
-    }
-
-    std::string sql{m_select_columns_sql};
-    sql += " FROM logs ORDER BY id ASC;";
-
-    sqlite3_stmt* statement{nullptr};
-    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
-    {
-        return false;
-    }
-
-    std::vector<std::string_view> row(m_fields.size());
-    bool completed{true};
-    while (sqlite3_step(statement) == SQLITE_ROW)
-    {
-        for (std::size_t index = 0; index < m_fields.size(); ++index)
-        {
-            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
-            row[index] = value ? std::string_view{reinterpret_cast<char const*>(value)} : "";
-        }
-
-        if (!callback(static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), row))
-        {
-            completed = false;
-            break;
-        }
-    }
-    sqlite3_finalize(statement);
-    return completed;
 }
 
 bool SQLiteStorage::ReadRowsByIDsInto(

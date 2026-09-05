@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.5
+/// @version 9.6
 /// @brief SQLite operations manager
 ///
 
@@ -13,7 +13,6 @@
 
 #include <cstddef>
 #include <filesystem>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <sqlite3.h>
@@ -29,8 +28,6 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 class SQLiteStorage
 {
 public:
-    using RowViewCallback = std::function<bool(std::size_t, std::vector<std::string_view> const&)>;
-
     struct Range
     {
         std::size_t begin{0};
@@ -179,7 +176,8 @@ public:
     /// @param callback Called for each row; views are valid only during the callback.
     /// @return True when all rows are visited, false when stopped or on error.
     ///
-    bool ReadRowsViews(RowViewCallback const callback) const;
+    template <typename Callback>
+    bool ReadRowsViews(Callback&& callback) const;
 
     ///
     /// @brief Reads rows whose IDs fall within any supplied half-open range into existing vectors.
@@ -243,3 +241,40 @@ private:
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V9
+
+template <typename Callback>
+bool Fluxion::Plugins::Logs::Text::RegexTags::V9::SQLiteStorage::ReadRowsViews(Callback&& callback) const
+{
+    if (!IsOpen())
+    {
+        return false;
+    }
+
+    std::string sql{m_select_columns_sql};
+    sql += " FROM logs ORDER BY id ASC;";
+
+    sqlite3_stmt* statement{nullptr};
+    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
+    {
+        return false;
+    }
+
+    std::vector<std::string_view> row(m_fields.size());
+    bool completed{true};
+    while (sqlite3_step(statement) == SQLITE_ROW)
+    {
+        for (std::size_t index = 0; index < m_fields.size(); ++index)
+        {
+            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
+            row[index] = value ? std::string_view{reinterpret_cast<char const*>(value)} : "";
+        }
+
+        if (!callback(static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), row))
+        {
+            completed = false;
+            break;
+        }
+    }
+    sqlite3_finalize(statement);
+    return completed;
+}
