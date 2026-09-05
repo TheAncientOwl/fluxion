@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.5
+/// @version 9.6
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -702,12 +702,12 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     {
         LOG_SCOPE("::ImportLogs()::BuildFilteredLogsIndex()");
-        std::size_t writtern_rows_total{0};
+        std::size_t written_rows_total{0};
         for (auto const& storage : m_sqlite_storages)
         {
-            writtern_rows_total += storage->GetWrittenRows();
+            written_rows_total += storage->GetWrittenRows();
         }
-        m_filtered_logs.reserve(writtern_rows_total);
+        m_filtered_logs.reserve(written_rows_total);
         for (auto const& storage : m_sqlite_storages)
         {
             auto const count = storage->GetWrittenRows();
