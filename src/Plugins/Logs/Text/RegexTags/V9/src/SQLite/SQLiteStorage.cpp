@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.2
+/// @version 9.3
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -174,11 +174,9 @@ bool SQLiteStorage::WriteChunk(
         if (sqlite3_step(m_insert_statement.get()) != SQLITE_DONE)
         {
             sqlite3_reset(m_insert_statement.get());
-            sqlite3_clear_bindings(m_insert_statement.get());
             return false;
         }
         sqlite3_reset(m_insert_statement.get());
-        sqlite3_clear_bindings(m_insert_statement.get());
         if (out_filtered_logs)
         {
             out_filtered_logs->emplace_back(log_id);

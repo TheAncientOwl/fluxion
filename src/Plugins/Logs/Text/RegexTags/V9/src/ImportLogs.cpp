@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -700,9 +700,12 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
             commit_threads.reserve(m_sqlite_storages.size());
             for (auto const& storage : m_sqlite_storages)
             {
-                commit_threads.emplace_back([&storage]() {
+                commit_threads.emplace_back([storage_ptr = storage.get()]() {
                     LOG_SCOPE("::ImportLogs()::CommitStorage::Thread()");
-                    std::ignore = storage->Commit();
+                    if (storage_ptr)
+                    {
+                        std::ignore = storage_ptr->Commit();
+                    }
                 });
             }
         }
