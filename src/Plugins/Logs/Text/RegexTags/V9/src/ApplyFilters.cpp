@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.3
+/// @version 9.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -160,7 +160,7 @@ void RegexTags::ApplyFilters(
                         bool const completed = storage->ReadRowsViews(
                             [this, &filters, &highlight_only, &filtered_logs](
                                 std::size_t const log_id, std::vector<std::string_view> const& row) {
-                                ++m_logs_operation_progress;
+                                m_logs_operation_progress.fetch_add(1, std::memory_order_relaxed);
                                 for (auto const& filter : filters)
                                 {
                                     bool matches{true};
@@ -252,7 +252,6 @@ void RegexTags::ApplyFilters(
         }
 
         FilteredLogs filtered_logs{};
-        filtered_logs.reserve(m_total_logs_imported);
         for (auto& filter_task : filter_tasks)
         {
             auto [completed, storage_logs] = filter_task.get();

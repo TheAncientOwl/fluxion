@@ -5,7 +5,7 @@
 ///
 /// @file DisableFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -39,7 +39,7 @@ void RegexTags::DisableFilters()
         auto const offset = storage->GetIDOffset();
         for (std::size_t index = 0; index < count; ++index)
         {
-            ++m_logs_operation_progress;
+            m_logs_operation_progress.fetch_add(1, std::memory_order_relaxed);
             m_filtered_logs.emplace_back(offset + index);
         }
     }
