@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.3
+/// @version 9.4
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -249,6 +249,46 @@ bool SQLiteStorage::ReadRows(RowCallback const callback) const
         {
             auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
             row.emplace_back(value ? reinterpret_cast<char const*>(value) : "");
+        }
+
+        if (!callback(static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), row))
+        {
+            completed = false;
+            break;
+        }
+    }
+    sqlite3_finalize(statement);
+    return completed;
+}
+
+bool SQLiteStorage::ReadRowsViews(RowViewCallback const callback) const
+{
+    if (!IsOpen() || !callback)
+    {
+        return false;
+    }
+
+    std::string sql{"SELECT id"};
+    for (auto const& field : m_fields)
+    {
+        sql += ", \"" + field + "\"";
+    }
+    sql += " FROM logs ORDER BY id ASC;";
+
+    sqlite3_stmt* statement{nullptr};
+    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
+    {
+        return false;
+    }
+
+    std::vector<std::string_view> row(m_fields.size());
+    bool completed{true};
+    while (sqlite3_step(statement) == SQLITE_ROW)
+    {
+        for (std::size_t index = 0; index < m_fields.size(); ++index)
+        {
+            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
+            row[index] = value ? std::string_view{reinterpret_cast<char const*>(value)} : "";
         }
 
         if (!callback(static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), row))

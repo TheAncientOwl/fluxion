@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.2
+/// @version 9.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -157,9 +157,9 @@ void RegexTags::ApplyFilters(
                     [this, storage = storage.get(), &filters, &highlight_only]() -> FilterResult {
                         LOG_SCOPE("::ApplyFilters::Thread::{}()", std::this_thread::get_id());
                         FilteredLogs filtered_logs;
-                        bool const completed = storage->ReadRows(
+                        bool const completed = storage->ReadRowsViews(
                             [this, &filters, &highlight_only, &filtered_logs](
-                                std::size_t const log_id, std::vector<std::string> const& row) {
+                                std::size_t const log_id, std::vector<std::string_view> const& row) {
                                 ++m_logs_operation_progress;
                                 for (auto const& filter : filters)
                                 {
@@ -178,7 +178,7 @@ void RegexTags::ApplyFilters(
                                                 ? (std::get<std::unique_ptr<re2::RE2>>(
                                                        condition.condition) &&
                                                    re2::RE2::FullMatch(
-                                                       target,
+                                                       re2::StringPiece(target.data(), target.size()),
                                                        *std::get<std::unique_ptr<re2::RE2>>(
                                                            condition.condition)))
                                             : condition[EConditionFlag::IsCaseSensitive]
@@ -215,7 +215,8 @@ void RegexTags::ApplyFilters(
                                                         ? (std::get<std::unique_ptr<re2::RE2>>(
                                                                condition.condition) &&
                                                            re2::RE2::FullMatch(
-                                                               target,
+                                                               re2::StringPiece(
+                                                                   target.data(), target.size()),
                                                                *std::get<std::unique_ptr<re2::RE2>>(
                                                                    condition.condition)))
                                                     : condition[EConditionFlag::IsCaseSensitive]

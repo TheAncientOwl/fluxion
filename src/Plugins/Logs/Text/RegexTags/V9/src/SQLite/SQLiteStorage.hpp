@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief SQLite operations manager
 ///
 
@@ -31,6 +31,7 @@ class SQLiteStorage
 {
 public:
     using RowCallback = std::function<bool(std::size_t, std::vector<std::string> const&)>;
+    using RowViewCallback = std::function<bool(std::size_t, std::vector<std::string_view> const&)>;
 
     struct Range
     {
@@ -176,6 +177,14 @@ public:
     /// @return True when all rows are visited, false when stopped or on error.
     ///
     bool ReadRows(RowCallback const callback) const;
+
+    ///
+    /// @brief Streams rows to a callback without materializing field strings.
+    ///
+    /// @param callback Called for each row; views are valid only during the callback.
+    /// @return True when all rows are visited, false when stopped or on error.
+    ///
+    bool ReadRowsViews(RowViewCallback const callback) const;
 
     ///
     /// @brief Reads rows whose IDs fall within any supplied half-open range.

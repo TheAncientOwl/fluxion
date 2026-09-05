@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorageTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
 ///
 
@@ -227,6 +227,27 @@ TEST_F(SQLiteStorageTest, StreamsRowsWithoutMaterializingTheTable)
         values.push_back(row.at(0));
         return true;
     }));
+
+    EXPECT_EQ(ids, (std::vector<std::size_t>{10, 11}));
+    EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
+}
+
+TEST_F(SQLiteStorageTest, StreamsRowsAsStringViews)
+{
+    OpenStorage(10);
+
+    std::vector<Data::FilteredLog> filtered_logs;
+    ASSERT_TRUE(m_storage.WriteChunk({{"first", "one"}, {"second", "two"}}, 2, filtered_logs));
+    ASSERT_TRUE(m_storage.Commit());
+
+    std::vector<std::size_t> ids;
+    std::vector<std::string> values;
+    ASSERT_TRUE(
+        m_storage.ReadRowsViews([&](std::size_t const id, std::vector<std::string_view> const& row) {
+            ids.push_back(id);
+            values.emplace_back(row.at(0));
+            return true;
+        }));
 
     EXPECT_EQ(ids, (std::vector<std::size_t>{10, 11}));
     EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
