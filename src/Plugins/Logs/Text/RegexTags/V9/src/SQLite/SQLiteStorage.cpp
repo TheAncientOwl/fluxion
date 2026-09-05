@@ -5,9 +5,11 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.8
+/// @version 9.9
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
+
+#include <algorithm>
 
 #include "SQLiteStorage.hpp"
 
@@ -210,7 +212,7 @@ bool SQLiteStorage::WriteChunkUnlocked(
 
 bool SQLiteStorage::ReadRowsByIDsInto(
     std::vector<Range> const& ranges,
-    std::unordered_map<std::size_t, std::vector<std::string>*> const& out_rows) const
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> const& out_rows) const
 {
     if (!IsOpen() || ranges.empty())
     {
@@ -248,28 +250,44 @@ bool SQLiteStorage::ReadRowsByIDsInto(
     while (sqlite3_step(statement) == SQLITE_ROW)
     {
         auto const id = static_cast<std::size_t>(sqlite3_column_int64(statement, 0));
-        auto const it = out_rows.find(id);
-        if (it == out_rows.end() || it->second == nullptr)
+        auto const match_begin = std::lower_bound(
+            out_rows.begin(), out_rows.end(), id, [](auto const& entry, std::size_t const target_id) {
+                return entry.first < target_id;
+            });
+        auto match_end = match_begin;
+        while (match_end != out_rows.end() && match_end->first == id)
+        {
+            ++match_end;
+        }
+        if (match_begin == match_end)
         {
             continue;
         }
 
-        auto& row = *it->second;
-        if (row.size() != m_fields.size())
+        for (auto it = match_begin; it != match_end; ++it)
         {
-            row.resize(m_fields.size());
-        }
-        for (std::size_t index = 0; index < m_fields.size(); ++index)
-        {
-            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
-            auto& field = row[index];
-            if (value)
+            if (it->second == nullptr)
             {
-                field.assign(reinterpret_cast<char const*>(value));
+                continue;
             }
-            else
+
+            auto& row = *it->second;
+            if (row.size() != m_fields.size())
             {
-                field.clear();
+                row.resize(m_fields.size());
+            }
+            for (std::size_t index = 0; index < m_fields.size(); ++index)
+            {
+                auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
+                auto& field = row[index];
+                if (value)
+                {
+                    field.assign(reinterpret_cast<char const*>(value));
+                }
+                else
+                {
+                    field.clear();
+                }
             }
         }
     }

@@ -5,14 +5,13 @@
 ///
 /// @file SQLiteStorageTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.4
+/// @version 9.5
 /// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
 ///
 
 #include <filesystem>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -104,7 +103,7 @@ TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
 
     std::vector<std::string> second_row;
     std::vector<std::string> third_row;
-    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> destinations{
         {101, &second_row}, {102, &third_row}};
     ASSERT_TRUE(m_storage.ReadRowsByIDsInto({{.begin = 101, .end = 103}}, destinations));
 
@@ -127,7 +126,7 @@ TEST_F(SQLiteStorageTest, ReadsRowsIntoExistingVectors)
     std::vector<std::string> output{"stale", "data"};
     output.reserve(8);
     auto const* const output_storage = output.data();
-    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{{100, &output}};
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> destinations{{100, &output}};
 
     ASSERT_TRUE(m_storage.ReadRowsByIDsInto({{.begin = 100, .end = 102}}, destinations));
 
@@ -151,7 +150,7 @@ TEST_F(SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
 
     std::vector<std::string> one_row;
     std::vector<std::string> three_row;
-    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> destinations{
         {1, &one_row}, {3, &three_row}};
     ASSERT_TRUE(m_storage.ReadRowsByIDsInto(
         {{.begin = 1, .end = 2}, {.begin = 3, .end = 3}, {.begin = 3, .end = 4}}, destinations));
@@ -219,7 +218,7 @@ TEST_F(SQLiteStorageTest, MissingIdsAreNotReturned)
     ASSERT_TRUE(m_storage.Commit());
 
     std::vector<std::string> output;
-    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{{10, &output}};
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> destinations{{10, &output}};
     ASSERT_TRUE(m_storage.ReadRowsByIDsInto({{.begin = 10, .end = 20}}, destinations));
     EXPECT_TRUE(output.empty());
 }

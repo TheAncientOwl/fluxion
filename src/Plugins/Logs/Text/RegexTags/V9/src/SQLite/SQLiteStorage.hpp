@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.6
+/// @version 9.7
 /// @brief SQLite operations manager
 ///
 
@@ -18,7 +18,6 @@
 #include <sqlite3.h>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V9/Data.hpp"
@@ -188,7 +187,7 @@ public:
     ///
     bool ReadRowsByIDsInto(
         std::vector<Range> const& ranges,
-        std::unordered_map<std::size_t, std::vector<std::string>*> const& out_rows) const;
+        std::vector<std::pair<std::size_t, std::vector<std::string>*>> const& out_rows) const;
 
 private:
     struct DatabaseDeleter

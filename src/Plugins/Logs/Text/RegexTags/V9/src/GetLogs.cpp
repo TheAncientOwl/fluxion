@@ -5,13 +5,12 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.2
+/// @version 9.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <algorithm>
 #include <limits>
-#include <unordered_map>
 #include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V9/RegexTags.hpp"
@@ -34,7 +33,7 @@ void RegexTags::GetLogs(
     }
 
     std::size_t const expected_fields_count = m_imported_logs_header.size();
-    std::unordered_map<std::size_t, std::vector<std::string>*> log_id_to_output;
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> log_id_to_output;
     std::vector<SQLiteStorage::Range> requested_id_ranges;
 
     for (auto const& range : ranges)
@@ -67,7 +66,7 @@ void RegexTags::GetLogs(
             }
 
             std::size_t const log_id = filtered_item.log_id;
-            log_id_to_output[log_id] = &target_row.data;
+            log_id_to_output.emplace_back(log_id, &target_row.data);
         }
     }
 
@@ -75,6 +74,10 @@ void RegexTags::GetLogs(
     {
         return;
     }
+
+    std::sort(log_id_to_output.begin(), log_id_to_output.end(), [](auto const& lhs, auto const& rhs) {
+        return lhs.first < rhs.first;
+    });
 
     for (auto const& storage : m_sqlite_storages)
     {
