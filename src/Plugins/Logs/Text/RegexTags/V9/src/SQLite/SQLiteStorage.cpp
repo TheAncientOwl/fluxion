@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.5
+/// @version 9.6
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -43,6 +43,12 @@ bool SQLiteStorage::Open(
     m_fields = fields;
     m_id_offset = id_offset;
     m_next_log_id = id_offset;
+
+    m_select_columns_sql = "SELECT id";
+    for (auto const& field : m_fields)
+    {
+        m_select_columns_sql += ", \"" + field + "\"";
+    }
 
     sqlite3* database{nullptr};
     if (sqlite3_open(path.string().c_str(), &database) != SQLITE_OK)
@@ -94,6 +100,7 @@ void SQLiteStorage::Close()
 {
     m_insert_statement.reset();
     m_database.reset();
+    m_select_columns_sql.clear();
     m_next_log_id = 0;
     m_id_offset = 0;
 }
@@ -207,11 +214,7 @@ bool SQLiteStorage::ReadAll(std::vector<std::pair<std::size_t, std::vector<std::
     {
         return false;
     }
-    std::string sql{"SELECT id"};
-    for (auto const& field : m_fields)
-    {
-        sql += ", \"" + field + "\"";
-    }
+    std::string sql{m_select_columns_sql};
     sql += " FROM logs ORDER BY id ASC;";
 
     sqlite3_stmt* statement{nullptr};
@@ -242,11 +245,7 @@ bool SQLiteStorage::ReadRows(RowCallback const callback) const
         return false;
     }
 
-    std::string sql{"SELECT id"};
-    for (auto const& field : m_fields)
-    {
-        sql += ", \"" + field + "\"";
-    }
+    std::string sql{m_select_columns_sql};
     sql += " FROM logs ORDER BY id ASC;";
 
     sqlite3_stmt* statement{nullptr};
@@ -283,11 +282,7 @@ bool SQLiteStorage::ReadRowsViews(RowViewCallback const callback) const
         return false;
     }
 
-    std::string sql{"SELECT id"};
-    for (auto const& field : m_fields)
-    {
-        sql += ", \"" + field + "\"";
-    }
+    std::string sql{m_select_columns_sql};
     sql += " FROM logs ORDER BY id ASC;";
 
     sqlite3_stmt* statement{nullptr};
@@ -324,11 +319,7 @@ bool SQLiteStorage::ReadRowsByIDs(
     {
         return false;
     }
-    std::string sql{"SELECT id"};
-    for (auto const& field : m_fields)
-    {
-        sql += ", \"" + field + "\"";
-    }
+    std::string sql{m_select_columns_sql};
     sql += " FROM logs WHERE ";
     bool has_condition{false};
     for (auto const& range : ranges)
@@ -380,11 +371,7 @@ bool SQLiteStorage::ReadRowsByIDsInto(
     {
         return false;
     }
-    std::string sql{"SELECT id"};
-    for (auto const& field : m_fields)
-    {
-        sql += ", \"" + field + "\"";
-    }
+    std::string sql{m_select_columns_sql};
     sql += " FROM logs WHERE ";
     bool has_condition{false};
     for (auto const& range : ranges)

@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.3
+/// @version 9.4
 /// @brief SQLite operations manager
 ///
 
@@ -265,6 +265,7 @@ private:
     DatabasePtr m_database{nullptr};
     StatementPtr m_insert_statement{nullptr};
     std::vector<std::string> m_fields{};
+    std::string m_select_columns_sql{};
     std::size_t m_id_offset{0};
     std::size_t m_next_log_id{0};
     mutable std::mutex m_mutex{};
