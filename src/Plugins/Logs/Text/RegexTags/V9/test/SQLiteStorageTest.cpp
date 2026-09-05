@@ -1,3 +1,14 @@
+/// --------------------------------------------------------------------------
+///                     Copyright (c) by Fluxion 2026
+/// --------------------------------------------------------------------------
+/// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
+///
+/// @file SQLiteStorageTest.cpp
+/// @author Alexandru Delegeanu
+/// @version 9.1
+/// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
+///
+
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -8,8 +19,7 @@
 
 #include "SQLite/SQLiteStorage.hpp"
 
-namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
-namespace {
+using namespace Fluxion::Plugins::Logs::Text::RegexTags::V9;
 
 class SQLiteStorageTest : public ::testing::Test
 {
@@ -75,6 +85,29 @@ TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
     ASSERT_EQ(read_rows.at(101), (std::vector<std::string>{"second", "two"}));
     ASSERT_EQ(read_rows.at(102), (std::vector<std::string>{"third", "three"}));
     EXPECT_EQ(read_rows.find(100), read_rows.end());
+}
+
+TEST_F(SQLiteStorageTest, ReadsRowsIntoExistingVectors)
+{
+    OpenStorage(100);
+
+    std::vector<std::vector<std::string_view>> rows{
+        {"first", "one"},
+        {"second", "two"},
+    };
+    std::vector<Data::FilteredLog> filtered_logs;
+    ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
+    ASSERT_TRUE(m_storage.Commit());
+
+    std::vector<std::string> output{"stale", "data"};
+    output.reserve(8);
+    auto const* const output_storage = output.data();
+    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{{100, &output}};
+
+    ASSERT_TRUE(m_storage.ReadRowsByIDsInto({{.begin = 100, .end = 102}}, destinations));
+
+    EXPECT_EQ(output, (std::vector<std::string>{"first", "one"}));
+    EXPECT_EQ(output.data(), output_storage);
 }
 
 TEST_F(SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
@@ -214,6 +247,3 @@ TEST_F(SQLiteStorageTest, StreamingReadCanStopEarly)
     }));
     EXPECT_EQ(rows_seen, 1);
 }
-
-} // namespace
-} // namespace Fluxion::Plugins::Logs::Text::RegexTags::V9

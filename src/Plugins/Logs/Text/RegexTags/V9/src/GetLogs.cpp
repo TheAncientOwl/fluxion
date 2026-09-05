@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -33,7 +33,7 @@ void RegexTags::GetLogs(
     }
 
     std::size_t const expected_fields_count = m_imported_logs_header.size();
-    std::unordered_map<std::size_t, std::vector<std::size_t>> log_id_to_view_indices;
+    std::unordered_map<std::size_t, std::vector<std::string>*> log_id_to_output;
     std::vector<SQLiteStorage::Range> requested_id_ranges;
 
     for (auto const& range : ranges)
@@ -58,11 +58,15 @@ void RegexTags::GetLogs(
                 .filter_id = filtered_item.filter_id,
                 .highlight_id = filtered_item.highlight_filter_id};
 
-            // Pre-allocate empty column slots matching the header size
-            target_row.data.assign(expected_fields_count, "");
+            // Reset column values while preserving vector and string capacity.
+            target_row.data.resize(expected_fields_count);
+            for (auto& value : target_row.data)
+            {
+                value.clear();
+            }
 
             std::size_t const log_id = filtered_item.log_id;
-            log_id_to_view_indices[log_id].push_back(view_idx);
+            log_id_to_output[log_id] = &target_row.data;
         }
     }
 
@@ -71,25 +75,9 @@ void RegexTags::GetLogs(
         return;
     }
 
-    std::unordered_map<std::size_t, std::vector<std::string>> line_buffer_pool;
     for (auto const& storage : m_sqlite_storages)
     {
-        storage->ReadRowsByIDs(requested_id_ranges, line_buffer_pool);
-    }
-
-    for (auto const& [log_id, view_indices] : log_id_to_view_indices)
-    {
-        if (auto const it = line_buffer_pool.find(log_id); it != line_buffer_pool.end())
-        {
-            auto const& line = it->second;
-            for (std::size_t const view_idx : view_indices)
-            {
-                if (!line.empty())
-                {
-                    out_logs[view_idx].data.assign(line.begin(), line.end());
-                }
-            }
-        }
+        storage->ReadRowsByIDsInto(requested_id_ranges, log_id_to_output);
     }
 }
 

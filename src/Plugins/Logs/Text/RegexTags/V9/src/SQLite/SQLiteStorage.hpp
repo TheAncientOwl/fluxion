@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief SQLite operations manager
 ///
 
@@ -187,6 +187,17 @@ public:
     bool ReadRowsByIDs(
         std::vector<Range> const& ranges,
         std::unordered_map<std::size_t, std::vector<std::string>>& out_rows) const;
+
+    ///
+    /// @brief Reads rows whose IDs fall within any supplied half-open range into existing vectors.
+    ///
+    /// @param ranges ID ranges in the form [begin, end).
+    /// @param out_rows Maps log IDs to destination row vectors.
+    /// @return True when the query completes successfully.
+    ///
+    bool ReadRowsByIDsInto(
+        std::vector<Range> const& ranges,
+        std::unordered_map<std::size_t, std::vector<std::string>*> const& out_rows) const;
 
 private:
     struct DatabaseDeleter

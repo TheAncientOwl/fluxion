@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -313,6 +313,79 @@ bool SQLiteStorage::ReadRowsByIDs(
         {
             auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
             row.emplace_back(value ? reinterpret_cast<char const*>(value) : "");
+        }
+    }
+    sqlite3_finalize(statement);
+    return true;
+}
+
+bool SQLiteStorage::ReadRowsByIDsInto(
+    std::vector<Range> const& ranges,
+    std::unordered_map<std::size_t, std::vector<std::string>*> const& out_rows) const
+{
+    if (!IsOpen() || ranges.empty())
+    {
+        return false;
+    }
+    std::string sql{"SELECT id"};
+    for (auto const& field : m_fields)
+    {
+        sql += ", \"" + field + "\"";
+    }
+    sql += " FROM logs WHERE ";
+    bool has_condition{false};
+    for (auto const& range : ranges)
+    {
+        if (range.begin >= range.end)
+        {
+            continue;
+        }
+        if (has_condition)
+        {
+            sql += " OR ";
+        }
+        sql +=
+            "(id >= " + std::to_string(range.begin) + " AND id < " + std::to_string(range.end) + ")";
+        has_condition = true;
+    }
+    sql += ";";
+
+    if (!has_condition)
+    {
+        return false;
+    }
+
+    sqlite3_stmt* statement{nullptr};
+    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
+    {
+        return false;
+    }
+    while (sqlite3_step(statement) == SQLITE_ROW)
+    {
+        auto const id = static_cast<std::size_t>(sqlite3_column_int64(statement, 0));
+        auto const it = out_rows.find(id);
+        if (it == out_rows.end() || it->second == nullptr)
+        {
+            continue;
+        }
+
+        auto& row = *it->second;
+        if (row.size() != m_fields.size())
+        {
+            row.resize(m_fields.size());
+        }
+        for (std::size_t index = 0; index < m_fields.size(); ++index)
+        {
+            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
+            auto& field = row[index];
+            if (value)
+            {
+                field.assign(reinterpret_cast<char const*>(value));
+            }
+            else
+            {
+                field.clear();
+            }
         }
     }
     sqlite3_finalize(statement);
