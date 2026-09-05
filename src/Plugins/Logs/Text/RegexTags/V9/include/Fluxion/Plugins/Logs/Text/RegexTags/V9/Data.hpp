@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Data structs
 ///
 
@@ -32,9 +32,9 @@ struct Settings
 {
     struct MultithreadingParams
     {
-        std::int32_t workers_count{10}; // how many threads
+        std::int32_t workers_count{30}; // how many parsing threads
         std::int32_t batch_capacity{5000}; // logs per batch
-        std::int32_t available_batches_per_worker{4}; // total available batches
+        std::int32_t available_batches_per_worker{4}; // total available batches / worker
     };
 
     struct ImportMultithreadingParams : public MultithreadingParams

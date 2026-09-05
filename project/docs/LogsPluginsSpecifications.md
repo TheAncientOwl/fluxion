@@ -191,7 +191,62 @@ struct FilteredLog
 
 ## 9. `Plugins/Logs/Text/RegexTags/V9`
 
-- Comparable performance to `Plugins/Logs/Text/RegexTags/Vb`
+- Improvement over `Plugins/Logs/Text/RegexTags/V8`
 - Regex engine: google RE2
 - Storage: SQLite3
+- Better import architecture
 - Filtering done in parallel
+
+```
+==============================================================================
+                            Import Architecture
+==============================================================================
+                      PHASE 1: Setup & Dispatching
+==============================================================================
+
+ [ Log File on Disk ]
+         |
+         | (mmap / MapViewOfFile)
+         v
+ [ Mapped Memory ]
+         |
+         | (Split into 4MB Tasks)
+         v
+ [ Task Dispatcher ] -------------+
+ (Atomic Indexer)                 |
+                                  |
+==============================================================================
+                PHASE 2 & 3: The Nexus & Parser Pool (Producers)
+==============================================================================
+                                  |
+                                  v (Assigns byte ranges)
+ +-----------------+      +-----------------------+      +-------------------+
+ |                 |      |    PARSER THREADS     |      |                   |
+ | FREE CHUNK POOL | <--- |   (30 Worker Pool)    | ---> |    READY QUEUES   |
+ |   (Pre-sized)   |      |                       |      | (Sorted by Shard) |
+ |                 |      +-----------------------+      |                   |
+ +-----------------+      ^           |           ^      +-------------------+
+        ^                 |           |           |                |
+        | (Acquire Empty) '           |           ' (Submit Filled)|
+        |                             |                            |
+        |                             | (Run RE2)                  |
+        |                             v                            |
+        |                  [ std::string_view rows ]               |
+        |                                                          |
+==============================================================================
+                      PHASE 4: SQLite Writers (Consumers)
+==============================================================================
+        |                                                          |
+        | (Recycle empty chunks)                                   |
+        |                                                          v
+ +-----------------+                                     (Pop sequential chunks)
+ |                 | <---------------------------------------------+
+ | WRITER THREADS  |
+ |  (1 per Shard)  |
+ |                 |
+ +-----------------+
+         |
+         | (WriteChunkSingleWriter)
+         v
+ [ db0.sqlite, db1.sqlite, ..., dbN.sqlite ]
+```
