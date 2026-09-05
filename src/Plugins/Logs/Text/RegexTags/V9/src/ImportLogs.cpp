@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -440,7 +440,8 @@ public:
                         LOG_ERROR("::LogsImporter::Run(): Failed to write chunk");
                     }
 
-                    m_logs_operation_progress += chunk->chunk_size_bytes;
+                    m_logs_operation_progress.fetch_add(
+                        chunk->chunk_size_bytes, std::memory_order_relaxed);
 
                     queue.RecycleChunk(std::move(chunk));
                     ++expected_chunk_idx;
