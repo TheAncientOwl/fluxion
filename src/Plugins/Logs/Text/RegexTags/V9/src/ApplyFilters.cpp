@@ -5,10 +5,11 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.4
+/// @version 9.5
 /// @brief Implementation @see RegexTags.hpp
 ///
 
+#include <algorithm>
 #include <cctype>
 #include <future>
 #include <memory>
@@ -69,6 +70,16 @@ struct ActiveFilter
     std::vector<ComputedCondition> conditions{};
 };
 
+inline std::size_t EvaluationCost(ComputedCondition const& condition)
+{
+    using namespace Fluxion::API::LogsPlugin::Data;
+    if (condition[EConditionFlag::IsRegex])
+    {
+        return 2;
+    }
+    return condition[EConditionFlag::IsCaseSensitive] ? 0 : 1;
+}
+
 ///
 /// @note Conversion has to be done because of plugin specific regex implementation
 /// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
@@ -111,6 +122,13 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
                                               : Lowercase(condition.data);
             }
         }
+
+        std::stable_sort(
+            out_conditions.begin(),
+            out_conditions.end(),
+            [](ComputedCondition const& lhs, ComputedCondition const& rhs) {
+                return EvaluationCost(lhs) < EvaluationCost(rhs);
+            });
 
         out.emplace_back(filter.id, filter.priority, std::move(out_conditions));
     }
