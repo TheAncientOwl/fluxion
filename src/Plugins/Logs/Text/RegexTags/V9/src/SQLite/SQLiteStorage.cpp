@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.4
+/// @version 9.5
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -155,6 +155,21 @@ bool SQLiteStorage::WriteChunk(
     }
     std::lock_guard<std::mutex> lock{m_mutex};
 
+    return WriteChunkUnlocked(rows, active_rows, out_filtered_logs);
+}
+
+bool SQLiteStorage::WriteChunkSingleWriter(
+    std::vector<std::vector<std::string_view>> const& rows,
+    std::size_t const active_rows)
+{
+    return WriteChunkUnlocked(rows, active_rows, nullptr);
+}
+
+bool SQLiteStorage::WriteChunkUnlocked(
+    std::vector<std::vector<std::string_view>> const& rows,
+    std::size_t const active_rows,
+    std::vector<Data::FilteredLog>* out_filtered_logs)
+{
     for (std::size_t row_index = 0; row_index < active_rows; ++row_index)
     {
         auto const& row = rows[row_index];

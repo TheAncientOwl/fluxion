@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorageTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.2
+/// @version 9.3
 /// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
 ///
 
@@ -63,6 +63,27 @@ TEST_F(SQLiteStorageTest, WritesRowsWithConfiguredIdOffset)
     ASSERT_EQ(filtered_logs.size(), 2);
     EXPECT_EQ(filtered_logs[0].log_id, 100);
     EXPECT_EQ(filtered_logs[1].log_id, 101);
+}
+
+TEST_F(SQLiteStorageTest, WritesRowsWithSingleWriterPath)
+{
+    OpenStorage(100);
+
+    std::vector<std::vector<std::string_view>> rows{
+        {"first", "one"},
+        {"second", "two"},
+    };
+
+    ASSERT_TRUE(m_storage.WriteChunkSingleWriter(rows, rows.size()));
+    ASSERT_TRUE(m_storage.Commit());
+
+    std::vector<std::pair<std::size_t, std::vector<std::string>>> read_rows;
+    ASSERT_TRUE(m_storage.ReadAll(read_rows));
+    ASSERT_EQ(read_rows.size(), 2);
+    EXPECT_EQ(read_rows[0].first, 100);
+    EXPECT_EQ(read_rows[0].second, (std::vector<std::string>{"first", "one"}));
+    EXPECT_EQ(read_rows[1].first, 101);
+    EXPECT_EQ(read_rows[1].second, (std::vector<std::string>{"second", "two"}));
 }
 
 TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)

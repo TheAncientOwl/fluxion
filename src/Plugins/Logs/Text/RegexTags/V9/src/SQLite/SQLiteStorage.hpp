@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.2
+/// @version 9.3
 /// @brief SQLite operations manager
 ///
 
@@ -163,6 +163,19 @@ public:
         std::vector<Data::FilteredLog>& out_filtered_logs);
 
     ///
+    /// @brief Writes a chunk without locking for a dedicated single writer.
+    ///
+    /// @warning The caller must guarantee exclusive access to this storage.
+    ///
+    /// @param rows Chunk rows to write.
+    /// @param active_rows Number of valid rows in the chunk.
+    /// @return True when every row is written successfully.
+    ///
+    bool WriteChunkSingleWriter(
+        std::vector<std::vector<std::string_view>> const& rows,
+        std::size_t const active_rows);
+
+    ///
     /// @brief Reads all rows into the supplied output vector.
     ///
     /// @param out_rows Receives rows ordered by log ID.
@@ -239,6 +252,11 @@ private:
     /// @return True when every row is written successfully.
     ///
     bool WriteChunk(
+        std::vector<std::vector<std::string_view>> const& rows,
+        std::size_t const active_rows,
+        std::vector<Data::FilteredLog>* out_filtered_logs);
+
+    bool WriteChunkUnlocked(
         std::vector<std::vector<std::string_view>> const& rows,
         std::size_t const active_rows,
         std::vector<Data::FilteredLog>* out_filtered_logs);

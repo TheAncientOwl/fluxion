@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.2
+/// @version 9.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -435,7 +435,8 @@ public:
                         break;
                     }
 
-                    if (!m_sqlite_storage.WriteChunk(chunk->rows, chunk->active_populated_rows))
+                    if (!m_sqlite_storage.WriteChunkSingleWriter(
+                            chunk->rows, chunk->active_populated_rows))
                     {
                         LOG_ERROR("::LogsImporter::Run(): Failed to write chunk");
                     }
