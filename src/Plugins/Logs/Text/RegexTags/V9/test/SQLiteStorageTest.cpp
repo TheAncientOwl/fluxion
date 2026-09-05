@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorageTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.3
+/// @version 9.4
 /// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
 ///
 
@@ -77,13 +77,16 @@ TEST_F(SQLiteStorageTest, WritesRowsWithSingleWriterPath)
     ASSERT_TRUE(m_storage.WriteChunkSingleWriter(rows, rows.size()));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::vector<std::pair<std::size_t, std::vector<std::string>>> read_rows;
-    ASSERT_TRUE(m_storage.ReadAll(read_rows));
-    ASSERT_EQ(read_rows.size(), 2);
-    EXPECT_EQ(read_rows[0].first, 100);
-    EXPECT_EQ(read_rows[0].second, (std::vector<std::string>{"first", "one"}));
-    EXPECT_EQ(read_rows[1].first, 101);
-    EXPECT_EQ(read_rows[1].second, (std::vector<std::string>{"second", "two"}));
+    std::vector<std::size_t> ids;
+    std::vector<std::string> values;
+    ASSERT_TRUE(
+        m_storage.ReadRowsViews([&](std::size_t const id, std::vector<std::string_view> const& row) {
+            ids.push_back(id);
+            values.emplace_back(row.at(0));
+            return true;
+        }));
+    EXPECT_EQ(ids, (std::vector<std::size_t>{100, 101}));
+    EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
 }
 
 TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
@@ -99,13 +102,14 @@ TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
     ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::unordered_map<std::size_t, std::vector<std::string>> read_rows;
-    ASSERT_TRUE(m_storage.ReadRowsByIDs({{.begin = 101, .end = 103}}, read_rows));
+    std::vector<std::string> second_row;
+    std::vector<std::string> third_row;
+    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{
+        {101, &second_row}, {102, &third_row}};
+    ASSERT_TRUE(m_storage.ReadRowsByIDsInto({{.begin = 101, .end = 103}}, destinations));
 
-    ASSERT_EQ(read_rows.size(), 2);
-    ASSERT_EQ(read_rows.at(101), (std::vector<std::string>{"second", "two"}));
-    ASSERT_EQ(read_rows.at(102), (std::vector<std::string>{"third", "three"}));
-    EXPECT_EQ(read_rows.find(100), read_rows.end());
+    EXPECT_EQ(second_row, (std::vector<std::string>{"second", "two"}));
+    EXPECT_EQ(third_row, (std::vector<std::string>{"third", "three"}));
 }
 
 TEST_F(SQLiteStorageTest, ReadsRowsIntoExistingVectors)
@@ -145,13 +149,15 @@ TEST_F(SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
     ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::unordered_map<std::size_t, std::vector<std::string>> read_rows;
-    ASSERT_TRUE(m_storage.ReadRowsByIDs(
-        {{.begin = 1, .end = 2}, {.begin = 3, .end = 3}, {.begin = 3, .end = 4}}, read_rows));
+    std::vector<std::string> one_row;
+    std::vector<std::string> three_row;
+    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{
+        {1, &one_row}, {3, &three_row}};
+    ASSERT_TRUE(m_storage.ReadRowsByIDsInto(
+        {{.begin = 1, .end = 2}, {.begin = 3, .end = 3}, {.begin = 3, .end = 4}}, destinations));
 
-    ASSERT_EQ(read_rows.size(), 2);
-    EXPECT_EQ(read_rows.at(1), (std::vector<std::string>{"one", "1"}));
-    EXPECT_EQ(read_rows.at(3), (std::vector<std::string>{"three", "3"}));
+    EXPECT_EQ(one_row, (std::vector<std::string>{"one", "1"}));
+    EXPECT_EQ(three_row, (std::vector<std::string>{"three", "3"}));
 }
 
 TEST_F(SQLiteStorageTest, ReadsAllRowsInIdOrder)
@@ -166,14 +172,17 @@ TEST_F(SQLiteStorageTest, ReadsAllRowsInIdOrder)
     ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::vector<std::pair<std::size_t, std::vector<std::string>>> read_rows;
-    ASSERT_TRUE(m_storage.ReadAll(read_rows));
+    std::vector<std::size_t> ids;
+    std::vector<std::string> values;
+    ASSERT_TRUE(
+        m_storage.ReadRowsViews([&](std::size_t const id, std::vector<std::string_view> const& row) {
+            ids.push_back(id);
+            values.emplace_back(row.at(0));
+            return true;
+        }));
 
-    ASSERT_EQ(read_rows.size(), 2);
-    EXPECT_EQ(read_rows[0].first, 50);
-    EXPECT_EQ(read_rows[1].first, 51);
-    EXPECT_EQ(read_rows[0].second, (std::vector<std::string>{"first", "one"}));
-    EXPECT_EQ(read_rows[1].second, (std::vector<std::string>{"second", "two"}));
+    EXPECT_EQ(ids, (std::vector<std::size_t>{50, 51}));
+    EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
 }
 
 TEST_F(SQLiteStorageTest, WritesOnlyActiveRowsFromChunk)
@@ -188,11 +197,14 @@ TEST_F(SQLiteStorageTest, WritesOnlyActiveRowsFromChunk)
     ASSERT_TRUE(m_storage.WriteChunk(rows, 1, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::vector<std::pair<std::size_t, std::vector<std::string>>> read_rows;
-    ASSERT_TRUE(m_storage.ReadAll(read_rows));
+    std::vector<std::string> values;
+    ASSERT_TRUE(m_storage.ReadRowsViews([&](std::size_t, std::vector<std::string_view> const& row) {
+        values.emplace_back(row.at(0));
+        return true;
+    }));
 
-    ASSERT_EQ(read_rows.size(), 1);
-    EXPECT_EQ(read_rows[0].second, (std::vector<std::string>{"active", "row"}));
+    ASSERT_EQ(values.size(), 1);
+    EXPECT_EQ(values[0], "active");
     ASSERT_EQ(filtered_logs.size(), 1);
     EXPECT_EQ(filtered_logs[0].log_id, 0);
 }
@@ -206,9 +218,10 @@ TEST_F(SQLiteStorageTest, MissingIdsAreNotReturned)
     ASSERT_TRUE(m_storage.WriteChunk(rows, rows.size(), filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::unordered_map<std::size_t, std::vector<std::string>> read_rows;
-    ASSERT_TRUE(m_storage.ReadRowsByIDs({{.begin = 10, .end = 20}}, read_rows));
-    EXPECT_TRUE(read_rows.empty());
+    std::vector<std::string> output;
+    std::unordered_map<std::size_t, std::vector<std::string>*> destinations{{10, &output}};
+    ASSERT_TRUE(m_storage.ReadRowsByIDsInto({{.begin = 10, .end = 20}}, destinations));
+    EXPECT_TRUE(output.empty());
 }
 
 TEST_F(SQLiteStorageTest, ReopenReplacesPreviousDatabaseContents)
@@ -226,31 +239,16 @@ TEST_F(SQLiteStorageTest, ReopenReplacesPreviousDatabaseContents)
     ASSERT_TRUE(m_storage.WriteChunk({{"new", "row"}}, 1, filtered_logs));
     ASSERT_TRUE(m_storage.Commit());
 
-    std::vector<std::pair<std::size_t, std::vector<std::string>>> read_rows;
-    ASSERT_TRUE(m_storage.ReadAll(read_rows));
-    ASSERT_EQ(read_rows.size(), 1);
-    EXPECT_EQ(read_rows[0].first, 200);
-    EXPECT_EQ(read_rows[0].second, (std::vector<std::string>{"new", "row"}));
-}
-
-TEST_F(SQLiteStorageTest, StreamsRowsWithoutMaterializingTheTable)
-{
-    OpenStorage(10);
-
-    std::vector<Data::FilteredLog> filtered_logs;
-    ASSERT_TRUE(m_storage.WriteChunk({{"first", "one"}, {"second", "two"}}, 2, filtered_logs));
-    ASSERT_TRUE(m_storage.Commit());
-
     std::vector<std::size_t> ids;
     std::vector<std::string> values;
-    ASSERT_TRUE(m_storage.ReadRows([&](std::size_t const id, std::vector<std::string> const& row) {
-        ids.push_back(id);
-        values.push_back(row.at(0));
-        return true;
-    }));
-
-    EXPECT_EQ(ids, (std::vector<std::size_t>{10, 11}));
-    EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
+    ASSERT_TRUE(
+        m_storage.ReadRowsViews([&](std::size_t const id, std::vector<std::string_view> const& row) {
+            ids.push_back(id);
+            values.emplace_back(row.at(0));
+            return true;
+        }));
+    ASSERT_EQ(ids, (std::vector<std::size_t>{200}));
+    EXPECT_EQ(values, (std::vector<std::string>{"new"}));
 }
 
 TEST_F(SQLiteStorageTest, StreamsRowsAsStringViews)
@@ -283,7 +281,7 @@ TEST_F(SQLiteStorageTest, StreamingReadCanStopEarly)
     ASSERT_TRUE(m_storage.Commit());
 
     std::size_t rows_seen{0};
-    EXPECT_FALSE(m_storage.ReadRows([&](std::size_t, std::vector<std::string> const&) {
+    EXPECT_FALSE(m_storage.ReadRowsViews([&](std::size_t, std::vector<std::string_view> const&) {
         ++rows_seen;
         return false;
     }));

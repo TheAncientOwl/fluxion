@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.6
+/// @version 9.7
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -208,73 +208,6 @@ bool SQLiteStorage::WriteChunkUnlocked(
     return true;
 }
 
-bool SQLiteStorage::ReadAll(std::vector<std::pair<std::size_t, std::vector<std::string>>>& out_rows) const
-{
-    if (!IsOpen())
-    {
-        return false;
-    }
-    std::string sql{m_select_columns_sql};
-    sql += " FROM logs ORDER BY id ASC;";
-
-    sqlite3_stmt* statement{nullptr};
-    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
-    {
-        return false;
-    }
-    while (sqlite3_step(statement) == SQLITE_ROW)
-    {
-        std::vector<std::string> row;
-        row.reserve(m_fields.size());
-        for (std::size_t index = 0; index < m_fields.size(); ++index)
-        {
-            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
-            row.emplace_back(value ? reinterpret_cast<char const*>(value) : "");
-        }
-        out_rows.emplace_back(
-            static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), std::move(row));
-    }
-    sqlite3_finalize(statement);
-    return true;
-}
-
-bool SQLiteStorage::ReadRows(RowCallback const callback) const
-{
-    if (!IsOpen() || !callback)
-    {
-        return false;
-    }
-
-    std::string sql{m_select_columns_sql};
-    sql += " FROM logs ORDER BY id ASC;";
-
-    sqlite3_stmt* statement{nullptr};
-    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
-    {
-        return false;
-    }
-
-    bool completed{true};
-    while (sqlite3_step(statement) == SQLITE_ROW)
-    {
-        std::vector<std::string> row;
-        row.reserve(m_fields.size());
-        for (std::size_t index = 0; index < m_fields.size(); ++index)
-        {
-            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
-            row.emplace_back(value ? reinterpret_cast<char const*>(value) : "");
-        }
-
-        if (!callback(static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), row))
-        {
-            completed = false;
-            break;
-        }
-    }
-    sqlite3_finalize(statement);
-    return completed;
-}
-
 bool SQLiteStorage::ReadRowsViews(RowViewCallback const callback) const
 {
     if (!IsOpen() || !callback)
@@ -309,58 +242,6 @@ bool SQLiteStorage::ReadRowsViews(RowViewCallback const callback) const
     }
     sqlite3_finalize(statement);
     return completed;
-}
-
-bool SQLiteStorage::ReadRowsByIDs(
-    std::vector<Range> const& ranges,
-    std::unordered_map<std::size_t, std::vector<std::string>>& out_rows) const
-{
-    if (!IsOpen() || ranges.empty())
-    {
-        return false;
-    }
-    std::string sql{m_select_columns_sql};
-    sql += " FROM logs WHERE ";
-    bool has_condition{false};
-    for (auto const& range : ranges)
-    {
-        if (range.begin >= range.end)
-        {
-            continue;
-        }
-        if (has_condition)
-        {
-            sql += " OR ";
-        }
-        sql +=
-            "(id >= " + std::to_string(range.begin) + " AND id < " + std::to_string(range.end) + ")";
-        has_condition = true;
-    }
-    sql += ";";
-
-    if (!has_condition)
-    {
-        return false;
-    }
-
-    sqlite3_stmt* statement{nullptr};
-    if (sqlite3_prepare_v2(m_database.get(), sql.c_str(), -1, &statement, nullptr) != SQLITE_OK)
-    {
-        return false;
-    }
-    while (sqlite3_step(statement) == SQLITE_ROW)
-    {
-        auto const id = static_cast<std::size_t>(sqlite3_column_int64(statement, 0));
-        auto& row = out_rows[id];
-        row.reserve(m_fields.size());
-        for (std::size_t index = 0; index < m_fields.size(); ++index)
-        {
-            auto const* value = sqlite3_column_text(statement, static_cast<int>(index + 1));
-            row.emplace_back(value ? reinterpret_cast<char const*>(value) : "");
-        }
-    }
-    sqlite3_finalize(statement);
-    return true;
 }
 
 bool SQLiteStorage::ReadRowsByIDsInto(

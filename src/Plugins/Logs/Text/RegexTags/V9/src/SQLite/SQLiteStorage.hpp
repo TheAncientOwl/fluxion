@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.hpp
 /// @author Alexandru Delegeanu
-/// @version 9.4
+/// @version 9.5
 /// @brief SQLite operations manager
 ///
 
@@ -20,7 +20,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V9/Data.hpp"
@@ -30,7 +29,6 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 class SQLiteStorage
 {
 public:
-    using RowCallback = std::function<bool(std::size_t, std::vector<std::string> const&)>;
     using RowViewCallback = std::function<bool(std::size_t, std::vector<std::string_view> const&)>;
 
     struct Range
@@ -176,39 +174,12 @@ public:
         std::size_t const active_rows);
 
     ///
-    /// @brief Reads all rows into the supplied output vector.
-    ///
-    /// @param out_rows Receives rows ordered by log ID.
-    /// @return True when the query completes successfully.
-    ///
-    bool ReadAll(std::vector<std::pair<std::size_t, std::vector<std::string>>>& out_rows) const;
-
-    ///
-    /// @brief Streams rows to a callback in log ID order.
-    ///
-    /// @param callback Called for each row; return false to stop early.
-    /// @return True when all rows are visited, false when stopped or on error.
-    ///
-    bool ReadRows(RowCallback const callback) const;
-
-    ///
     /// @brief Streams rows to a callback without materializing field strings.
     ///
     /// @param callback Called for each row; views are valid only during the callback.
     /// @return True when all rows are visited, false when stopped or on error.
     ///
     bool ReadRowsViews(RowViewCallback const callback) const;
-
-    ///
-    /// @brief Reads rows whose IDs fall within any supplied half-open range.
-    ///
-    /// @param ranges ID ranges in the form [begin, end).
-    /// @param out_rows Receives rows keyed by log ID.
-    /// @return True when the query completes successfully.
-    ///
-    bool ReadRowsByIDs(
-        std::vector<Range> const& ranges,
-        std::unordered_map<std::size_t, std::vector<std::string>>& out_rows) const;
 
     ///
     /// @brief Reads rows whose IDs fall within any supplied half-open range into existing vectors.
