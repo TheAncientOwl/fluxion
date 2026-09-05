@@ -5,11 +5,12 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <algorithm>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 
@@ -77,7 +78,28 @@ void RegexTags::GetLogs(
 
     for (auto const& storage : m_sqlite_storages)
     {
-        storage->ReadRowsByIDsInto(requested_id_ranges, log_id_to_output);
+        auto const shard_begin = storage->GetIDOffset();
+        auto const shard_size = storage->GetWrittenRows();
+        auto const shard_end = shard_size > std::numeric_limits<std::size_t>::max() - shard_begin
+                                   ? std::numeric_limits<std::size_t>::max()
+                                   : shard_begin + shard_size;
+
+        std::vector<SQLiteStorage::Range> shard_id_ranges{};
+        shard_id_ranges.reserve(requested_id_ranges.size());
+        for (auto const& requested_range : requested_id_ranges)
+        {
+            auto const begin = std::max(requested_range.begin, shard_begin);
+            auto const end = std::min(requested_range.end, shard_end);
+            if (begin < end)
+            {
+                shard_id_ranges.push_back({.begin = begin, .end = end});
+            }
+        }
+
+        if (!shard_id_ranges.empty())
+        {
+            storage->ReadRowsByIDsInto(shard_id_ranges, log_id_to_output);
+        }
     }
 }
 
