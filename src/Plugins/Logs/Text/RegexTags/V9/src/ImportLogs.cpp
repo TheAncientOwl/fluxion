@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.6
+/// @version 9.7
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -613,7 +613,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     LOG_SCOPE("::ImportLogs()");
     LOG_INFO("Importing {}", path);
 
-    m_filtered_logs.clear();
+    m_filtered_logs = std::vector<Data::FilteredLog>{};
     m_total_logs_imported = 0;
 
     m_regex_tags.SyncFrontBufferCopy();
