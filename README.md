@@ -1,8 +1,25 @@
 # ⚡ 🪵 Fluxion
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE)
+[![C++23](https://img.shields.io/badge/C++-23-purple.svg)](https://en.cppreference.com/w/cpp/23)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-purple.svg)](https://github.com/TheAncientOwl/fluxion)
+
 **Fluxion** is a lightning-fast, high-performance cross-platform log viewer built to effortlessly handle and analyze massive log files without breaking a sweat.
 
 Designed with a modular architecture, Fluxion separates its rendering interface from its heavy lifting logic through a robust plugin API, ensuring fluid navigation and instant search capabilities even across gigabytes of data.
+
+---
+
+## 📑 Table of Contents
+
+- [Goals](#-goals)
+- [Architecture](#️-architecture)
+- [Features](#-features)
+- [Tech Stack](#️-tech-stack)
+- [Plugin Interface Overview](#-plugin-interface-overview)
+- [Building & Development](#-building--development)
+- [License](#-license)
+- [Gallery](#-gallery)
 
 ---
 
@@ -41,7 +58,7 @@ The GUI communicates with the backend entirely through a standardized plugin int
 
 ## 🛠 Tech Stack
 
-- **C++** – Core application and high-performance log parsing engine
+- **C++23** – Core application and high-performance log parsing engine
 - **Graphite** – Custom APP framework that uses ImGui (immediate-mode GUI) for rendering
 - **Google RE2** – Thread-safe, high-performance regular expression matching
 - **Google Test (gtest)** – Comprehensive unit and integration testing framework
