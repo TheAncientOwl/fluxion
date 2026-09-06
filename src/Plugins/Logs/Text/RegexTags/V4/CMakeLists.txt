@@ -41,7 +41,7 @@ target_include_directories(fluxion_logs_plugin__text__regex_tags__v4_interface I
 
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v4_interface INTERFACE
     re2::re2
-    sqlite3
+    SQLite::SQLite3
 )
 
 # --- 2. Implementation ---
@@ -92,7 +92,7 @@ target_link_libraries(fluxion_logs_plugin__text__regex_tags__v4 PUBLIC
     fluxion_api_impl
     fluxion_logs_plugin__text__regex_tags__v4_interface
     re2::re2
-    sqlite3
+    SQLite::SQLite3
 )
 
 target_compile_options(fluxion_logs_plugin__text__regex_tags__v4 PRIVATE -Wno-nullability-extension)
