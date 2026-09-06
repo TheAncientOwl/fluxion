@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.7
+/// @version 9.8
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -141,10 +141,10 @@ MappedFile MapFile(std::filesystem::path const& path)
     HANDLE hFile = ::CreateFileW(
         path.c_str(),
         GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_SHARE_READ,
         nullptr,
         OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
+        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
         nullptr);
 
     if (hFile == INVALID_HANDLE_VALUE)
@@ -178,12 +178,6 @@ MappedFile MapFile(std::filesystem::path const& path)
     {
         return {};
     }
-
-    // Windows equivalent of madvise(..., MADV_WILLNEED/SEQUENTIAL)
-    WIN32_MEMORY_RANGE_ENTRY rangeEntry;
-    rangeEntry.VirtualAddress = mapped_ptr;
-    rangeEntry.NumberOfBytes = file_size;
-    ::PrefetchVirtualMemory(::GetCurrentProcess(), 1, &rangeEntry, 0);
 
     return MappedFile{
         .data = std::unique_ptr<const char, MappedFile::Deleter>(
