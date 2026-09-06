@@ -287,6 +287,14 @@ struct LogChunk
     }
 };
 
+// Shard isolated resources for lock fragmentation
+struct ShardQueue
+{
+    std::mutex mutex{};
+    std::condition_variable cv{};
+    std::unordered_map<uint64_t, std::unique_ptr<LogChunk>> ready_chunks{};
+};
+
 class ChunksQueue
 {
 public:
@@ -300,7 +308,13 @@ public:
         , m_max_pool_size(initial_total_chunks * 2)
     {
         LOG_SCOPE("::GlobalChunkQueue()");
-        m_ready_chunks.resize(total_shards);
+
+        m_shards.reserve(total_shards);
+        for (std::size_t i = 0; i < total_shards; ++i)
+        {
+            m_shards.push_back(std::make_unique<ShardQueue>());
+        }
+
         m_free_pool.reserve(initial_total_chunks);
         for (std::size_t i = 0; i < initial_total_chunks; ++i)
         {
@@ -310,7 +324,7 @@ public:
 
     std::unique_ptr<LogChunk> Acquire()
     {
-        std::unique_lock<std::mutex> lock{m_mutex};
+        std::unique_lock<std::mutex> lock{m_pool_mutex};
         if (!m_free_pool.empty())
         {
             auto chunk = std::move(m_free_pool.back());
@@ -324,49 +338,56 @@ public:
 
     void Submit(std::unique_ptr<LogChunk> chunk)
     {
-        std::unique_lock<std::mutex> lock{m_mutex};
-        std::size_t const shard = chunk->shard_id;
-        // Composite key avoids nested maps: high 32 bits = task_id, low 32 bits = local_chunk_idx
+        std::size_t const shard_id = chunk->shard_id;
         uint64_t const key = (static_cast<uint64_t>(chunk->task_id) << 32) | chunk->local_chunk_idx;
 
-        m_ready_chunks[shard][key] = std::move(chunk);
-        m_cv_writer.notify_all();
+        auto& shard = m_shards[shard_id];
+        {
+            // Only block the writer thread assigned to this specific shard
+            std::unique_lock<std::mutex> lock{shard->mutex};
+            shard->ready_chunks[key] = std::move(chunk);
+        }
+
+        // notify_one is safe here because we have 1 dedicated writer thread per shard
+        shard->cv.notify_one();
     }
 
     std::unique_ptr<LogChunk> Pop(std::size_t const shard_id, std::size_t const task_id, std::size_t const local_idx)
     {
-        std::unique_lock<std::mutex> lock{m_mutex};
         uint64_t const key = (static_cast<uint64_t>(task_id) << 32) | local_idx;
+        auto& shard = m_shards[shard_id];
 
-        m_cv_writer.wait(lock, [&] { return m_ready_chunks[shard_id].contains(key); });
+        std::unique_lock<std::mutex> lock{shard->mutex};
+        shard->cv.wait(lock, [&] { return shard->ready_chunks.contains(key); });
 
-        auto chunk = std::move(m_ready_chunks[shard_id][key]);
-        m_ready_chunks[shard_id].erase(key);
+        auto chunk = std::move(shard->ready_chunks[key]);
+        shard->ready_chunks.erase(key);
         return chunk;
     }
 
     void Recycle(std::unique_ptr<LogChunk> chunk)
     {
-        std::unique_lock<std::mutex> lock{m_mutex};
+        // Reset state lock-free to keep the critical section as tight as possible
+        chunk->active_populated_rows = 0;
+        chunk->chunk_size_bytes = 0;
+        chunk->is_last_in_task = false;
+
+        std::unique_lock<std::mutex> lock{m_pool_mutex};
         if (m_free_pool.size() < m_max_pool_size)
         {
-            chunk->active_populated_rows = 0;
-            chunk->chunk_size_bytes = 0;
-            chunk->is_last_in_task = false;
             m_free_pool.push_back(std::move(chunk));
         }
     }
 
 private:
-    std::mutex m_mutex{};
-    std::condition_variable m_cv_writer{};
+    std::mutex m_pool_mutex{};
 
     std::size_t m_capacity_per_chunk{};
     std::size_t m_field_count{};
     std::size_t m_max_pool_size{};
 
     std::vector<std::unique_ptr<LogChunk>> m_free_pool{};
-    std::vector<std::unordered_map<uint64_t, std::unique_ptr<LogChunk>>> m_ready_chunks{};
+    std::vector<std::unique_ptr<ShardQueue>> m_shards{};
 };
 
 class LogsImporter
