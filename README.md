@@ -1,4 +1,7 @@
-# ⚡ 🪵 Fluxion
+<h1 style="display: flex; align-items: center; gap: 10px; margin: 0;">
+  <img src="./assets/icons/fluxion.725x725.png" width="40" alt="Fluxion Logo">
+  Fluxion
+</h1>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE)
 [![C++23](https://img.shields.io/badge/C++-23-purple.svg)](https://en.cppreference.com/w/cpp/23)
@@ -205,37 +208,37 @@ Below are a few screenshots showcasing the Fluxion workflow, from importing larg
 
 ### » App UI
 
-<img alt='Logs Import' src="./gallery/0.fluxion-first-view.png" width="600">
+<img alt='fluxion-first-view' src="./gallery/0.fluxion-first-view.png" width="600">
 
 ### » Logs Import & Regex Columns Configurator
 
 - Split raw log lines into clean, structured columns using regular expressions.
 
-<img alt='Logs Import' src="./gallery/1.raw-logs.png" width="600">
+<img alt='raw-logs' src="./gallery/1.raw-logs.png" width="600">
 
-<img alt='Logs Import' src="./gallery/1.1.fluxion-logs-menu.png" width="600">
+<img alt='fluxion-logs-menu' src="./gallery/1.1.fluxion-logs-menu.png" width="600">
 
 - Import massive log files with progress tracking.
 
-<img alt='Logs Import' src="./gallery/1.2.fluxion-logs-import-select.png" width="600">
-<img alt='Logs Import' src="./gallery/1.3.fluxion-logs-import-progress.png" width="600">
-<img alt='Logs Import' src="./gallery/1.4.fluxion-logs-begin.png" width="600">
-<img alt='Logs Import' src="./gallery/1.5.fluxion-logs-end.png" width="600">
+<img alt='fluxion-logs-import-select' src="./gallery/1.2.fluxion-logs-import-select.png" width="600">
+<img alt='fluxion-logs-import-progress' src="./gallery/1.3.fluxion-logs-import-progress.png" width="600">
+<img alt='fluxion-logs-begin' src="./gallery/1.4.fluxion-logs-begin.png" width="600">
+<img alt='fluxion-logs-end' src="./gallery/1.5.fluxion-logs-end.png" width="600">
 
 ### » Advanced Filtering, Highlights & Navigation
 
 - Filter logs dynamically and apply priority color highlighting to crucial log levels.
 
-<img alt='Filtered Logs' src="./gallery/2.1.fluxion-filtering.png" width="600">
+<img alt='fluxion-filtering' src="./gallery/2.1.fluxion-filtering.png" width="600">
 
 - Sky's the limit when it comes to highlight colors for foreground/background.
 
-<img alt='Filtered Logs' src="./gallery/2.2.fluxion-filtering-color-picker.png" width="600">
+<img alt='fluxion-filtering-color-picker' src="./gallery/2.2.fluxion-filtering-color-picker.png" width="600">
 
 - Explore structured logs with smooth virtualized scrolling and instant find-next/find-prev navigation.
 
-<img alt='Logs View' src="./gallery/2.3.fluxion-filtering-next-1.png" width="600">
-<img alt='Logs View' src="./gallery/2.4.fluxion-filtering-next-2.png" width="600">
-<img alt='Logs View' src="./gallery/2.5.fluxion-filtering-next-3.png" width="600">
-<img alt='Logs View' src="./gallery/2.6.fluxion-filtering-next-4.png" width="600">
-<img alt='Logs View' src="./gallery/2.7.fluxion-filtering-next-5.png" width="600">
+<img alt='fluxion-filtering-next-1' src="./gallery/2.3.fluxion-filtering-next-1.png" width="600">
+<img alt='fluxion-filtering-next-2' src="./gallery/2.4.fluxion-filtering-next-2.png" width="600">
+<img alt='fluxion-filtering-next-3' src="./gallery/2.5.fluxion-filtering-next-3.png" width="600">
+<img alt='fluxion-filtering-next-4' src="./gallery/2.6.fluxion-filtering-next-4.png" width="600">
+<img alt='fluxion-filtering-next-5' src="./gallery/2.7.fluxion-filtering-next-5.png" width="600">
