@@ -84,6 +84,7 @@ set_target_properties(fluxion_logs_plugin__text__regex_tags__v4 PROPERTIES
 )
 
 target_link_libraries(fluxion_logs_plugin__text__regex_tags__v4 PUBLIC
+    external_imgui
     project_compile_options
     external_icons_codicons
     graphite_interface

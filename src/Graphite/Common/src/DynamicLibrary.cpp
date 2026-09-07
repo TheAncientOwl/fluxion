@@ -5,7 +5,7 @@
 ///
 /// @file DynamicLibrary.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief Implementation of @see DynamicLibrary.hpp.
 ///
 
@@ -17,6 +17,7 @@ namespace Graphite::Common::Plugin {
 
 #if defined(_WIN32)
 #include <windows.h>
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
 using LibHandle = HMODULE;
 #else
 #include <dlfcn.h>

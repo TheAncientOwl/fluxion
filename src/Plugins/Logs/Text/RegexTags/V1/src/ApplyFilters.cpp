@@ -5,12 +5,13 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <regex>
 #include <string>
+#include <variant>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -28,6 +29,8 @@ namespace FilterImpl {
 struct ComputedCondition
     : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
 {
+    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
 };

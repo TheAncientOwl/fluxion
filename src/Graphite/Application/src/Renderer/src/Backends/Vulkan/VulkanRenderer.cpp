@@ -5,7 +5,7 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.6
+/// @version 1.7
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
@@ -26,6 +26,7 @@ USE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
 #define GLFW_INCLUDE_VULKAN
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
 #include <dwmapi.h>
 #include <windows.h>
 #endif

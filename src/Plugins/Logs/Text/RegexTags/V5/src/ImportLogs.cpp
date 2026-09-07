@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.6
+/// @version 5.7
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -25,6 +25,7 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
 #include <windows.h>
 #else
 #include <fcntl.h>

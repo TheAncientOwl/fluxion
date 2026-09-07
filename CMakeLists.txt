@@ -19,6 +19,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    add_compile_options("/Zc:twoPhase-") 
+endif()
+
 if(WIN32)
     set(FLUXION_USER_HOME "$ENV{USERPROFILE}")
     if(NOT FLUXION_USER_HOME)

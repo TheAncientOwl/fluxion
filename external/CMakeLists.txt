@@ -18,6 +18,13 @@ endif()
 
 add_library(external_imgui SHARED ${IMGUI_SOURCES})
 
+# Automatically export all symbols on Windows for shared libraries without needing __declspec(dllexport)
+if(WIN32)
+    set_target_properties(external_imgui PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+    )
+endif()
+
 set_target_properties(external_imgui PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

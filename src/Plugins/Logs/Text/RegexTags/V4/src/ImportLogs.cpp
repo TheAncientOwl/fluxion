@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.4
+/// @version 4.5
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -22,6 +22,7 @@
 #include <thread>
 #include <vector>
 #if defined(_WIN32)
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
 #include <windows.h>
 #else
 #include <sys/mman.h>

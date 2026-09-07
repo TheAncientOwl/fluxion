@@ -5,7 +5,7 @@
 ///
 /// @file MappedBinaryStringsFile.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.1
 /// @brief Implementation of @see MappedBinaryStringsFile.hpp
 ///
 
@@ -14,6 +14,7 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
 #include <windows.h>
 #else
 #include <fcntl.h>
@@ -397,7 +398,7 @@ MappedBinaryStringsFile::WriteResult MappedBinaryStringsFile::Write(std::string_
         {
             return WriteResult{.status = EWriteStatus::OutOfCapacity, .bytes_written = 0};
         }
-        LOG_INFO("::Write(): File resized successfuly!", m_max_size, new_max_size);
+        LOG_INFO("::Write(): File resized successfuly!");
     }
 
     auto const len_header = static_cast<StringLengthType>(payload_len);

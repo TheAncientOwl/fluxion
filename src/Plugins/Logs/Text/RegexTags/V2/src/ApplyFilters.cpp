@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.3
+/// @version 2.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -30,6 +30,8 @@ namespace FilterImpl {
 struct ComputedCondition
     : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
 {
+    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+
     std::size_t column_index{};
     std::variant<std::unique_ptr<re2::RE2>, std::string> condition{};
 };

@@ -199,7 +199,8 @@ void FluxionApplication::OnInit()
 
     AddView<Views::BaseView>(shared_from_this(), 0);
     AddView<Views::DevView>(
-        shared_from_this(), std::numeric_limits<Graphite::Application::Views::RenderPriority>::max());
+        shared_from_this(),
+        (std::numeric_limits<Graphite::Application::Views::RenderPriority>::max)());
     AddView<Views::MainMenuView>(shared_from_this(), 1);
     AddView<Views::SettingsView>(shared_from_this(), 2);
     AddView<Views::LogsTableView>(shared_from_this(), 10);

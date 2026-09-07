@@ -5,7 +5,7 @@
 ///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.12
+/// @version 0.13
 /// @brief Implementation of @see DummyLogsPlugin.hpp
 ///
 
@@ -33,6 +33,8 @@ namespace DummyImpl {
 struct ComputedCondition
     : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
 {
+    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
 };
