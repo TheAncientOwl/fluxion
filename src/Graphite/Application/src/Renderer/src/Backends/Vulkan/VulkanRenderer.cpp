@@ -5,7 +5,7 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.7
+/// @version 1.8
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
@@ -459,14 +459,26 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
 
     // Create window with Vulkan context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    float main_scale =
-        ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
+
+    GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
+    float main_scale = 1.0f;
+    if (primary_monitor != nullptr)
+    {
+        main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(primary_monitor);
+        if (main_scale <= 0.0f)
+            main_scale = 1.0f;
+    }
+
+    int target_width = static_cast<int>(static_cast<float>(window_configuration.width) * main_scale);
+    int target_height = static_cast<int>(static_cast<float>(window_configuration.height) * main_scale);
+    if (target_width <= 0)
+        target_width = window_configuration.width > 0 ? window_configuration.width : 950;
+    if (target_height <= 0)
+        target_height = window_configuration.height > 0 ? window_configuration.height : 750;
+
     m_state.window = glfwCreateWindow(
-        static_cast<int>(static_cast<float>(window_configuration.width) * main_scale),
-        static_cast<int>(static_cast<float>(window_configuration.height) * main_scale),
-        window_configuration.title.c_str(),
-        nullptr,
-        nullptr);
+        target_width, target_height, window_configuration.title.c_str(), nullptr, nullptr);
+
     if (m_state.window == nullptr)
     {
         std::string const msg =
@@ -671,16 +683,27 @@ void VulkanRenderer::Cleanup()
     {
         m_cleaned_up = true;
 
-        VkResult err = vkDeviceWaitIdle(m_state.device);
-        check_vk_result(err);
+        if (m_state.device != VK_NULL_HANDLE)
+        {
+            VkResult err = vkDeviceWaitIdle(m_state.device);
+            check_vk_result(err);
+        }
+
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
-        CleanupVulkanWindow(m_state, &m_state.mainWindowData);
-        CleanupVulkan(m_state);
+        if (m_state.device != VK_NULL_HANDLE)
+        {
+            CleanupVulkanWindow(m_state, &m_state.mainWindowData);
+            CleanupVulkan(m_state);
+        }
 
-        glfwDestroyWindow(m_state.window);
+        if (m_state.window != nullptr)
+        {
+            glfwDestroyWindow(m_state.window);
+        }
+
         glfwTerminate();
     }
 }
