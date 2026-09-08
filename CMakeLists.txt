@@ -76,7 +76,6 @@ target_compile_definitions(fluxion PRIVATE
     $<$<CONFIG:Release>:GRAPHITE_NO_LOGGER>
 )
 
-
 # Set output directories
 set_target_properties(fluxion PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
@@ -84,19 +83,29 @@ set_target_properties(fluxion PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+if(APPLE)
+    set_target_properties(fluxion PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "@executable_path/../Frameworks"
+    )
+endif()
+
 target_link_libraries(fluxion PRIVATE
     project_compile_options
     fluxion_app
     $<$<BOOL:${MINGW}>:stdc++exp>
 )
 
-# --- 5. Asset Handling ---
+# --- 5. Asset & Shared Library Bundling ---
 if(APPLE)
-    # Assets for macOS Bundle (copies into Fluxion.app/Contents/Resources)
+    # Assets for macOS Bundle and native script execution for dylibs (targeting Frameworks)
     add_custom_command(TARGET fluxion POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:fluxion>/../Resources/assets
-        COMMENT "Copying assets into macOS App Bundle"
+        COMMAND ${CMAKE_COMMAND} -E echo "Copying shared libraries into bundle Frameworks..."
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:fluxion>/../Frameworks
+        COMMAND ${CMAKE_COMMAND} -D"BIN_DIR=${CMAKE_BINARY_DIR}/bin" -D"TARGET_DIR=$<TARGET_FILE_DIR:fluxion>/../Frameworks" -P "${CMAKE_CURRENT_SOURCE_DIR}/project/cmake/bundle-dylibs.cmake"
+        COMMENT "Bundling assets and dylibs for macOS"
     )
 else()
     # Base assets for Windows/Linux (copies to the folder where the .exe lives)

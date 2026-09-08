@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on any tag starting with 'v' (e.g., v0.25, v1.0.0, v1.0.0-alpha.1)
+
+jobs:
+  build:
+    name: Build & Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux System Dependencies, Clang & Vulkan
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libgl1-mesa-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libvulkan-dev
+
+      - name: Install Vulkan SDK (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install vulkan-sdk --no-progress -y
+          $vulkanPath = (Get-ChildItem -Path "C:\VulkanSDK" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
+          echo "VULKAN_SDK=$vulkanPath" >> $env:GITHUB_ENV
+          echo "Successfully installed Vulkan to: $vulkanPath"
+
+      - name: Configure CMake (Linux)
+        if: runner.os == 'Linux'
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+
+      - name: Configure CMake (macOS)
+        if: runner.os == 'macOS'
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -T ClangCL
+
+      - name: Build Application
+        run: cmake --build build --config Release
+
+      - name: Set Archive Filename
+        id: archive-name
+        shell: bash
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            echo "ARCHIVE_NAME=fluxion-${VERSION}-windows-x86_64.zip" >> $GITHUB_ENV
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            echo "ARCHIVE_NAME=fluxion-${VERSION}-macos.zip" >> $GITHUB_ENV
+          else
+            echo "ARCHIVE_NAME=fluxion-${VERSION}-linux-x86_64.tar.gz" >> $GITHUB_ENV
+          fi
+
+      - name: Create Staging Directory & Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "staging/fluxion"
+          Copy-Item -Recurse -Force "build/bin/*" "staging/fluxion/"
+          Compress-Archive -Path "staging/fluxion/*" -DestinationPath "${env:ARCHIVE_NAME}" -Force
+
+      - name: Create Staging Directory & Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p staging/fluxion
+          
+          if [ "${{ matrix.os }}" == "macos-latest" ]; then
+            cp -r build/bin/Fluxion.app staging/fluxion/
+            if [ -d "build/bin/plugins" ]; then
+              cp -r build/bin/plugins staging/fluxion/
+            fi
+            cd staging/fluxion
+            zip -r ../../${{ env.ARCHIVE_NAME }} .
+            cd ../..
+          else
+            cp build/bin/fluxion staging/fluxion/
+            cp -r build/bin/assets staging/fluxion/
+            if [ -d "build/bin/plugins" ]; then
+              cp -r build/bin/plugins staging/fluxion/
+            fi
+            cd staging/fluxion
+            tar -czf ../../${{ env.ARCHIVE_NAME }} .
+            cd ../..
+          fi
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVE_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create release and upload assets
+    steps:
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
