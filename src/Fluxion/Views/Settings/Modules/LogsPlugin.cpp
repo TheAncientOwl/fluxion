@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.8
+/// @version 0.9
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -13,7 +13,10 @@
 
 #include "Fluxion/SentinelPlugins/Logs/SentinelLogsPlugin.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
+#include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
+
+#include "IconsCodicons.h"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Views::Modules::SettingsView::LogsPlugin);
 USE_LOG_SCOPE(Fluxion::Application::Views::Modules::SettingsView::LogsPlugin);
@@ -24,7 +27,17 @@ void LogsPluginRenderer::Render()
 {
     LOG_SCOPE("::Render()");
 
+    ImGui::BeginDisabled(
+        m_application->GetApplicationState().logs_progress.operation !=
+        Fluxion::Application::ELogsOperation::None);
+
+    // Render the Import button first, then place the combo box on the same line
+    RenderImportPlugins();
+    ImGui::SameLine();
     RenderPluginSelection();
+
+    ImGui::EndDisabled();
+
     RenderMenu();
 }
 
@@ -32,18 +45,11 @@ void LogsPluginRenderer::OnAdd(Fluxion::Application::FluxionApplication::Ptr app
 {
     LOG_SCOPE("::OnAdd()");
     m_application = std::move(app);
-    ScanAvailablePlugins();
 }
 
 void LogsPluginRenderer::RenderPluginSelection()
 {
     LOG_SCOPE("::RenderPluginSelection()");
-
-    if (m_available_plugins.empty())
-    {
-        ImGui::TextDisabled("No plugins found in ~/.fluxion/plugins/logs");
-        return;
-    }
 
     auto& app_state{m_application->GetApplicationState()};
     std::string const current_display_name =
@@ -51,133 +57,155 @@ void LogsPluginRenderer::RenderPluginSelection()
             ? "Select Logs Plugin :D"
             : app_state.selected_logs_plugin_path.filename().string();
 
-    ImGui::BeginDisabled(
-        app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None);
-    if (ImGui::BeginCombo("##plugin-selection", current_display_name.c_str()))
+    ScanAvailablePlugins();
+
+    // The combo box automatically fills the remaining width on the line
+    if (m_available_plugins.empty())
     {
-        for (int i = 0; i < static_cast<int>(m_available_plugins.size()); ++i)
+        if (ImGui::BeginCombo("##plugin-selection", "No plugins found"))
         {
-            auto const& plugin_path = m_available_plugins[static_cast<std::size_t>(i)];
-            std::string const display_name = plugin_path.filename().string();
-
-            bool const is_selected{m_selected_plugin_index == i};
-            ImGui::PushID(i);
-            if (ImGui::Selectable(display_name.c_str(), is_selected))
+            ImGui::EndCombo();
+        }
+    }
+    else
+    {
+        if (ImGui::BeginCombo("##plugin-selection", current_display_name.c_str()))
+        {
+            for (int i = 0; i < static_cast<int>(m_available_plugins.size()); ++i)
             {
-                LOG_INFO("::RenderPluginSelection(): Selected plugin: {}", plugin_path);
+                auto const& plugin_path = m_available_plugins[static_cast<std::size_t>(i)];
+                std::string const display_name = plugin_path.filename().string();
 
-                m_selected_plugin_index = i;
-
-                if (plugin_path != app_state.selected_logs_plugin_path)
+                bool const is_selected{m_selected_plugin_index == i};
+                ImGui::PushID(i);
+                if (ImGui::Selectable(display_name.c_str(), is_selected))
                 {
-                    LOG_INFO(
-                        "::RenderPluginSelection(): Selected plugin changed from {} to {}",
-                        app_state.selected_logs_plugin_path,
-                        plugin_path);
+                    LOG_INFO("::RenderPluginSelection(): Selected plugin: {}", plugin_path);
 
-                    LOG_INFO("::RenderPluginSelection(): Disabling current plugin");
-                    app_state.logs_plugin->OnDisable({});
+                    m_selected_plugin_index = i;
 
-                    LOG_INFO("::RenderPluginSelection(): Clearing table header");
-                    app_state.logs.table_header.clear();
-
-                    LOG_INFO("::RenderPluginSelection(): Clearing searched log index");
-                    app_state.logs.searched_log.UpdateBackBufferCopyLocking(
-                        [](auto& searched_log) { searched_log.index = std::nullopt; });
-
-                    LOG_INFO("::RenderPluginSelection(): Clearing visible logs");
-                    /// @note we have to <clear, swap & clear again> to get rid of front artifacts
-                    /// that are being swapped on back the first time
-                    app_state.logs.visible.UpdateBackBufferSwap(
-                        [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
-                    app_state.logs.visible.SyncFrontBufferSwap();
-                    app_state.logs.visible.UpdateBackBufferSwap(
-                        [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
-
-                    // Destroy old plugin BEFORE unloading the library
-                    LOG_INFO("::RenderPluginSelection(): Destroying old plugin");
-                    app_state.logs_plugin.reset();
-                    app_state.loaded_plugin_library.reset();
-
-                    // Load new plugin with persistent library handle
-                    app_state.loaded_plugin_library =
-                        std::make_unique<Graphite::Common::Plugin::DynamicLibrary>(plugin_path);
-                    app_state.selected_logs_plugin_path = plugin_path;
-
-                    m_application->As<FluxionApplication>()->SavePluginPathToDisk();
-
-                    app_state.logs_plugin.reset(nullptr);
-                    if (app_state.loaded_plugin_library && app_state.loaded_plugin_library->isLoaded())
+                    if (plugin_path != app_state.selected_logs_plugin_path)
                     {
-                        using CreateFunc = Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*)();
-                        auto const factory{reinterpret_cast<CreateFunc>(
-                            app_state.loaded_plugin_library->getSymbol("CreateFluxionLogsPlugin"))};
+                        LOG_INFO(
+                            "::RenderPluginSelection(): Selected plugin changed from {} to {}",
+                            app_state.selected_logs_plugin_path,
+                            plugin_path);
 
-                        if (factory != nullptr)
+                        LOG_INFO("::RenderPluginSelection(): Disabling current plugin");
+                        app_state.logs_plugin->OnDisable({});
+
+                        LOG_INFO("::RenderPluginSelection(): Clearing table header");
+                        app_state.logs.table_header.clear();
+
+                        LOG_INFO("::RenderPluginSelection(): Clearing searched log index");
+                        app_state.logs.searched_log.UpdateBackBufferCopyLocking(
+                            [](auto& searched_log) { searched_log.index = std::nullopt; });
+
+                        LOG_INFO("::RenderPluginSelection(): Clearing visible logs");
+                        /// @note we have to <clear, swap & clear again> to get rid of front
+                        /// artifacts that are being swapped on back the first time
+                        app_state.logs.visible.UpdateBackBufferSwap(
+                            [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
+                        app_state.logs.visible.SyncFrontBufferSwap();
+                        app_state.logs.visible.UpdateBackBufferSwap(
+                            [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
+
+                        // Destroy old plugin BEFORE unloading the library
+                        LOG_INFO("::RenderPluginSelection(): Destroying old plugin");
+                        app_state.logs_plugin.reset();
+                        app_state.loaded_plugin_library.reset();
+
+                        // Load new plugin with persistent library handle
+                        app_state.loaded_plugin_library =
+                            std::make_unique<Graphite::Common::Plugin::DynamicLibrary>(plugin_path);
+                        app_state.selected_logs_plugin_path = plugin_path;
+
+                        m_application->As<FluxionApplication>()->SavePluginPathToDisk();
+
+                        app_state.logs_plugin.reset(nullptr);
+                        if (app_state.loaded_plugin_library &&
+                            app_state.loaded_plugin_library->isLoaded())
                         {
-                            LOG_INFO("::RenderPluginSelection(): Creating and enabling new plugin");
-                            auto plugin_ptr{factory()};
-                            if (plugin_ptr != nullptr)
+                            using CreateFunc = Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*)();
+                            auto const factory{reinterpret_cast<CreateFunc>(
+                                app_state.loaded_plugin_library->getSymbol("CreateFluxionLogsPlugin"))};
+
+                            if (factory != nullptr)
                             {
-                                LOG_INFO("::RenderPluginSelection(): Plugin created");
-                                app_state.logs_plugin.reset(plugin_ptr);
+                                LOG_INFO(
+                                    "::RenderPluginSelection(): Creating and enabling new plugin");
+                                auto plugin_ptr{factory()};
+                                if (plugin_ptr != nullptr)
+                                {
+                                    LOG_INFO("::RenderPluginSelection(): Plugin created");
+                                    app_state.logs_plugin.reset(plugin_ptr);
 
-                                Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+                                    Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
 
-                                enable_data.plugin_home_path =
-                                    m_application->As<FluxionApplication>()->GetHomePath() /
-                                    std::string(app_state.logs_plugin->GetDirectoryName());
-                                std::filesystem::create_directories(enable_data.plugin_home_path);
+                                    enable_data.plugin_home_path =
+                                        m_application->As<FluxionApplication>()->GetHomePath() /
+                                        std::string(app_state.logs_plugin->GetDirectoryName());
+                                    std::filesystem::create_directories(enable_data.plugin_home_path);
 
-                                app_state.logs_plugin->OnEnable(enable_data);
+                                    app_state.logs_plugin->OnEnable(enable_data);
 
-                                app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
+                                    app_state.logs.table_header =
+                                        app_state.logs_plugin->GetTableHeader();
+                                }
+                                else
+                                {
+                                    LOG_ERROR(
+                                        "::RenderPluginSelection(): Failed to create the plugin "
+                                        "from "
+                                        "{}",
+                                        plugin_path);
+                                }
                             }
                             else
                             {
                                 LOG_ERROR(
-                                    "::RenderPluginSelection(): Failed to create the plugin from "
-                                    "{}",
+                                    "::RenderPluginSelection(): Failed to load "
+                                    "CreateFluxionLogsPlugin "
+                                    "symbol from {}",
                                     plugin_path);
                             }
                         }
                         else
                         {
                             LOG_ERROR(
-                                "::RenderPluginSelection(): Failed to load CreateFluxionLogsPlugin "
-                                "symbol from {}",
+                                "::RenderPluginSelection(): Failed to load plugin library at {}",
                                 plugin_path);
                         }
-                    }
-                    else
-                    {
-                        LOG_ERROR(
-                            "::RenderPluginSelection(): Failed to load plugin library at {}",
-                            plugin_path);
-                    }
 
-                    // Fall back to DummyPlugin if loading failed
-                    if (app_state.logs_plugin == nullptr)
-                    {
-                        LOG_WARN(
-                            "::::RenderPluginSelection(): Plugin loading failed, falling back to "
-                            "DummyPlugin");
-                        app_state.logs_plugin = Fluxion::SentinelPlugins::Logs::Create();
-                        app_state.selected_logs_plugin_path.clear();
-                        app_state.loaded_plugin_library.reset();
+                        // Fall back to DummyPlugin if loading failed
+                        if (app_state.logs_plugin == nullptr)
+                        {
+                            LOG_WARN(
+                                "::::RenderPluginSelection(): Plugin loading failed, falling back "
+                                "to "
+                                "DummyPlugin");
+                            app_state.logs_plugin = Fluxion::SentinelPlugins::Logs::Create();
+                            app_state.selected_logs_plugin_path.clear();
+                            app_state.loaded_plugin_library.reset();
+                        }
                     }
                 }
-            }
 
-            if (is_selected)
-            {
-                ImGui::SetItemDefaultFocus();
+                if (is_selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+                ImGui::PopID();
             }
-            ImGui::PopID();
+            ImGui::EndCombo();
         }
-        ImGui::EndCombo();
     }
-    ImGui::EndDisabled();
+
+    if (m_available_plugins.empty())
+    {
+        ImGui::Spacing();
+        ImGui::TextDisabled("No plugins found in ~/.fluxion/plugins/logs");
+    }
 }
 
 void LogsPluginRenderer::RenderMenu()
@@ -240,6 +268,65 @@ void LogsPluginRenderer::ScanAvailablePlugins()
     catch (const std::exception& e)
     {
         LOG_ERROR("Failed to scan plugins directory: {}", e.what());
+    }
+}
+
+void LogsPluginRenderer::RenderImportPlugins()
+{
+    LOG_SCOPE("::RenderImportPlugins()");
+
+    if (Graphite::Common::UI::IconButton(ICON_CI_EXTENSIONS, "Import Plugins", []() {}))
+    {
+        LOG_INFO("::RenderImportPlugins(): Opening file dialog for importing plugins");
+
+        auto const plugins_dir =
+            m_application->As<FluxionApplication>()->GetHomePath() / "plugins" / "logs";
+
+        m_file_dialog.Open(
+            "Import Log Plugins",
+            Graphite::Common::UI::EFileDialogMode::OpenMultiple,
+            plugins_dir,
+            {{"Plugin Libraries", {".dylib", ".so", ".dll"}}});
+    }
+
+    // Render the file dialog if it is open
+    if (m_file_dialog.IsOpen())
+    {
+        // Render() returns true while the dialog remains open, and false when closed
+        if (!m_file_dialog.Render())
+        {
+            auto const& selected_paths = m_file_dialog.GetSelectedPaths();
+            if (!selected_paths.empty())
+            {
+                auto const plugins_dir =
+                    m_application->As<FluxionApplication>()->GetHomePath() / "plugins" / "logs";
+
+                try
+                {
+                    std::filesystem::create_directories(plugins_dir);
+
+                    for (auto const& src_path : selected_paths)
+                    {
+                        if (std::filesystem::exists(src_path) &&
+                            std::filesystem::is_regular_file(src_path))
+                        {
+                            std::filesystem::path dest_path = plugins_dir / src_path.filename();
+                            LOG_INFO(
+                                "::RenderImportPlugins(): Copying plugin from {} to {}",
+                                src_path,
+                                dest_path);
+
+                            std::filesystem::copy_file(
+                                src_path, dest_path, std::filesystem::copy_options::overwrite_existing);
+                        }
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    LOG_ERROR("::RenderImportPlugins(): Failed to import plugins: {}", e.what());
+                }
+            }
+        }
     }
 }
 

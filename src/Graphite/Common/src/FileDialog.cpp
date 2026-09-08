@@ -5,7 +5,7 @@
 ///
 /// @file FileDialog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.4
+/// @version 0.5
 /// @brief Implementation of @see Graphite/Common/UI/FileDialog.hpp
 ///
 
@@ -201,8 +201,9 @@ void FileDialog::RenderFileList()
                 return a.path().filename().string() < b.path().filename().string();
             });
 
-            for (const auto& entry : entries)
+            for (std::size_t i = 0; i < entries.size(); ++i)
             {
+                const auto& entry = entries[i];
                 const auto& path = entry.path();
                 std::string display_name = path.filename().string();
 
@@ -223,8 +224,9 @@ void FileDialog::RenderFileList()
 
                 if (should_show)
                 {
-                    bool is_selected =
-                        !m_state.selected_paths.empty() && m_state.selected_paths.front() == path;
+                    auto it =
+                        std::find(m_state.selected_paths.begin(), m_state.selected_paths.end(), path);
+                    bool is_selected = (it != m_state.selected_paths.end());
 
                     ImGui::TableNextRow();
 
@@ -246,8 +248,62 @@ void FileDialog::RenderFileList()
                         }
                         else
                         {
-                            m_state.selected_paths.clear();
-                            m_state.selected_paths.push_back(path);
+                            bool const ctrl = ImGui::GetIO().KeyCtrl;
+                            bool const shift = ImGui::GetIO().KeyShift;
+
+                            if (m_state.mode == EFileDialogMode::OpenMultiple)
+                            {
+                                if (ctrl)
+                                {
+                                    // Toggle selection with Ctrl
+                                    if (is_selected)
+                                    {
+                                        m_state.selected_paths.erase(it);
+                                    }
+                                    else
+                                    {
+                                        m_state.selected_paths.push_back(path);
+                                    }
+                                }
+                                else if (shift && !m_state.selected_paths.empty())
+                                {
+                                    // Range selection with Shift using the last selected path as an anchor
+                                    auto anchor_it = std::find_if(
+                                        entries.begin(), entries.end(), [&](const auto& e) {
+                                            return e.path() == m_state.selected_paths.back();
+                                        });
+
+                                    std::size_t anchor_idx =
+                                        (anchor_it != entries.end())
+                                            ? static_cast<std::size_t>(
+                                                  std::distance(entries.begin(), anchor_it))
+                                            : i;
+
+                                    std::size_t start_idx = std::min(anchor_idx, i);
+                                    std::size_t end_idx = std::max(anchor_idx, i);
+
+                                    m_state.selected_paths.clear();
+                                    for (std::size_t idx = start_idx; idx <= end_idx; ++idx)
+                                    {
+                                        if (entries[idx].is_regular_file() &&
+                                            PathMatchesFilter(entries[idx].path()))
+                                        {
+                                            m_state.selected_paths.push_back(entries[idx].path());
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // Normal click selects only this file
+                                    m_state.selected_paths.clear();
+                                    m_state.selected_paths.push_back(path);
+                                }
+                            }
+                            else
+                            {
+                                m_state.selected_paths.clear();
+                                m_state.selected_paths.push_back(path);
+                            }
                         }
                     }
 

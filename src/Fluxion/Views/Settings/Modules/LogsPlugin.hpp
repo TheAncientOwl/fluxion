@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "Fluxion.hpp"
+#include "Graphite/Common/UI/FileDialog.hpp"
 
 namespace Fluxion::Application::Views::Modules::SettingsView {
 
@@ -26,11 +27,13 @@ private:
     void RenderPluginSelection();
     void RenderMenu();
     void ScanAvailablePlugins();
+    void RenderImportPlugins();
 
 private:
     std::vector<std::filesystem::path> m_available_plugins;
     int m_selected_plugin_index{-1};
     Fluxion::Application::FluxionApplication::Ptr m_application{nullptr};
+    Graphite::Common::UI::FileDialog m_file_dialog{};
 };
 
 } // namespace Fluxion::Application::Views::Modules::SettingsView
