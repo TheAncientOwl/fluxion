@@ -5,7 +5,7 @@
 ///
 /// @file ImGuiHelpers.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.7
+/// @version 0.8
 /// @brief Wrappers for ImGui UI elements.
 ///
 
@@ -92,5 +92,7 @@ bool InputText(const char* label, std::string& str)
 void VerticalSeparator(float height = 0.0f, float thickness = 1.0f, float reserved_width = 5.0f);
 
 void ProgressBar(float const current_percent, float const width = -1.0f, const char* const overlay = nullptr);
+
+bool Hyperlink(const char* label, const char* url);
 
 }; // namespace Graphite::Common::UI

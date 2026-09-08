@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.22
+/// @version 0.23
 /// @brief Application state.
 ///
 
@@ -66,6 +66,7 @@ struct AppState
         bool debug{true};
         bool filters{true};
         bool settings{true};
+        bool about{true};
     } views_active{};
 
     struct

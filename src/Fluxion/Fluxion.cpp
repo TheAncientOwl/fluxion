@@ -5,7 +5,7 @@
 ///
 /// @file Fluxion.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.25
+/// @version 0.26
 /// @brief Implementation of @see Fluxion.hpp.
 ///
 
@@ -19,6 +19,7 @@
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Common/Utility/ThemeSerializer.hpp"
 #include "Graphite/Logger.hpp"
+#include "Views/About/AboutView.hpp"
 #include "Views/BaseView.hpp"
 #include "Views/Dev/DevView.hpp"
 #include "Views/Filters/FiltersView.hpp"
@@ -203,6 +204,7 @@ void FluxionApplication::OnInit()
         (std::numeric_limits<Graphite::Application::Views::RenderPriority>::max)());
     AddView<Views::MainMenuView>(shared_from_this(), 1);
     AddView<Views::SettingsView>(shared_from_this(), 2);
+    AddView<Views::AboutView>(shared_from_this(), 5);
     AddView<Views::LogsTableView>(shared_from_this(), 10);
     AddView<Views::FiltersView>(shared_from_this(), 20);
 }

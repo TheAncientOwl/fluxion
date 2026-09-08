@@ -5,7 +5,7 @@
 ///
 /// @file ImGuiHelpers.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Implementation of @see Graphite/Common/UI/ImGuiHelpers.hpp
 ///
 
@@ -72,6 +72,46 @@ void ProgressBar(float const current_percent, float const width, const char* con
 
     // 5. Crisp primary text
     draw_list->AddText(text_pos, ImGui::GetColorU32(ImGuiCol_Text), text_to_render);
+}
+
+bool Hyperlink(const char* label, const char* url)
+{
+    // Style text with a classic hyperlink blue color
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
+    ImGui::Text("%s", label);
+    bool clicked = false;
+
+    if (ImGui::IsItemHovered())
+    {
+        // Change cursor to hand to indicate it's clickable
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
+        // Draw an underline beneath the text
+        ImVec2 min = ImGui::GetItemRectMin();
+        ImVec2 max = ImGui::GetItemRectMax();
+        ImGui::GetWindowDrawList()->AddLine(
+            ImVec2(min.x, max.y),
+            ImVec2(max.x, max.y),
+            ImGui::GetColorU32(ImVec4(0.2f, 0.6f, 1.0f, 1.0f)));
+
+        // Handle click event to open URL cross-platform
+        if (ImGui::IsItemClicked())
+        {
+            clicked = true;
+            std::string command{};
+#if defined(_WIN32)
+            command = "start " + std::string(url);
+#elif defined(__APPLE__)
+            command = "open " + std::string(url);
+#else
+            command = "xdg-open " + std::string(url);
+#endif
+            std::system(command.c_str());
+        }
+    }
+
+    ImGui::PopStyleColor();
+    return clicked;
 }
 
 } // namespace Graphite::Common::UI

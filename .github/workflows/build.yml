@@ -44,15 +44,15 @@ jobs:
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Configure CMake (macOS)
         if: runner.os == 'macOS'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -T ClangCL
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -T ClangCL -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Build Application
         run: cmake --build build --config Release

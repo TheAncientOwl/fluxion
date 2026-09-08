@@ -7,6 +7,8 @@ add_subdirectory(Common)
 add_library(fluxion_app STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Fluxion.cpp
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/Views/About/AboutView.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Dev/DevView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Views/Dev/Modules/Logger.cpp
 

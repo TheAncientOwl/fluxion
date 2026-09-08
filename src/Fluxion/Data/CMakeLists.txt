@@ -5,11 +5,36 @@ target_include_directories(fluxion_application_data_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+# --- 5. Fluxion version compile definition ---
+# --- Version Detection ---
+if(NOT DEFINED FLUXION_VERSION)
+    find_package(Git QUIET)
+    if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE FLUXION_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+endif()
+
+# Fallback if git is unavailable or not a repository
+if(NOT FLUXION_VERSION)
+    set(FLUXION_VERSION "confused-owl")
+endif()
+
+# Expose version as a preprocessor definition to the executable
+target_compile_definitions(fluxion_application_data_interface INTERFACE
+    FLUXION_VERSION="${FLUXION_VERSION}"
+)
+
 set_target_properties(fluxion_application_data_interface PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
 
 # target_precompile_headers(graphite_application_interface REUSE_FROM fluxion_pch)
 
