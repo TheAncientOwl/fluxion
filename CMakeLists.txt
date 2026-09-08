@@ -88,6 +88,11 @@ if(APPLE)
         BUILD_WITH_INSTALL_RPATH TRUE
         INSTALL_RPATH "@executable_path/../Frameworks"
     )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_target_properties(fluxion PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "$ORIGIN"
+    )
 endif()
 
 target_link_libraries(fluxion PRIVATE

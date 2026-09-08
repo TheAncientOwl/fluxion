@@ -71,6 +71,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "staging/fluxion"
           Copy-Item -Recurse -Force "build/bin/*" "staging/fluxion/"
+          Copy-Item -Force "$env:VULKAN_SDK\Bin\vulkan-1.dll" "staging/fluxion/"
           Compress-Archive -Path "staging/fluxion/*" -DestinationPath "${env:ARCHIVE_NAME}" -Force
 
       - name: Create Staging Directory & Package (Unix)
@@ -89,6 +90,10 @@ jobs:
             cd ../..
           else
             cp build/bin/fluxion staging/fluxion/
+            
+            cp build/bin/*.so staging/fluxion/ 2>/dev/null || true
+            cp build/bin/*.so.* staging/fluxion/ 2>/dev/null || true
+            
             cp -r build/bin/assets staging/fluxion/
             if [ -d "build/bin/plugins" ]; then
               cp -r build/bin/plugins staging/fluxion/
