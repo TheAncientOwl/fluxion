@@ -5,7 +5,7 @@
 ///
 /// @file Formatters.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief IO related utilities.
 ///
 
@@ -31,7 +31,7 @@
 namespace std {
 
 template <>
-struct std::formatter<Fluxion::API::LogsPlugin::Data::Range> : std::formatter<std::string>
+struct formatter<Fluxion::API::LogsPlugin::Data::Range> : std::formatter<std::string>
 {
     template <typename FormatContext>
     auto format(Fluxion::API::LogsPlugin::Data::Range const& range, FormatContext& ctx) const
