@@ -5,7 +5,7 @@
 ///
 /// @file VulkanRenderer.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.9
+/// @version 1.10
 /// @brief Implementation of @see VulkanRenderer.hpp.
 ///
 
@@ -32,7 +32,9 @@ USE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
 
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <dwmapi.h>
 #include <windows.h>
 #endif
@@ -142,6 +144,7 @@ static bool IsExtensionAvailable(const ImVector<VkExtensionProperties>& properti
     return false;
 }
 
+#ifdef APP_USE_VULKAN_DEBUG_REPORT
 static bool IsLayerAvailable(const ImVector<VkLayerProperties>& properties, const char* layer)
 {
     for (const VkLayerProperties& p : properties)
@@ -152,6 +155,7 @@ static bool IsLayerAvailable(const ImVector<VkLayerProperties>& properties, cons
 
     return false;
 }
+#endif
 
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(
@@ -342,7 +346,7 @@ static void SetupVulkan(
     }
 
     ImVector<VkExtensionProperties> properties;
-    properties.resize(properties_count);
+    properties.resize(static_cast<int>(properties_count));
 
     err = vkEnumerateInstanceExtensionProperties(nullptr, &properties_count, properties.Data);
 
@@ -428,7 +432,7 @@ static void SetupVulkan(
 
     if (layer_count > 0)
     {
-        layers.resize(layer_count);
+        layers.resize(static_cast<int>(layer_count));
 
         err = vkEnumerateInstanceLayerProperties(&layer_count, layers.Data);
 
@@ -587,7 +591,7 @@ static void SetupVulkanDevice(
     }
 
     ImVector<VkExtensionProperties> properties;
-    properties.resize(properties_count);
+    properties.resize(static_cast<int>(properties_count));
 
     err = vkEnumerateDeviceExtensionProperties(
         state.physicalDevice, nullptr, &properties_count, properties.Data);
@@ -864,10 +868,10 @@ static void FrameRender(
     ImDrawData* draw_data)
 {
     VkSemaphore image_acquired_semaphore =
-        wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
+        wd->FrameSemaphores[static_cast<int>(wd->SemaphoreIndex)].ImageAcquiredSemaphore;
 
     VkSemaphore render_complete_semaphore =
-        wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
+        wd->FrameSemaphores[static_cast<int>(wd->SemaphoreIndex)].RenderCompleteSemaphore;
 
     VkResult err = vkAcquireNextImageKHR(
         state.device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
@@ -890,7 +894,7 @@ static void FrameRender(
         return;
     }
 
-    ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
+    ImGui_ImplVulkanH_Frame* fd = &wd->Frames[static_cast<int>(wd->FrameIndex)];
 
     // ----------------------------------------------------------------------
     // Wait for previous frame
@@ -956,9 +960,9 @@ static void FrameRender(
 
     render_pass_info.framebuffer = fd->Framebuffer;
 
-    render_pass_info.renderArea.extent.width = wd->Width;
+    render_pass_info.renderArea.extent.width = static_cast<uint32_t>(wd->Width);
 
-    render_pass_info.renderArea.extent.height = wd->Height;
+    render_pass_info.renderArea.extent.height = static_cast<uint32_t>(wd->Height);
 
     render_pass_info.clearValueCount = 1;
     render_pass_info.pClearValues = &wd->ClearValue;
@@ -1022,7 +1026,7 @@ static void FramePresent(
         return;
 
     VkSemaphore render_complete_semaphore =
-        wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
+        wd->FrameSemaphores[static_cast<int>(wd->SemaphoreIndex)].RenderCompleteSemaphore;
 
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1120,9 +1124,11 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    int target_width = window_configuration.width > 0 ? window_configuration.width : 950;
+    int target_width =
+        window_configuration.width > 0 ? static_cast<int>(window_configuration.width) : 950;
 
-    int target_height = window_configuration.height > 0 ? window_configuration.height : 750;
+    int target_height =
+        window_configuration.height > 0 ? static_cast<int>(window_configuration.height) : 750;
 
     GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
 
@@ -1141,7 +1147,7 @@ void VulkanRenderer::Init(Graphite::Application::WindowConfiguration const& wind
         "[glfw] Creating window: %dx%d, content scale: %.2f\n",
         target_width,
         target_height,
-        main_scale);
+        static_cast<double>(main_scale));
 
     m_state.window = glfwCreateWindow(
         target_width, target_height, window_configuration.title.c_str(), nullptr, nullptr);
@@ -1402,9 +1408,8 @@ void VulkanRenderer::Render(std::shared_ptr<IRenderable> user_interface)
         glfwGetFramebufferSize(m_state.window, &fb_width, &fb_height);
 
         if (fb_width > 0 && fb_height > 0 &&
-            (m_state.swapChainRebuild ||
-             m_state.mainWindowData.Width != static_cast<uint32_t>(fb_width) ||
-             m_state.mainWindowData.Height != static_cast<uint32_t>(fb_height)))
+            (m_state.swapChainRebuild || m_state.mainWindowData.Width != fb_width ||
+             m_state.mainWindowData.Height != fb_height))
         {
             fprintf(stderr, "[vulkan] Recreating swapchain: %dx%d\n", fb_width, fb_height);
 
