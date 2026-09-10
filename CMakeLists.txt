@@ -43,6 +43,10 @@ if (WIN32 AND NOT MSVC)
     add_compile_definitions(O_NONBLOCK=0)
 endif()
 
+if(WIN32)
+    add_compile_definitions(_WIN32_WINNT=0x0602 WINVER=0x0602)
+endif()
+
 # --- 2. Build Logic & Subdirectories ---
 include(project/cmake/compile-options.cmake)
 include(project/cmake/precompiled-headers.cmake)
