@@ -5,7 +5,7 @@
 ///
 /// @file FileDialog.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.1
+/// @version 0.2
 /// @brief File dialog UI component for selecting files and directories.
 ///
 
@@ -67,10 +67,11 @@ public:
      * @param filters File filters to apply
      */
     void Open(
-        const std::string& title,
-        EFileDialogMode mode = EFileDialogMode::OpenFile,
-        const std::filesystem::path& initial_path = std::filesystem::current_path(),
-        const std::vector<FileFilter>& filters = {});
+        std::string const& title,
+        EFileDialogMode const mode = EFileDialogMode::OpenFile,
+        std::filesystem::path const& home_path = std::filesystem::current_path(),
+        std::filesystem::path const& initial_path = std::filesystem::current_path(),
+        std::vector<FileFilter> const& filters = {});
 
     /**
      * @brief Renders the file dialog UI
@@ -115,6 +116,7 @@ private:
         std::vector<std::filesystem::path> selected_paths;
         bool is_open{false};
         bool show_dialog{false};
+        std::filesystem::path home_path;
     };
 
     State m_state;

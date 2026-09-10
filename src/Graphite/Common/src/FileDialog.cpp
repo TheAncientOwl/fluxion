@@ -5,7 +5,7 @@
 ///
 /// @file FileDialog.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.5
+/// @version 0.6
 /// @brief Implementation of @see Graphite/Common/UI/FileDialog.hpp
 ///
 
@@ -54,10 +54,11 @@ std::string FormatFileSize(std::uintmax_t bytes)
 FileDialog::FileDialog() = default;
 
 void FileDialog::Open(
-    const std::string& title,
+    std::string const& title,
     EFileDialogMode mode,
-    const std::filesystem::path& initial_path,
-    const std::vector<FileFilter>& filters)
+    std::filesystem::path const& home_path,
+    std::filesystem::path const& initial_path,
+    std::vector<FileFilter> const& filters)
 {
     m_state.title = title;
     m_state.mode = mode;
@@ -67,6 +68,7 @@ void FileDialog::Open(
     m_state.selected_paths.clear();
     m_state.is_open = true;
     m_state.show_dialog = true;
+    m_state.home_path = home_path;
 }
 
 bool FileDialog::Render()
@@ -154,7 +156,7 @@ void FileDialog::RenderPathBar()
     ImGui::SameLine();
     if (ImGui::Button(ICON_CI_HOME))
     {
-        m_state.current_path = std::filesystem::path(std::getenv("HOME"));
+        m_state.current_path = m_state.home_path;
     }
 }
 
