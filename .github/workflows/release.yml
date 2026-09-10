@@ -90,6 +90,11 @@ jobs:
           if [ -d "build/bin/plugins" ]; then
             cp -r build/bin/plugins staging/fluxion/
           fi
+
+          # Ensure GCC/MinGW C++ runtime DLLs are explicitly packaged
+          cp /mingw64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || true
+          cp /mingw64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || true
+          cp /mingw64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || true
           
           cd staging
           zip -r ../${{ env.ARCHIVE_NAME }} fluxion

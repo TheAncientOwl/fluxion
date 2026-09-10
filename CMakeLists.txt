@@ -123,4 +123,16 @@ else()
         ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:fluxion>/assets
         COMMENT "Copying assets to executable directory"
     )
+
+    # Copy GCC/MinGW runtime DLLs for Windows local runs
+    if(WIN32 AND MINGW)
+        add_custom_command(TARGET fluxion POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<SHELL_PATH:${CMAKE_CXX_COMPILER}>/../libstdc++-6.dll"
+                "$<SHELL_PATH:${CMAKE_CXX_COMPILER}>/../libgcc_s_seh-1.dll"
+                "$<SHELL_PATH:${CMAKE_CXX_COMPILER}>/../libwinpthread-1.dll"
+                $<TARGET_FILE_DIR:fluxion>
+            COMMENT "Copying GCC runtime DLLs to binary directory"
+        )
+    endif()
 endif()
