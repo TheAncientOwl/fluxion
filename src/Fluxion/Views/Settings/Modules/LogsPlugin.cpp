@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.9
+/// @version 0.10
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -275,16 +275,18 @@ void LogsPluginRenderer::RenderImportPlugins()
 {
     LOG_SCOPE("::RenderImportPlugins()");
 
+    auto const home_path{m_application->As<FluxionApplication>()->GetHomePath()};
+
     if (Graphite::Common::UI::IconButton(ICON_CI_EXTENSIONS, "Import Plugins", []() {}))
     {
         LOG_INFO("::RenderImportPlugins(): Opening file dialog for importing plugins");
 
-        auto const plugins_dir =
-            m_application->As<FluxionApplication>()->GetHomePath() / "plugins" / "logs";
+        auto const plugins_dir = home_path / "plugins" / "logs";
 
         m_file_dialog.Open(
             "Import Log Plugins",
             Graphite::Common::UI::EFileDialogMode::OpenMultiple,
+            home_path,
             plugins_dir,
             {{"Plugin Libraries", {".dylib", ".so", ".dll"}}});
     }
@@ -298,8 +300,7 @@ void LogsPluginRenderer::RenderImportPlugins()
             auto const& selected_paths = m_file_dialog.GetSelectedPaths();
             if (!selected_paths.empty())
             {
-                auto const plugins_dir =
-                    m_application->As<FluxionApplication>()->GetHomePath() / "plugins" / "logs";
+                auto const plugins_dir = home_path / "plugins" / "logs";
 
                 try
                 {
