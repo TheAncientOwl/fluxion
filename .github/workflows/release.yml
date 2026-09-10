@@ -22,35 +22,47 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Linux System Dependencies, Clang & Vulkan
+      - name: Install Linux System Dependencies, Clang, Ninja & Vulkan
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang libgl1-mesa-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libvulkan-dev
+          sudo apt-get install -y ninja-build clang libgl1-mesa-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libvulkan-dev
 
-      - name: Install Vulkan SDK (Windows)
+      - name: Setup MSYS2 / MinGW-w64 & Ninja (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          choco install vulkan-sdk --no-progress -y
-          $vulkanPath = (Get-ChildItem -Path "C:\VulkanSDK" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
-          echo "VULKAN_SDK=$vulkanPath" >> $env:GITHUB_ENV
-          echo "Successfully installed Vulkan to: $vulkanPath"
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-vulkan-headers
+            mingw-w64-x86_64-vulkan-loader
+            zip
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Configure CMake (macOS)
         if: runner.os == 'macOS'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -T ClangCL -DFLUXION_VERSION=${{ github.ref_name }}
+        shell: msys2 {0}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFLUXION_VERSION=${{ github.ref_name }}
 
-      - name: Build Application
-        run: cmake --build build --config Release
+      - name: Build Application (Unix)
+        if: runner.os != 'Windows'
+        run: cmake --build build
+
+      - name: Build Application (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: cmake --build build
 
       - name: Set Archive Filename
         id: archive-name
@@ -67,11 +79,21 @@ jobs:
 
       - name: Create Staging Directory & Package (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: msys2 {0}
         run: |
-          New-Item -ItemType Directory -Force -Path "staging/fluxion"
-          Copy-Item -Recurse -Force "build/bin/*" "staging/fluxion/"
-          Compress-Archive -Path "staging/fluxion/*" -DestinationPath "${env:ARCHIVE_NAME}" -Force
+          mkdir -p staging/fluxion
+          
+          # Copy executable, dynamic libraries, assets, and plugins
+          cp build/bin/fluxion.exe staging/fluxion/
+          cp build/bin/*.dll staging/fluxion/ 2>/dev/null || true
+          cp -r build/bin/assets staging/fluxion/ 2>/dev/null || true
+          if [ -d "build/bin/plugins" ]; then
+            cp -r build/bin/plugins staging/fluxion/
+          fi
+          
+          cd staging
+          zip -r ../${{ env.ARCHIVE_NAME }} fluxion
+          cd ..
 
       - name: Create Staging Directory & Package (Unix)
         if: runner.os != 'Windows'
