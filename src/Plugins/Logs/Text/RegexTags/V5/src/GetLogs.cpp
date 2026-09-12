@@ -5,12 +5,14 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <filesystem>
+#include <span>
 #include <system_error>
+#include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V5/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -23,16 +25,21 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::GetLogs);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V5 {
 
-void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+void RegexTags::GetLogsABI(Bridge::ABI::Span<Bridge::Range> const _ranges, Bridge::ILogsWriter* out_logs)
 {
-    LOG_SCOPE("::GetLogs()");
+    LOG_SCOPE("::GetLogsABI()");
+
+    if (!out_logs)
+    {
+        return;
+    }
+
+    std::span<Bridge::Range const> const ranges{_ranges};
 
     if (!m_sqlite_connection.IsOpen() &&
         !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
-        LOG_WARN("::GetLogs(): SQLite connection is closed and could not be opened");
+        LOG_WARN("::GetLogsABI(): SQLite connection is closed and could not be opened");
         return;
     }
 
@@ -41,18 +48,18 @@ void RegexTags::GetLogs(
     {
         ss << "[" << range.begin << ", " << range.end << "), ";
     }
-    LOG_INFO("::GetLogs(): Requested ranges: {}", ss.str());
+    LOG_INFO("::GetLogsABI(): Requested ranges: {}", ss.str());
 
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
-        LOG_INFO("::GetLogs(): No logs were imported before");
+        LOG_INFO("::GetLogsABI(): No logs were imported before");
         return;
     }
 
     auto const total_logs_opt{GetConfig().get<std::size_t>("total_logs")};
     if (!static_cast<bool>(total_logs_opt))
     {
-        LOG_WARN("::GetLogs(): total_logs is not set in config");
+        LOG_WARN("::GetLogsABI(): total_logs is not set in config");
         return;
     }
 
@@ -61,13 +68,14 @@ void RegexTags::GetLogs(
     if (std::filesystem::file_size(db_path, ec) == 0 || ec)
     {
         LOG_WARN(
-            "::GetLogs(): Database file {} is currently 0 bytes or locked. Skipping read.", db_path);
+            "::GetLogsABI(): Database file {} is currently 0 bytes or locked. Skipping read.",
+            db_path.string());
         return;
     }
 
     if (m_imported_logs_header.empty())
     {
-        LOG_WARN("::GetLogs(): m_imported_logs_header is empty.");
+        LOG_WARN("::GetLogsABI(): m_imported_logs_header is empty.");
         return;
     }
 
@@ -76,7 +84,7 @@ void RegexTags::GetLogs(
         ranges, SQLite::Utility::MakeFieldsIDs(m_imported_logs_header))};
     if (!query_handle.IsValid())
     {
-        LOG_ERROR("::GetLogs(): Failed to prepare ranges query.");
+        LOG_ERROR("::GetLogsABI(): Failed to prepare ranges query.");
         return;
     }
 
@@ -87,18 +95,23 @@ void RegexTags::GetLogs(
 
     while (reader.NextFilteredRow(query_handle, row_fields, filter_id_str, highlight_id_str, view_index))
     {
-        if (view_index > *total_logs_opt)
+        if (view_index >= *total_logs_opt)
         {
             break;
         }
 
-        auto& target_row = out_logs[view_index];
+        std::vector<Bridge::ABI::StringView> columns;
+        columns.reserve(row_fields.size());
+        for (auto const& field : row_fields)
+        {
+            columns.emplace_back(field);
+        }
 
-        target_row.data = row_fields;
+        out_logs->WriteData(view_index, columns);
 
-        target_row.metadata = {
-            .filter_id = Graphite::Common::Utility::UniqueID{filter_id_str},
-            .highlight_id = Graphite::Common::Utility::UniqueID{highlight_id_str}};
+        Graphite::Common::Utility::UniqueID const filter_id{filter_id_str};
+        Graphite::Common::Utility::UniqueID const highlight_id{highlight_id_str};
+        out_logs->WriteMetadata(view_index, filter_id, highlight_id);
 
         row_fields.clear();
     }

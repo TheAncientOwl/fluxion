@@ -17,7 +17,7 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
-void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
+void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Bridge::OnDisableData const& /*data*/)
 {
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");

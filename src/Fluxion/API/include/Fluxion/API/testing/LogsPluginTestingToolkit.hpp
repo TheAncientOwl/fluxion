@@ -5,12 +5,13 @@
 ///
 /// @file LogsPluginTestingToolkit.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 2.0
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <gtest/gtest.h>
@@ -24,6 +25,8 @@
 #include "Graphite/Logger.hpp"
 
 namespace Fluxion::API::Testing::LogsPluginTestingKit {
+
+namespace Bridge = Fluxion::API::LogsPlugin::Bridge;
 
 namespace LogEntry {
 
@@ -47,6 +50,92 @@ inline constexpr std::string_view GetPayload(Data const& data) noexcept
 }
 
 } // namespace LogEntry
+
+struct TestRow
+{
+    std::size_t index{};
+    std::vector<std::string> data{};
+    Bridge::LogRowMetadata metadata{};
+};
+
+class TestLogsWriter : public Bridge::ILogsWriter
+{
+public:
+    explicit TestLogsWriter(std::vector<TestRow>& rows) : m_rows(rows) {}
+
+    void WriteData(std::size_t const log_index, Bridge::ABI::Span<Bridge::ABI::StringView> const _columns) override
+    {
+        std::span<Bridge::ABI::StringView const> columns{_columns};
+        // Find existing or emplace new row
+        auto it = std::find_if(m_rows.begin(), m_rows.end(), [log_index](TestRow const& r) {
+            return r.index == log_index;
+        });
+
+        if (it == m_rows.end())
+        {
+            auto& row = m_rows.emplace_back();
+            row.index = log_index;
+            row.data.reserve(columns.size());
+            for (std::size_t i = 0; i < columns.size(); ++i)
+            {
+                row.data.emplace_back(columns.data()[i].data, columns.data()[i].size);
+            }
+        }
+        else
+        {
+            it->data.clear();
+            it->data.reserve(columns.size());
+            for (std::size_t i = 0; i < columns.size(); ++i)
+            {
+                it->data.emplace_back(columns.data()[i].data, columns.data()[i].size);
+            }
+        }
+    }
+
+    void WriteMetadata(
+        std::size_t const log_index,
+        Graphite::Common::Utility::UniqueID const filter_id,
+        Graphite::Common::Utility::UniqueID const highlight_id) override
+    {
+        auto it = std::find_if(m_rows.begin(), m_rows.end(), [log_index](TestRow const& r) {
+            return r.index == log_index;
+        });
+
+        if (it == m_rows.end())
+        {
+            auto& row = m_rows.emplace_back();
+            row.index = log_index;
+            row.metadata.filter_id = filter_id;
+            row.metadata.highlight_id = highlight_id;
+        }
+        else
+        {
+            it->metadata.filter_id = filter_id;
+            it->metadata.highlight_id = highlight_id;
+        }
+    }
+
+private:
+    std::vector<TestRow>& m_rows;
+};
+
+// Helper lookup utility functions for vector-backed rows
+inline bool ContainsRow(std::vector<TestRow> const& rows, std::size_t index)
+{
+    return std::any_of(
+        rows.begin(), rows.end(), [index](TestRow const& r) { return r.index == index; });
+}
+
+inline TestRow const& GetRow(std::vector<TestRow> const& rows, std::size_t index)
+{
+    auto it = std::find_if(
+        rows.begin(), rows.end(), [index](TestRow const& r) { return r.index == index; });
+    if (it != rows.end())
+    {
+        return *it;
+    }
+    std::terminate();
+}
 
 class ILogsPluginTestWrapper
 {
@@ -148,17 +237,17 @@ protected:
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
         EXPECT_EQ(logs_plugin.GetTotalLogs(), m_generated_logs.size());
 
-        static std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{0, 2}, {2, 5}};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        static std::vector<Bridge::Range> const ranges{{0, 2}, {2, 5}};
+        std::vector<TestRow> rows{};
+        TestLogsWriter writer{rows};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(ranges, &writer);
 
         static std::initializer_list<std::size_t> const target_indices{0u, 1u, 2u, 3u, 4u};
         for (auto const index : target_indices)
         {
-            ASSERT_TRUE(index_to_log_row_map.contains(index)) << "Missing imported index: " << index;
-            auto const& plugin_log = index_to_log_row_map.at(index);
+            ASSERT_TRUE(ContainsRow(rows, index)) << "Missing imported index: " << index;
+            auto const& plugin_log = GetRow(rows, index);
             auto const& generated_log = m_generated_logs[index];
 
             EXPECT_EQ(plugin_log.data.size(), generated_log.size());
@@ -180,17 +269,17 @@ protected:
             return;
         }
 
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{0, total_logs}};
+        std::vector<Bridge::Range> const ranges{{0, total_logs}};
 
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        std::vector<TestRow> rows{};
+        TestLogsWriter writer{rows};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(ranges, &writer);
 
         for (std::size_t index = 0; index < total_logs; ++index)
         {
-            ASSERT_TRUE(index_to_log_row_map.contains(index)) << "Missing log at index: " << index;
-            auto const& plugin_log = index_to_log_row_map.at(index);
+            ASSERT_TRUE(ContainsRow(rows, index)) << "Missing log at index: " << index;
+            auto const& plugin_log = GetRow(rows, index);
             auto const& generated_log = m_generated_logs[index];
 
             EXPECT_EQ(plugin_log.data.size(), generated_log.size())
@@ -207,32 +296,31 @@ protected:
     {
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
         const std::size_t total_logs = logs_plugin.GetTotalLogs();
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{
-            {total_logs + 10, total_logs + 20}};
+        std::vector<Bridge::Range> const ranges{{total_logs + 10, total_logs + 20}};
 
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        std::vector<TestRow> rows{};
+        TestLogsWriter writer{rows};
 
-        logs_plugin.GetLogs(ranges, writer);
-        EXPECT_TRUE(index_to_log_row_map.empty());
+        logs_plugin.GetLogs(ranges, &writer);
+        EXPECT_TRUE(rows.empty());
     }
 
     void RunTestEmptyAndOverlappingRanges()
     {
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{1, 4}, {3, 5}, {10, 10}};
+        std::vector<Bridge::Range> const ranges{{1, 4}, {3, 5}, {10, 10}};
 
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        std::vector<TestRow> rows{};
+        TestLogsWriter writer{rows};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(ranges, &writer);
 
         static std::initializer_list<std::size_t> const expected_indices{1u, 2u, 3u, 4u};
         for (auto const index : expected_indices)
         {
-            EXPECT_TRUE(index_to_log_row_map.contains(index));
+            EXPECT_TRUE(ContainsRow(rows, index));
         }
-        EXPECT_FALSE(index_to_log_row_map.contains(10));
+        EXPECT_FALSE(ContainsRow(rows, 10));
     }
 
     void RunTestMetadataAndHeader()
@@ -283,10 +371,10 @@ protected:
     void RunTestEnableDisableLifecycle()
     {
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
-        Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+        Bridge::OnEnableData enable_data{};
         logs_plugin.OnEnable(enable_data);
 
-        Fluxion::API::LogsPlugin::Data::OnDisableData disable_data{};
+        Bridge::OnDisableData disable_data{};
         logs_plugin.OnDisable(disable_data);
     }
 

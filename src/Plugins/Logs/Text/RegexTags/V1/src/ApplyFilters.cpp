@@ -5,11 +5,12 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.4
+/// @version 1.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <regex>
+#include <span>
 #include <string>
 #include <variant>
 
@@ -27,9 +28,9 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 namespace FilterImpl {
 
 struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Bridge::EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, Bridge::EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
@@ -46,9 +47,9 @@ struct ActiveFilter
 /// @note Conversion has to be done because of plugin specific regex implementation
 /// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
 ///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::span<Bridge::Filter const> const filters)
 {
-    using namespace Fluxion::API::LogsPlugin::Data;
+    using namespace Bridge;
     LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
@@ -57,25 +58,31 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
     for (auto const& filter : filters)
     {
         std::vector<ComputedCondition> out_conditions{};
-        out_conditions.reserve(filter.conditions.size());
 
-        for (auto const& condition : filter.conditions)
+        std::span<Condition const> conditions_span = filter.conditions;
+        out_conditions.reserve(conditions_span.size());
+
+        for (auto const& condition : conditions_span)
         {
             auto& out_condition = out_conditions.emplace_back();
             out_condition.column_index = condition.column_index;
 
-            out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
-            out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
-            out_condition[EConditionFlag::IsCaseSensitive] =
-                condition[EConditionFlag::IsCaseSensitive];
+            out_condition[Bridge::EConditionFlag::IsRegex] =
+                condition[Bridge::EConditionFlag::IsRegex];
+            out_condition[Bridge::EConditionFlag::IsEquals] =
+                condition[Bridge::EConditionFlag::IsEquals];
+            out_condition[Bridge::EConditionFlag::IsCaseSensitive] =
+                condition[Bridge::EConditionFlag::IsCaseSensitive];
 
-            if (condition[EConditionFlag::IsRegex])
+            std::string_view const data_sv = condition.data;
+
+            if (condition[Bridge::EConditionFlag::IsRegex])
             {
-                out_condition.condition = std::regex{condition.data};
+                out_condition.condition = std::regex{std::string(data_sv)};
             }
             else
             {
-                out_condition.condition = std::move(condition.data);
+                out_condition.condition = std::string(data_sv);
             }
         }
 
@@ -87,30 +94,29 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
 
 }; // namespace FilterImpl
 
-void RegexTags::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+void RegexTags::ApplyFiltersABI(
+    Bridge::ABI::Span<Bridge::Filter const> const _filters,
+    Bridge::ABI::Span<Bridge::Filter const> const _highlight_only)
 {
-    LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
+    LOG_SCOPE("::ApplyFiltersABI()");
 
-    auto const filters = FilterImpl::Convert(std::move(_filters));
-    auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
-    LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
-    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+    auto const filters = FilterImpl::Convert(_filters);
+    auto const highlight_only = FilterImpl::Convert(_highlight_only);
+    LOG_INFO("::ApplyFiltersABI(): Active filters size: {}", filters.size());
+    LOG_INFO("::ApplyFiltersABI(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
-        LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
+        LOG_INFO("::ApplyFiltersABI(): No logs were imported, stopping execution");
         return;
     }
     auto const output_filtered_path{MakeFilteredLogsPath(*m_last_imported_logs_path)};
     auto filtered_logs_writer = CSV::Writer{output_filtered_path};
-    LOG_INFO("::ApplyFilters(): Output filtered CSV file {}", output_filtered_path);
+    LOG_INFO("::ApplyFiltersABI(): Output filtered CSV file {}", output_filtered_path);
 
     auto const input_logs_path{MakeConvertedLogsPath(*m_last_imported_logs_path)};
     auto converted_logs_reader = CSV::Reader{input_logs_path};
-    LOG_INFO("::ApplyFilters(): Converted CSV file {}", input_logs_path);
+    LOG_INFO("::ApplyFiltersABI(): Converted CSV file {}", input_logs_path);
 
     std::size_t total_filtered_logs{0};
     m_logs_operation_progress = 0;
@@ -125,11 +131,11 @@ void RegexTags::ApplyFilters(
                 auto const& target{row[condition.column_index]};
 
                 bool const equals{
-                    condition[EConditionFlag::IsRegex]
+                    condition[Bridge::EConditionFlag::IsRegex]
                         ? std::regex_match(target, std::get<std::regex>(condition.condition))
                         : target == std::get<std::string>(condition.condition)};
 
-                if (condition[EConditionFlag::IsEquals] != equals)
+                if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                 {
                     matches = false;
                     break;
@@ -150,11 +156,11 @@ void RegexTags::ApplyFilters(
                         auto const& target{row[condition.column_index]};
 
                         bool const equals{
-                            condition[EConditionFlag::IsRegex]
+                            condition[Bridge::EConditionFlag::IsRegex]
                                 ? std::regex_match(target, std::get<std::regex>(condition.condition))
                                 : target == std::get<std::string>(condition.condition)};
 
-                        if (condition[EConditionFlag::IsEquals] != equals)
+                        if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                         {
                             highlight_matches = false;
                             break;
@@ -181,7 +187,7 @@ void RegexTags::ApplyFilters(
         }
     }
 
-    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", total_filtered_logs);
+    LOG_INFO("::ApplyFiltersABI(): Total filtered logs: {}", total_filtered_logs);
     auto settings{GetConfig()};
     // TODO: move "total_logs" key to some constexpr global
     settings.set("total_logs", total_filtered_logs);

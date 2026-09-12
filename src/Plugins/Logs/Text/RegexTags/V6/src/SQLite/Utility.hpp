@@ -15,7 +15,7 @@
 #include <memory>
 #include <vector>
 
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/API/LogsPlugin/Bridge.hpp"
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V6/Data.hpp"
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite::Utility {
@@ -24,6 +24,6 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite::Utility {
     std::vector<std::shared_ptr<Data::RegexTag>> const& tags);
 
 [[nodiscard]] std::vector<std::string> MakeFieldsIDs(
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> const& columns);
+    std::vector<Fluxion::API::LogsPlugin::Bridge::ColumnDetails> const& columns);
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite::Utility

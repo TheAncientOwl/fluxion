@@ -5,12 +5,13 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 6.3
+/// @version 6.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <memory>
 #include <re2/re2.h>
+#include <span>
 #include <string>
 #include <variant>
 
@@ -30,9 +31,9 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
 namespace FilterImpl {
 
 struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Bridge::EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Bridge::EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::unique_ptr<re2::RE2>, std::string> condition{};
@@ -49,40 +50,47 @@ struct ActiveFilter
 /// @note Conversion has to be done because of plugin specific regex implementation
 /// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
 ///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::span<Bridge::Filter const> const filters)
 {
     LOG_SCOPE("::Convert()");
-    using namespace Fluxion::API::LogsPlugin::Data;
     LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
     out.reserve(filters.size());
 
-    for (auto const& filter : filters)
+    for (std::size_t i = 0; i < filters.size(); ++i)
     {
-        std::vector<ComputedCondition> out_conditions{};
-        out_conditions.reserve(filter.conditions.size());
+        auto const& filter = filters[i];
 
-        for (auto const& condition : filter.conditions)
+        std::vector<ComputedCondition> out_conditions{};
+        std::span<Bridge::Condition const> const conditions_span{filter.conditions};
+        out_conditions.reserve(conditions_span.size());
+
+        for (std::size_t j = 0; j < conditions_span.size(); ++j)
         {
+            auto const& condition = conditions_span[j];
+
             auto& out_condition = out_conditions.emplace_back();
             out_condition.column_index = condition.column_index;
 
-            out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
-            out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
-            out_condition[EConditionFlag::IsCaseSensitive] =
-                condition[EConditionFlag::IsCaseSensitive];
+            out_condition[Bridge::EConditionFlag::IsRegex] =
+                condition[Bridge::EConditionFlag::IsRegex];
+            out_condition[Bridge::EConditionFlag::IsEquals] =
+                condition[Bridge::EConditionFlag::IsEquals];
+            out_condition[Bridge::EConditionFlag::IsCaseSensitive] =
+                condition[Bridge::EConditionFlag::IsCaseSensitive];
 
             re2::RE2::Options options;
-            options.set_case_sensitive(condition[EConditionFlag::IsCaseSensitive]);
+            options.set_case_sensitive(condition[Bridge::EConditionFlag::IsCaseSensitive]);
 
-            if (condition[EConditionFlag::IsRegex])
+            std::string_view const condition_data{condition.data};
+            if (condition[Bridge::EConditionFlag::IsRegex])
             {
-                out_condition.condition = std::make_unique<re2::RE2>(condition.data, options);
+                out_condition.condition = std::make_unique<re2::RE2>(condition_data, options);
             }
             else
             {
-                out_condition.condition = std::move(condition.data);
+                out_condition.condition = std::string(condition_data);
             }
         }
 
@@ -94,30 +102,29 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
 
 }; // namespace FilterImpl
 
-void RegexTags::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+void RegexTags::ApplyFiltersABI(
+    Bridge::ABI::Span<Bridge::Filter const> const _filters,
+    Bridge::ABI::Span<Bridge::Filter const> const _highlight_only)
 {
-    LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
+    LOG_SCOPE("::ApplyFiltersABI()");
 
-    auto const filters = FilterImpl::Convert(std::move(_filters));
-    auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
-    LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
-    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+    auto const filters = FilterImpl::Convert(_filters);
+    auto const highlight_only = FilterImpl::Convert(_highlight_only);
+    LOG_INFO("::ApplyFiltersABI(): Active filters size: {}", filters.size());
+    LOG_INFO("::ApplyFiltersABI(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
     m_filtered_logs.clear();
 
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
-        LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
+        LOG_INFO("::ApplyFiltersABI(): No logs were imported, stopping execution");
         return;
     }
 
     if (!m_sqlite_connection.IsOpen() &&
         !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
-        LOG_WARN("::ApplyFilters(): SQLite connection is closed and could not be opened");
+        LOG_WARN("::ApplyFiltersABI(): SQLite connection is closed and could not be opened");
         return;
     }
 
@@ -135,12 +142,12 @@ void RegexTags::ApplyFilters(
     m_logs_operation_target = m_total_logs_imported;
     m_logs_operation_progress = 0;
     {
-        LOG_SCOPE("::ApplyFilters(): filtering");
+        LOG_SCOPE("::ApplyFiltersABI(): filtering");
         SQLite::Transaction transaction{m_sqlite_connection.GetDatabaseRef()};
         if (!transaction.IsActive())
         {
             LOG_ERROR(
-                "::ApplyFilters(): Failed to begin transaction: {}",
+                "::ApplyFiltersABI(): Failed to begin transaction: {}",
                 m_sqlite_connection.GetDatabaseRef().GetLastErrorMessage());
             return;
         }
@@ -155,13 +162,13 @@ void RegexTags::ApplyFilters(
                     auto const& target{row[condition.column_index]};
 
                     bool const equals =
-                        condition[EConditionFlag::IsRegex]
+                        condition[Bridge::EConditionFlag::IsRegex]
                             ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
                                re2::RE2::FullMatch(
                                    target, *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
                             : (target == std::get<std::string>(condition.condition));
 
-                    if (condition[EConditionFlag::IsEquals] != equals)
+                    if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                     {
                         matches = false;
                         break;
@@ -180,14 +187,14 @@ void RegexTags::ApplyFilters(
                             auto const& target{row[condition.column_index]};
 
                             bool const equals =
-                                condition[EConditionFlag::IsRegex]
+                                condition[Bridge::EConditionFlag::IsRegex]
                                     ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
                                        re2::RE2::FullMatch(
                                            target,
                                            *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
                                     : (target == std::get<std::string>(condition.condition));
 
-                            if (condition[EConditionFlag::IsEquals] != equals)
+                            if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                             {
                                 highlight_matches = false;
                                 break;
@@ -210,13 +217,13 @@ void RegexTags::ApplyFilters(
         if (!transaction.Commit())
         {
             LOG_ERROR(
-                "::ApplyFilters(): Failed to commit transaction: {}",
+                "::ApplyFiltersABI(): Failed to commit transaction: {}",
                 m_sqlite_connection.GetDatabaseRef().GetLastErrorMessage());
             return;
         }
     }
 
-    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", m_filtered_logs.size());
+    LOG_INFO("::ApplyFiltersABI(): Total filtered logs: {}", m_filtered_logs.size());
 
     m_logs_operation_progress = 0;
     m_logs_operation_target = 0;

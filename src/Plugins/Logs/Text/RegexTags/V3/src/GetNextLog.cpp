@@ -5,7 +5,7 @@
 ///
 /// @file GetNextLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.3
+/// @version 3.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -19,21 +19,42 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetNextLog);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
-std::optional<std::size_t> RegexTags::GetNextLog(
+bool RegexTags::GetNextLogABI(
     Graphite::Common::Utility::UniqueID const& filter_id,
-    std::size_t const current_index)
+    std::size_t const current_index,
+    std::size_t* out_index)
 {
-    LOG_SCOPE("::GetNextLog()");
+    LOG_SCOPE("::GetNextLogABI()");
+
+    if (!out_index)
+    {
+        return false;
+    }
+
+    if (!m_last_imported_logs_path)
+    {
+        LOG_INFO("::GetNextLogABI(): No logs imported");
+        return false;
+    }
 
     if (!m_sqlite_connection.IsOpen() &&
         !m_sqlite_connection.OpenDatabase(MakeDatabasePath(*m_last_imported_logs_path)))
     {
-        LOG_WARN("::GetNextLog(): SQLite connection is closed and could not be opened");
-        return std::nullopt;
+        LOG_WARN("::GetNextLogABI(): SQLite connection is closed and could not be opened");
+        return false;
     }
 
-    return SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}.GetNextFilteredIndex(
-        filter_id.ToString(), current_index);
+    auto next_index_opt =
+        SQLite::FilteredLogsReader{m_sqlite_connection.GetDatabaseRef()}.GetNextFilteredIndex(
+            filter_id.ToString(), current_index);
+
+    if (next_index_opt.has_value())
+    {
+        *out_index = *next_index_opt;
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V3

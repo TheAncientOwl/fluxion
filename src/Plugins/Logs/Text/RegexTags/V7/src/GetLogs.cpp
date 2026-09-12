@@ -5,11 +5,12 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.0
+/// @version 7.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <algorithm>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -21,13 +22,14 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V7::GetLogs);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V7 {
 
-void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+void RegexTags::GetLogsABI(Bridge::ABI::Span<Bridge::Range> const ranges, Bridge::ILogsWriter* out_logs)
 {
-    LOG_SCOPE("::GetLogs()");
+    LOG_SCOPE("::GetLogsABI()");
 
-    if (m_filtered_logs.empty() || ranges.empty() || m_imported_logs_header.empty())
+    std::span<Bridge::Range const> const ranges_span = ranges;
+
+    if (m_filtered_logs.empty() || ranges_span.empty() || m_imported_logs_header.empty() ||
+        out_logs == nullptr)
     {
         return;
     }
@@ -36,7 +38,7 @@ void RegexTags::GetLogs(
     std::unordered_map<std::size_t, std::vector<std::size_t>> log_id_to_view_indices;
     std::vector<std::size_t> requested_log_ids;
 
-    for (auto const& range : ranges)
+    for (auto const& range : ranges_span)
     {
         for (std::size_t view_idx = range.begin;
              view_idx < range.end && view_idx < m_filtered_logs.size();
@@ -44,13 +46,13 @@ void RegexTags::GetLogs(
         {
             auto const& filtered_item = m_filtered_logs[view_idx];
 
-            auto& target_row = out_logs[view_idx];
-            target_row.metadata = {
-                .filter_id = filtered_item.filter_id,
-                .highlight_id = filtered_item.highlight_filter_id};
+            out_logs->WriteMetadata(
+                view_idx, filtered_item.filter_id, filtered_item.highlight_filter_id);
 
             // Pre-allocate empty column slots matching the header size
-            target_row.data.assign(expected_fields_count, "");
+            std::vector<Bridge::ABI::StringView> empty_cols(
+                expected_fields_count, Bridge::ABI::StringView(""));
+            out_logs->WriteData(view_idx, empty_cols);
 
             std::size_t const log_id = filtered_item.log_id;
             log_id_to_view_indices[log_id].push_back(view_idx);
@@ -92,11 +94,18 @@ void RegexTags::GetLogs(
         if (auto const it = line_buffer_pool.find(log_id); it != line_buffer_pool.end())
         {
             auto const& line = it->second;
-            for (std::size_t const view_idx : view_indices)
+            if (!line.empty())
             {
-                if (!line.empty())
+                std::vector<Bridge::ABI::StringView> line_views;
+                line_views.reserve(line.size());
+                for (auto const& col : line)
                 {
-                    out_logs[view_idx].data.assign(line.begin(), line.end());
+                    line_views.emplace_back(col);
+                }
+
+                for (std::size_t const view_idx : view_indices)
+                {
+                    out_logs->WriteData(view_idx, line_views);
                 }
             }
         }

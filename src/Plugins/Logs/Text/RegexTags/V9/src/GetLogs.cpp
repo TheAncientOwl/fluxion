@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.3
+/// @version 9.6
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -21,22 +21,30 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9::GetLogs);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
-void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+void RegexTags::GetLogsABI(Bridge::ABI::Span<Bridge::Range> const ranges, Bridge::ILogsWriter* out_logs)
 {
-    LOG_SCOPE("::GetLogs()");
+    LOG_SCOPE("::GetLogsABI()");
 
-    if (m_filtered_logs.empty() || ranges.empty() || m_imported_logs_header.empty())
+    std::span<Bridge::Range const> ranges_span{ranges};
+
+    if (m_filtered_logs.empty() || ranges_span.empty() || m_imported_logs_header.empty() || !out_logs)
     {
         return;
     }
 
     std::size_t const expected_fields_count = m_imported_logs_header.size();
-    std::vector<std::pair<std::size_t, std::vector<std::string>*>> log_id_to_output;
+
+    struct LogOutputTarget
+    {
+        std::size_t view_idx;
+        std::size_t log_id;
+        std::vector<std::string> data;
+    };
+
+    std::vector<LogOutputTarget> targets;
     std::vector<SQLiteStorage::Range> requested_id_ranges;
 
-    for (auto const& range : ranges)
+    for (auto const& range : ranges_span)
     {
         auto const range_begin = std::min(range.begin, m_filtered_logs.size());
         auto const range_end = std::min(range.end, m_filtered_logs.size());
@@ -53,26 +61,27 @@ void RegexTags::GetLogs(
         {
             auto const& filtered_item = m_filtered_logs[view_idx];
 
-            auto& target_row = out_logs[view_idx];
-            target_row.metadata = {
-                .filter_id = filtered_item.filter_id,
-                .highlight_id = filtered_item.highlight_filter_id};
+            // Stream metadata directly via WriteMetadata
+            out_logs->WriteMetadata(
+                view_idx, filtered_item.filter_id, filtered_item.highlight_filter_id);
 
-            // Reset column values while preserving vector and string capacity.
-            target_row.data.resize(expected_fields_count);
-            for (auto& value : target_row.data)
-            {
-                value.clear();
-            }
-
-            std::size_t const log_id = filtered_item.log_id;
-            log_id_to_output.emplace_back(log_id, &target_row.data);
+            targets.push_back(
+                {.view_idx = view_idx,
+                 .log_id = filtered_item.log_id,
+                 .data = std::vector<std::string>(expected_fields_count)});
         }
     }
 
-    if (requested_id_ranges.empty())
+    if (requested_id_ranges.empty() || targets.empty())
     {
         return;
+    }
+
+    std::vector<std::pair<std::size_t, std::vector<std::string>*>> log_id_to_output;
+    log_id_to_output.reserve(targets.size());
+    for (auto& target : targets)
+    {
+        log_id_to_output.emplace_back(target.log_id, &target.data);
     }
 
     std::sort(log_id_to_output.begin(), log_id_to_output.end(), [](auto const& lhs, auto const& rhs) {
@@ -103,6 +112,19 @@ void RegexTags::GetLogs(
         {
             storage->ReadRowsByIDsInto(shard_id_ranges, log_id_to_output);
         }
+    }
+
+    // Stream row columns back through WriteData
+    for (auto const& target : targets)
+    {
+        std::vector<Bridge::ABI::StringView> string_views;
+        string_views.reserve(target.data.size());
+        for (auto const& val : target.data)
+        {
+            string_views.emplace_back(val);
+        }
+
+        out_logs->WriteData(target.view_idx, string_views);
     }
 }
 

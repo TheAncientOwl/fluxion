@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 8.1
+/// @version 8.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -69,7 +69,7 @@ std::string MakeLineRegexPattern(
     return out;
 }
 
-std::vector<std::string> MakeFields(std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> const& header)
+std::vector<std::string> MakeFields(std::vector<Bridge::ColumnDetails> const& header)
 {
     LOG_SCOPE("::MakeFields()");
     std::vector<std::string> out{};
@@ -84,18 +84,12 @@ std::vector<std::string> MakeFields(std::vector<Fluxion::API::LogsPlugin::Data::
 class LogsOperationUnitResetter
 {
 public:
-    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& target)
-        : m_target{target}
-    {
-    }
+    LogsOperationUnitResetter(Bridge::ELogsOperationUnit& target) : m_target{target} {}
 
-    ~LogsOperationUnitResetter()
-    {
-        m_target = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs;
-    };
+    ~LogsOperationUnitResetter() { m_target = Bridge::ELogsOperationUnit::Logs; };
 
 private:
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& m_target;
+    Bridge::ELogsOperationUnit& m_target;
 };
 
 struct MappedFile
@@ -584,9 +578,10 @@ private:
 
 } // namespace Utility
 
-void RegexTags::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogsABI(Bridge::ABI::StringView const path_view)
 {
-    LOG_SCOPE("::ImportLogs()");
+    LOG_SCOPE("::ImportLogsABI()");
+    std::filesystem::path const path{std::string_view(path_view)};
     LOG_INFO("Importing {}", path);
 
     m_filtered_logs.clear();
@@ -607,26 +602,26 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto mapped_file = Utility::MapFile(path);
     if (!mapped_file.IsValid())
     {
-        LOG_ERROR("::ImportLogs(): Failed to map file or file is empty: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Failed to map file or file is empty: {}", path);
         return;
     }
 
     auto const _{Utility::LogsOperationUnitResetter{m_logs_operation_unit}};
     m_last_imported_logs_path = path;
     m_logs_operation_progress = 0;
-    m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
+    m_logs_operation_unit = Bridge::ELogsOperationUnit::Bytes;
     m_logs_operation_target = mapped_file.size;
 
     auto const mapped_file_slices{Utility::Multithreading::SplitFileSlice(
         Utility::Multithreading::FileSlice{mapped_file.get(), mapped_file.get() + mapped_file.size},
-        static_cast<std::size_t>(m_settings.import_params.file_slice_size_mb) * 1024 * 1024)};
+        static_cast<std::size_t>(m_settings.import_params.file_target_slice_mb) * 1024 * 1024)};
     LOG_INFO(
-        "::ImportLogs(): Generated {} slices of {}mb",
+        "::ImportLogsABI(): Generated {} slices of {}mb",
         mapped_file_slices.size(),
-        m_settings.import_params.file_slice_size_mb);
+        m_settings.import_params.file_target_slice_mb);
 
     {
-        LOG_SCOPE("::ImportLogs::OpenSQLite()");
+        LOG_SCOPE("::ImportLogsABI::OpenSQLite()");
         // >> Cleanup existing storage
         m_sqlite_storages.clear();
         auto const database_path{MakeDatabasePath(path)};
@@ -636,7 +631,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         std::filesystem::create_directories(database_path, ec);
         if (ec)
         {
-            LOG_ERROR("::ImportLogs(): failed to create SQLite directory {}", database_path);
+            LOG_ERROR("::ImportLogsABI(): failed to create SQLite directory {}", database_path);
             return;
         }
 
@@ -650,7 +645,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
             if (!storage->Open(shard_path, fields, slice_idx * 1'000'000'000'000ULL) ||
                 !storage->BeginTransaction())
             {
-                LOG_ERROR("::ImportLogs(): failed to open SQLite shard {}", shard_path);
+                LOG_ERROR("::ImportLogsABI(): failed to open SQLite shard {}", shard_path);
                 return;
             }
             m_sqlite_storages.push_back(std::move(storage));
@@ -658,7 +653,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     }
 
     {
-        LOG_SCOPE("::ImportLogs()::SliceWorkers()");
+        LOG_SCOPE("::ImportLogsABI()::SliceWorkers()");
 
         auto const row_fields_count{m_imported_logs_header.size()};
         std::vector<std::thread> slice_workers{};
@@ -694,15 +689,15 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     }
 
     {
-        LOG_SCOPE("::ImportLogs()::CommitStorage()");
+        LOG_SCOPE("::ImportLogsABI()::CommitStorage()");
         std::vector<std::thread> commit_threads{};
         {
-            LOG_SCOPE("::ImportLogs()::CommitStorage::ThreadsCreation()");
+            LOG_SCOPE("::ImportLogsABI()::CommitStorage::ThreadsCreation()");
             commit_threads.reserve(m_sqlite_storages.size());
             for (auto const& storage : m_sqlite_storages)
             {
                 commit_threads.emplace_back([&storage]() {
-                    LOG_SCOPE("::ImportLogs()::CommitStorage::Thread()");
+                    LOG_SCOPE("::ImportLogsABI()::CommitStorage::Thread()");
                     std::ignore = storage->Commit();
                 });
             }
@@ -714,7 +709,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     }
 
     {
-        LOG_SCOPE("::ImportLogs()::BuildFilteredLogsIndex()");
+        LOG_SCOPE("::ImportLogsABI()::BuildFilteredLogsIndex()");
         std::size_t writtern_rows_total{0};
         for (auto const& storage : m_sqlite_storages)
         {
@@ -727,13 +722,16 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
             auto const offset = storage->GetIDOffset();
             for (std::size_t index = 0; index < count; ++index)
             {
-                m_filtered_logs.emplace_back(offset + index);
+                m_filtered_logs.emplace_back(
+                    offset + index,
+                    Graphite::Common::Utility::UniqueID::GetDefault(),
+                    Graphite::Common::Utility::UniqueID::GetDefault());
             }
         }
     }
 
     m_total_logs_imported = m_filtered_logs.size();
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_total_logs_imported);
+    LOG_INFO("::ImportLogsABI(): Total matched logs: {}", m_total_logs_imported);
 
     m_logs_operation_target = 0;
     m_logs_operation_progress = 0;

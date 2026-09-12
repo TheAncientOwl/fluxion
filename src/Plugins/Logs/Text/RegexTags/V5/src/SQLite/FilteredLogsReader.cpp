@@ -5,7 +5,7 @@
 ///
 /// @file FilteredLogsReader.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2.0
 /// @brief Implementation of @see FilteredLogsReader.hpp
 ///
 
@@ -25,7 +25,7 @@ FilteredLogsReader::FilteredLogsReader(DatabaseRef db) : m_database{db}
 }
 
 Statement FilteredLogsReader::PrepareGetRangesQuery(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
+    std::span<Fluxion::API::LogsPlugin::Bridge::Range const> const ranges,
     std::vector<std::string> const& fields)
 {
     LOG_SCOPE("::PrepareGetRangesQuery()");

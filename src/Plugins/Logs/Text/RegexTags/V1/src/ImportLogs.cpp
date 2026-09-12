@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.3
+/// @version 1.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -15,6 +15,7 @@
 #include <fstream>
 #include <regex>
 #include <string>
+#include <string_view>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -59,10 +60,12 @@ size_t CountLines(const std::filesystem::path& filepath)
 
 } // namespace Utility
 
-void RegexTags::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogsABI(Fluxion::API::LogsPlugin::Bridge::ABI::StringView const path_sv)
 {
-    LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path);
+    std::filesystem::path const path{std::string_view{path_sv}};
+
+    LOG_SCOPE("::ImportLogsABI()");
+    LOG_INFO("Importing {}", path.string());
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const& tags{m_regex_tags.GetFront()};
@@ -81,7 +84,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
     }
     UpdateImportedLogsHeader(tags);
-    LOG_INFO("::ImportLogs(): Full regex pattern: {}", full_pattern);
+    LOG_INFO("::ImportLogsABI(): Full regex pattern: {}", full_pattern);
 
     std::regex line_regex{};
     try
@@ -98,17 +101,17 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     std::ifstream raw_logs_file{path};
     if (!raw_logs_file.is_open())
     {
-        LOG_WARN("::ImportLogs(): Could not open file {}", path);
+        LOG_WARN("::ImportLogsABI(): Could not open file {}", path.string());
         return;
     }
 
     auto const output_converted_path{MakeConvertedLogsPath(path)};
     auto converted_writer = CSV::Writer{output_converted_path};
-    LOG_INFO("Output converted CSV file {}", output_converted_path);
+    LOG_INFO("Output converted CSV file {}", output_converted_path.string());
 
     auto const output_filtered_path{MakeFilteredLogsPath(path)};
     auto filtered_writer = CSV::Writer{output_filtered_path};
-    LOG_INFO("Output filtered CSV file {}", output_filtered_path);
+    LOG_INFO("Output filtered CSV file {}", output_filtered_path.string());
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
 
     std::string line{};
@@ -155,11 +158,11 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
         else
         {
-            LOG_WARN("::ImportLogs(): Regex did not match entry '{}'", line);
+            LOG_WARN("::ImportLogsABI(): Regex did not match entry '{}'", line);
         }
     }
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
+    LOG_INFO("::ImportLogsABI(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};
     settings.set("total_logs", m_logs_operation_progress);
     settings.set("total_logs_imported", m_logs_operation_progress);

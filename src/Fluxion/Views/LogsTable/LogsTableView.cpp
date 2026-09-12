@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.27
+/// @version 0.28
 /// @brief Implementation of @see LogsTableView.hpp.
 ///
 
@@ -94,7 +94,7 @@ void LogsTableView::OnRender()
             processed,
             total,
             app_state.logs_plugin->GetLogsOperationUnit() ==
-                    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+                    Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Bytes
                 ? "bytes"
                 : "logs",
             static_cast<double>(Fluxion::Common::Utility::Math::Percentage(processed, total)));
@@ -136,8 +136,7 @@ void LogsTableView::RenderLogsTable()
     if (app_state.app_options.show_logs_table_idx)
     {
         table_header.insert(
-            table_header.begin(),
-            API::LogsPlugin::Data::ColumnDetails{.id = s_index_id, .display_name = "Index"});
+            table_header.begin(), API::LogsPlugin::Host::ColumnDetails{s_index_id, "Index"});
     }
 
     if (table_header.empty())
@@ -204,7 +203,7 @@ void LogsTableView::RenderLogsTable()
         clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()), clipper_row_height);
 
         auto const& front_buffer = app_state.logs.visible.GetFront();
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> ranges{};
+        std::vector<Fluxion::API::LogsPlugin::Bridge::Range> ranges{};
 
         while (clipper.Step())
         {

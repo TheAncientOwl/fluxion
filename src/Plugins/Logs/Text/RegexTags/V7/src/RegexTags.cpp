@@ -29,15 +29,12 @@ Data::FilteredLog::FilteredLog(
 {
 }
 
-RegexTags::RegexTags() = default;
-RegexTags::~RegexTags() = default;
-
-std::string_view RegexTags::GetDisplayName() const
+Bridge::ABI::StringView RegexTags::GetDisplayNameABI() const
 {
     return "Text::RegexTags::V7";
 }
 
-std::string_view RegexTags::GetDirectoryName() const
+Bridge::ABI::StringView RegexTags::GetDirectoryNameABI() const
 {
     return "Text_RegexTags_V7";
 }

@@ -5,7 +5,7 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 3.2
+/// @version 3.2.0
 /// @brief Logs::Text::RegexTags::V3 Plugin test
 ///
 
@@ -102,7 +102,7 @@ public:
             config.SetJsonValue("tags", tags_json);
             config.Save();
 
-            m_plugin.OnEnable({.plugin_home_path = m_home_path});
+            m_plugin.OnEnable({.plugin_home_path = std::string_view(m_home_path.string())});
         }
     }
 

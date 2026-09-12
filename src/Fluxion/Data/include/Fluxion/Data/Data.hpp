@@ -5,7 +5,7 @@
 ///
 /// @file Data.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.14
+/// @version 0.15
 /// @brief General data.
 ///
 
@@ -21,7 +21,7 @@
 #include "Graphite/Common/Utility/UniqueID.hpp"
 
 #include "Fluxion/API/Data/Common.hpp"
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/API/LogsPlugin/Host.hpp"
 
 namespace Fluxion::Application::Data {
 
@@ -107,7 +107,7 @@ namespace Logs {
 
 struct VisibleLogs
 {
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMap logs{};
+    Fluxion::API::LogsPlugin::Host::IndexToLogRowMap logs{};
 };
 
 struct SharedFilterMetadata

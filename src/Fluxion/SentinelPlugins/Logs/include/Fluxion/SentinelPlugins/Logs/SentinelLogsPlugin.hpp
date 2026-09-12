@@ -5,61 +5,67 @@
 ///
 /// @file SentinelLogsPlugin.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 1.0
 /// @brief Do nothing...
 ///
 
 #include <memory>
 #include <vector>
 
+#include "Fluxion/API/LogsPlugin/Bridge.hpp"
+#include "Fluxion/API/LogsPlugin/Host.hpp"
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
 
 namespace Fluxion::SentinelPlugins::Logs {
 
-class SentinelLogsPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
+namespace Bridge = Fluxion::API::LogsPlugin::Bridge;
+
+class SentinelLogsPlugin final : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
     SentinelLogsPlugin();
 
+protected:
+    Bridge::ABI::StringView GetDisplayNameABI() const override;
+    Bridge::ABI::StringView GetDirectoryNameABI() const override;
+
+    void ImportLogsABI(Bridge::ABI::StringView const path) override;
+
+    Bridge::ABI::Span<Bridge::ColumnDetails> GetTableHeaderABI() const override;
+
+    void GetLogsABI(Bridge::ABI::Span<Bridge::Range> const ranges, Bridge::ILogsWriter* out_logs) override;
+
+    void ApplyFiltersABI(
+        Bridge::ABI::Span<Bridge::Filter const> const filters,
+        Bridge::ABI::Span<Bridge::Filter const> const highlight_only) override;
+
+    bool GetNextLogABI(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index,
+        std::size_t* out_index) override;
+
+    bool GetPrevLogABI(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index,
+        std::size_t* out_index) override;
+
 public:
-    std::string_view GetDisplayName() const override final;
-    std::string_view GetDirectoryName() const override final;
+    void OnEnable(Bridge::OnEnableData const& data) override;
+    void OnDisable(Bridge::OnDisableData const& data) override;
 
-    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override final;
-    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override final;
+    void RenderMenu() override;
 
-    void RenderMenu() override final;
+    void DisableFilters() override;
 
-    void ImportLogs(std::filesystem::path const& path) override final;
+    std::size_t GetTotalLogs() const override;
 
-    std::optional<std::size_t> GetNextLog(
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index = 0) override final;
-    std::optional<std::size_t> GetPrevLog(
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index = 0) override final;
-
-    void ApplyFilters(
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only) override final;
-    void DisableFilters() override final;
-
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const override final;
-
-    std::size_t GetTotalLogs() const override final;
-
-    void GetLogs(
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
-
-    std::size_t GetLogsOperationTarget() const override final;
-    std::size_t GetLogsOperationProgress() const override final;
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit GetLogsOperationUnit() const override final;
+    std::size_t GetLogsOperationTarget() const override;
+    std::size_t GetLogsOperationProgress() const override;
+    Bridge::ELogsOperationUnit GetLogsOperationUnit() const override;
 
 private:
     std::vector<std::vector<std::string>> m_logs;
-    std::vector<Fluxion::API::LogsPlugin::Data::LogRow> m_filtered_logs;
+    std::vector<Fluxion::API::LogsPlugin::Host::LogRow> m_filtered_logs;
 
     std::unordered_map<Graphite::Common::Utility::UniqueID, std::optional<std::size_t>>
         m_filter_to_search_log_index{};

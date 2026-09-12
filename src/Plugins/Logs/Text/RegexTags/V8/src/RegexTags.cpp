@@ -20,15 +20,12 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V8::RegexTags);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V8 {
 
-RegexTags::RegexTags() = default;
-RegexTags::~RegexTags() = default;
-
-std::string_view RegexTags::GetDisplayName() const
+Bridge::ABI::StringView RegexTags::GetDisplayNameABI() const
 {
     return "Text::RegexTags::V8";
 }
 
-std::string_view RegexTags::GetDirectoryName() const
+Bridge::ABI::StringView RegexTags::GetDirectoryNameABI() const
 {
     return "Text_RegexTags_V8";
 }

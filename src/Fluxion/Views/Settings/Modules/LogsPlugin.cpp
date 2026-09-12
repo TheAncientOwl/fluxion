@@ -5,7 +5,7 @@
 ///
 /// @file LogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Logs plugin selector + menu.
 ///
 
@@ -140,12 +140,14 @@ void LogsPluginRenderer::RenderPluginSelection()
                                     LOG_INFO("::RenderPluginSelection(): Plugin created");
                                     app_state.logs_plugin.reset(plugin_ptr);
 
-                                    Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+                                    Fluxion::API::LogsPlugin::Bridge::OnEnableData enable_data{};
 
-                                    enable_data.plugin_home_path =
+                                    auto const plugin_home_path =
                                         m_application->As<FluxionApplication>()->GetHomePath() /
                                         std::string(app_state.logs_plugin->GetDirectoryName());
-                                    std::filesystem::create_directories(enable_data.plugin_home_path);
+                                    std::filesystem::create_directories(plugin_home_path);
+                                    auto const plugin_home_path_str{plugin_home_path.string()};
+                                    enable_data.plugin_home_path = plugin_home_path_str;
 
                                     app_state.logs_plugin->OnEnable(enable_data);
 

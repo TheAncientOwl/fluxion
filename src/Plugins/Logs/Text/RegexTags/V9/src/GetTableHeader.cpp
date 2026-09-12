@@ -5,7 +5,7 @@
 ///
 /// @file GetTableHeader.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -18,8 +18,10 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9::GetTableHeader);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
-std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> RegexTags::GetTableHeader() const
+Fluxion::API::LogsPlugin::Bridge::ABI::Span<Fluxion::API::LogsPlugin::Bridge::ColumnDetails> RegexTags::
+    GetTableHeaderABI() const
 {
+    LOG_SCOPE("::GetTableHeaderABI()");
     return m_imported_logs_header;
 }
 

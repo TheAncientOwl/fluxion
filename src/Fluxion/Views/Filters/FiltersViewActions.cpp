@@ -5,7 +5,7 @@
 ///
 /// @file FiltersView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.24
+/// @version 0.25
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -446,8 +446,8 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
         return;
     }
 
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters{};
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only{};
+    std::vector<Fluxion::API::LogsPlugin::Bridge::Filter> filters{};
+    std::vector<Fluxion::API::LogsPlugin::Bridge::Filter> highlight_only{};
 
     auto const& tabs{application_state.filters.tabs.GetBack()};
     auto const& header{application_state.logs_plugin->GetTableHeader()};
@@ -481,7 +481,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
                 continue;
             }
 
-            std::vector<Fluxion::API::LogsPlugin::Data::Condition> out_conditions{};
+            std::vector<Fluxion::API::LogsPlugin::Bridge::Condition> out_conditions{};
             out_conditions.reserve(filter.conditions.GetBack().size());
             for (auto const& condition_ptr : filter.conditions.GetBack())
             {
@@ -498,7 +498,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
                 out_condition.data = condition.data;
 
                 using EInternalConditionFlag = EConditionFlag;
-                using EBridgeConditionFlag = Fluxion::API::LogsPlugin::Data::EConditionFlag;
+                using EBridgeConditionFlag = Fluxion::API::LogsPlugin::Bridge::EConditionFlag;
 
                 out_condition[EBridgeConditionFlag::IsRegex] =
                     condition[EInternalConditionFlag::IsRegex];

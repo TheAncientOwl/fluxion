@@ -5,7 +5,7 @@
 ///
 /// @file Progress.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.1
+/// @version 4.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -28,9 +28,9 @@ std::size_t RegexTags::GetLogsOperationProgress() const
     return m_logs_operation_progress;
 }
 
-Fluxion::API::LogsPlugin::Data::ELogsOperationUnit RegexTags::GetLogsOperationUnit() const
+Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit RegexTags::GetLogsOperationUnit() const
 {
-    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+    return API::LogsPlugin::Bridge::ELogsOperationUnit::Logs;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V4

@@ -5,7 +5,7 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.6
+/// @version 9.8
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -14,6 +14,7 @@
 #include <future>
 #include <memory>
 #include <re2/re2.h>
+#include <span>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -29,7 +30,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
 namespace FilterImpl {
 
-inline std::string Lowercase(std::string_view value)
+inline std::string Lowercase(std::string_view const value)
 {
     std::string out{value};
     for (auto& character : out)
@@ -39,7 +40,7 @@ inline std::string Lowercase(std::string_view value)
     return out;
 }
 
-inline bool equalsIgnoreCase(std::string_view const str, std::string_view const str_lowercase)
+inline bool EqualsIgnoreCase(std::string_view const str, std::string_view const str_lowercase)
 {
     if (str.size() != str_lowercase.size())
     {
@@ -48,7 +49,7 @@ inline bool equalsIgnoreCase(std::string_view const str, std::string_view const 
 
     for (std::size_t index{0}; index < str.size(); ++index)
     {
-        if (std::tolower(str[index]) != str_lowercase[index])
+        if (std::tolower(static_cast<unsigned char>(str[index])) != str_lowercase[index])
         {
             return false;
         }
@@ -57,9 +58,9 @@ inline bool equalsIgnoreCase(std::string_view const str, std::string_view const 
 }
 
 struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Bridge::EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Bridge::EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::unique_ptr<re2::RE2>, std::string> condition{};
@@ -74,23 +75,17 @@ struct ActiveFilter
 
 inline std::size_t EvaluationCost(ComputedCondition const& condition)
 {
-    using namespace Fluxion::API::LogsPlugin::Data;
-    if (condition[EConditionFlag::IsRegex])
+    if (condition[Bridge::EConditionFlag::IsRegex])
     {
         return 2;
     }
-    return condition[EConditionFlag::IsCaseSensitive] ? 0 : 1;
+    return condition[Bridge::EConditionFlag::IsCaseSensitive] ? 0 : 1;
 }
 
-///
-/// @note Conversion has to be done because of plugin specific regex implementation
-/// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
-///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Bridge::Filter> filters)
 {
-    LOG_SCOPE("::Convert()");
-    using namespace Fluxion::API::LogsPlugin::Data;
-    LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
+    LOG_SCOPE("::FilterImpl::Convert()");
+    LOG_INFO("::FilterImpl::Convert(): Converting {} filters", filters.size());
 
     std::vector<ActiveFilter> out{};
     out.reserve(filters.size());
@@ -98,29 +93,32 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
     for (auto const& filter : filters)
     {
         std::vector<ComputedCondition> out_conditions{};
-        out_conditions.reserve(filter.conditions.size());
+        std::span<Bridge::Condition const> conditions_span{filter.conditions};
+        out_conditions.reserve(conditions_span.size());
 
-        for (auto const& condition : filter.conditions)
+        for (auto const& condition : conditions_span)
         {
             auto& out_condition = out_conditions.emplace_back();
             out_condition.column_index = condition.column_index;
 
-            out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
-            out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
-            out_condition[EConditionFlag::IsCaseSensitive] =
-                condition[EConditionFlag::IsCaseSensitive];
+            out_condition[Bridge::EConditionFlag::IsRegex] =
+                condition[Bridge::EConditionFlag::IsRegex];
+            out_condition[Bridge::EConditionFlag::IsEquals] =
+                condition[Bridge::EConditionFlag::IsEquals];
+            out_condition[Bridge::EConditionFlag::IsCaseSensitive] =
+                condition[Bridge::EConditionFlag::IsCaseSensitive];
 
             re2::RE2::Options options;
-            options.set_case_sensitive(condition[EConditionFlag::IsCaseSensitive]);
+            options.set_case_sensitive(condition[Bridge::EConditionFlag::IsCaseSensitive]);
 
-            if (condition[EConditionFlag::IsRegex])
+            if (condition[Bridge::EConditionFlag::IsRegex])
             {
                 out_condition.condition = std::make_unique<re2::RE2>(condition.data, options);
             }
             else
             {
-                out_condition.condition = condition[EConditionFlag::IsCaseSensitive]
-                                              ? std::move(condition.data)
+                out_condition.condition = condition[Bridge::EConditionFlag::IsCaseSensitive]
+                                              ? std::string(condition.data)
                                               : Lowercase(condition.data);
             }
         }
@@ -138,23 +136,30 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
     return out;
 }
 
-}; // namespace FilterImpl
+} // namespace FilterImpl
 
-void RegexTags::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+void RegexTags::ApplyFiltersABI(
+    Bridge::ABI::Span<Bridge::Filter const> const _filters,
+    Bridge::ABI::Span<Bridge::Filter const> const _highlight_only)
 {
-    LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
+    LOG_SCOPE("::ApplyFiltersABI()");
 
-    auto const filters = FilterImpl::Convert(std::move(_filters));
-    auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
-    LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
-    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+    std::span<Bridge::Filter const> filters_span{_filters};
+    std::span<Bridge::Filter const> highlight_only_span{_highlight_only};
+
+    std::vector<Bridge::Filter> const filters_vector(filters_span.begin(), filters_span.end());
+    std::vector<Bridge::Filter> const highlight_vector(
+        highlight_only_span.begin(), highlight_only_span.end());
+
+    auto const filters = FilterImpl::Convert(std::move(filters_vector));
+    auto const highlight_only = FilterImpl::Convert(std::move(highlight_vector));
+
+    LOG_INFO("::ApplyFiltersABI(): Active filters size: {}", filters.size());
+    LOG_INFO("::ApplyFiltersABI(): Highlight-only filters size: {}", highlight_only.size());
 
     if (m_sqlite_storages.empty())
     {
-        LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
+        LOG_INFO("::ApplyFiltersABI(): No logs were imported, stopping execution");
         return;
     }
 
@@ -162,10 +167,11 @@ void RegexTags::ApplyFilters(
     m_logs_operation_progress = 0;
 
     {
-        LOG_SCOPE("::ApplyFilters(): filtering");
+        LOG_SCOPE("::ApplyFiltersABI(): Execution phase");
 
         using FilteredLogs = std::vector<Data::FilteredLog>;
         using FilterResult = std::pair<bool, FilteredLogs>;
+
         std::vector<std::future<FilterResult>> filter_tasks{};
         filter_tasks.reserve(m_sqlite_storages.size());
 
@@ -175,12 +181,14 @@ void RegexTags::ApplyFilters(
                 std::async(
                     std::launch::async,
                     [this, storage = storage.get(), &filters, &highlight_only]() -> FilterResult {
-                        LOG_SCOPE("::ApplyFilters::Thread::{}()", std::this_thread::get_id());
+                        LOG_SCOPE("::ApplyFiltersABI::WorkerThread");
                         FilteredLogs filtered_logs;
+
                         bool const completed = storage->ReadRowsViews(
                             [this, &filters, &highlight_only, &filtered_logs](
                                 std::size_t const log_id, std::vector<std::string_view> const& row) {
                                 m_logs_operation_progress.fetch_add(1, std::memory_order_relaxed);
+
                                 for (auto const& filter : filters)
                                 {
                                     bool matches{true};
@@ -193,21 +201,33 @@ void RegexTags::ApplyFilters(
                                         }
                                         auto const& target{row[condition.column_index]};
 
-                                        bool const equals =
-                                            condition[EConditionFlag::IsRegex]
-                                                ? (std::get<std::unique_ptr<re2::RE2>>(
-                                                       condition.condition) &&
-                                                   re2::RE2::FullMatch(
-                                                       re2::StringPiece(target.data(), target.size()),
-                                                       *std::get<std::unique_ptr<re2::RE2>>(
-                                                           condition.condition)))
-                                            : condition[EConditionFlag::IsCaseSensitive]
-                                                ? (target == std::get<std::string>(condition.condition))
-                                                : FilterImpl::equalsIgnoreCase(
-                                                      target,
-                                                      std::get<std::string>(condition.condition));
+                                        bool const equals = [&]() {
+                                            if (condition[Bridge::EConditionFlag::IsRegex])
+                                            {
+                                                auto const* regex_ptr =
+                                                    std::get_if<std::unique_ptr<re2::RE2>>(
+                                                        &condition.condition);
+                                                return regex_ptr && *regex_ptr &&
+                                                       re2::RE2::FullMatch(
+                                                           re2::StringPiece(
+                                                               target.data(), target.size()),
+                                                           **regex_ptr);
+                                            }
+                                            if (condition[Bridge::EConditionFlag::IsCaseSensitive])
+                                            {
+                                                auto const* str_ptr =
+                                                    std::get_if<std::string>(&condition.condition);
+                                                return str_ptr && (target == *str_ptr);
+                                            }
+                                            {
+                                                auto const* str_ptr =
+                                                    std::get_if<std::string>(&condition.condition);
+                                                return str_ptr && FilterImpl::EqualsIgnoreCase(
+                                                                      target, *str_ptr);
+                                            }
+                                        }();
 
-                                        if (condition[EConditionFlag::IsEquals] != equals)
+                                        if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                                         {
                                             matches = false;
                                             break;
@@ -218,6 +238,7 @@ void RegexTags::ApplyFilters(
                                     {
                                         Graphite::Common::Utility::UniqueID highlight_id{filter.id};
                                         auto highlight_priority{filter.priority};
+
                                         for (auto const& highlight_filter : highlight_only)
                                         {
                                             bool highlight_matches{true};
@@ -230,29 +251,40 @@ void RegexTags::ApplyFilters(
                                                 }
                                                 auto const& target{row[condition.column_index]};
 
-                                                bool const equals =
-                                                    condition[EConditionFlag::IsRegex]
-                                                        ? (std::get<std::unique_ptr<re2::RE2>>(
-                                                               condition.condition) &&
-                                                           re2::RE2::FullMatch(
-                                                               re2::StringPiece(
-                                                                   target.data(), target.size()),
-                                                               *std::get<std::unique_ptr<re2::RE2>>(
-                                                                   condition.condition)))
-                                                    : condition[EConditionFlag::IsCaseSensitive]
-                                                        ? (target ==
-                                                           std::get<std::string>(condition.condition))
-                                                        : FilterImpl::equalsIgnoreCase(
-                                                              target,
-                                                              std::get<std::string>(
-                                                                  condition.condition));
+                                                bool const equals = [&]() {
+                                                    if (condition[Bridge::EConditionFlag::IsRegex])
+                                                    {
+                                                        auto const* regex_ptr =
+                                                            std::get_if<std::unique_ptr<re2::RE2>>(
+                                                                &condition.condition);
+                                                        return regex_ptr && *regex_ptr &&
+                                                               re2::RE2::FullMatch(
+                                                                   re2::StringPiece(
+                                                                       target.data(), target.size()),
+                                                                   **regex_ptr);
+                                                    }
+                                                    if (condition[Bridge::EConditionFlag::IsCaseSensitive])
+                                                    {
+                                                        auto const* str_ptr = std::get_if<std::string>(
+                                                            &condition.condition);
+                                                        return str_ptr && (target == *str_ptr);
+                                                    }
+                                                    {
+                                                        auto const* str_ptr = std::get_if<std::string>(
+                                                            &condition.condition);
+                                                        return str_ptr && FilterImpl::EqualsIgnoreCase(
+                                                                              target, *str_ptr);
+                                                    }
+                                                }();
 
-                                                if (condition[EConditionFlag::IsEquals] != equals)
+                                                if (condition[Bridge::EConditionFlag::IsEquals] !=
+                                                    equals)
                                                 {
                                                     highlight_matches = false;
                                                     break;
                                                 }
                                             }
+
                                             if (highlight_matches &&
                                                 highlight_filter.priority > highlight_priority)
                                             {
@@ -267,6 +299,7 @@ void RegexTags::ApplyFilters(
                                 }
                                 return true;
                             });
+
                         return {completed, std::move(filtered_logs)};
                     }));
         }
@@ -277,6 +310,7 @@ void RegexTags::ApplyFilters(
             auto [completed, storage_logs] = filter_task.get();
             if (!completed)
             {
+                LOG_ERROR("::ApplyFiltersABI(): Filter task execution failed or was interrupted");
                 m_logs_operation_progress = 0;
                 m_logs_operation_target = 0;
                 return;
@@ -289,7 +323,7 @@ void RegexTags::ApplyFilters(
         m_filtered_logs = std::move(filtered_logs);
     }
 
-    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", m_filtered_logs.size());
+    LOG_INFO("::ApplyFiltersABI(): Total filtered logs matched: {}", m_filtered_logs.size());
 
     m_logs_operation_progress = 0;
     m_logs_operation_target = 0;

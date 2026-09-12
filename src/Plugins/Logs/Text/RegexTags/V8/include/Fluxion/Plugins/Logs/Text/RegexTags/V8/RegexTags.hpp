@@ -24,44 +24,47 @@
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V8 {
 
-class GRAPHITE_EXPORT RegexTags : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
+namespace Bridge = Fluxion::API::LogsPlugin::Bridge;
+
+class GRAPHITE_EXPORT RegexTags final : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
+protected:
+    Bridge::ABI::StringView GetDisplayNameABI() const override;
+    Bridge::ABI::StringView GetDirectoryNameABI() const override;
+
+    void ImportLogsABI(Bridge::ABI::StringView const path) override;
+
+    Bridge::ABI::Span<Bridge::ColumnDetails> GetTableHeaderABI() const override;
+
+    void GetLogsABI(Bridge::ABI::Span<Bridge::Range> const ranges, Bridge::ILogsWriter* out_logs) override;
+
+    void ApplyFiltersABI(
+        Bridge::ABI::Span<Bridge::Filter const> const filters,
+        Bridge::ABI::Span<Bridge::Filter const> const highlight_only) override;
+
+    bool GetNextLogABI(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index,
+        std::size_t* out_index) override;
+
+    bool GetPrevLogABI(
+        Graphite::Common::Utility::UniqueID const& filter_id,
+        std::size_t const current_index,
+        std::size_t* out_index) override;
+
 public:
-    RegexTags();
-    ~RegexTags() override;
+    void OnEnable(Bridge::OnEnableData const& data) override;
+    void OnDisable(Bridge::OnDisableData const& data) override;
 
-    std::string_view GetDisplayName() const override final;
-    std::string_view GetDirectoryName() const override final;
+    void RenderMenu() override;
 
-    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override final;
-    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override final;
+    void DisableFilters() override;
 
-    void RenderMenu() override final;
+    std::size_t GetTotalLogs() const override;
 
-    void ImportLogs(std::filesystem::path const& path) override final;
-
-    std::optional<std::size_t> GetNextLog(
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index) override final;
-    std::optional<std::size_t> GetPrevLog(
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index) override final;
-
-    void ApplyFilters(
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only) override final;
-    void DisableFilters() override final;
-
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const override final;
-
-    std::size_t GetTotalLogs() const override final;
-
-    void GetLogs(
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
-
-    std::size_t GetLogsOperationTarget() const override final;
-    std::size_t GetLogsOperationProgress() const override final;
+    std::size_t GetLogsOperationTarget() const override;
+    std::size_t GetLogsOperationProgress() const override;
+    Bridge::ELogsOperationUnit GetLogsOperationUnit() const override;
 
 private:
     std::filesystem::path MakeDatabasePath(std::filesystem::path const& raw_logs_path) const;
@@ -70,7 +73,6 @@ private:
     void SaveRegexTags(std::vector<std::shared_ptr<Data::RegexTag>> const& tags) const;
     std::vector<std::shared_ptr<Data::RegexTag>> LoadRegexTags() const;
     void UpdateImportedLogsHeader(std::vector<std::shared_ptr<Data::RegexTag>> const& tags);
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit GetLogsOperationUnit() const override final;
 
     void LoadSettings();
     void SaveSettings() const;
@@ -81,11 +83,11 @@ private:
 
     std::filesystem::path m_home_path{};
     std::optional<std::filesystem::path> m_last_imported_logs_path{};
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> m_imported_logs_header{};
+    std::vector<Fluxion::API::LogsPlugin::Bridge::ColumnDetails> m_imported_logs_header{};
     std::atomic<std::size_t> m_logs_operation_progress{0};
     std::size_t m_logs_operation_target{0};
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit m_logs_operation_unit{
-        Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs};
+    Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit m_logs_operation_unit{
+        Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Logs};
 
     std::vector<std::unique_ptr<SQLiteStorage>> m_sqlite_storages{};
     std::vector<Data::FilteredLog> m_filtered_logs{};

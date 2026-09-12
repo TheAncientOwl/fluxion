@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableViewActions.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.10
+/// @version 0.11
 /// @brief Main view responsible for rendering logs table.
 ///
 
@@ -27,8 +27,8 @@ void handle(AppState& application_state, TPayload const& payload) = delete;
 
 namespace Utility {
 
-std::vector<Fluxion::API::LogsPlugin::Data::Range> MergeRanges(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range>& input_ranges)
+std::vector<Fluxion::API::LogsPlugin::Bridge::Range> MergeRanges(
+    std::vector<Fluxion::API::LogsPlugin::Bridge::Range>& input_ranges)
 {
     if (input_ranges.empty())
     {
@@ -43,7 +43,7 @@ std::vector<Fluxion::API::LogsPlugin::Data::Range> MergeRanges(
         return a.end < b.end;
     });
 
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> merged;
+    std::vector<Fluxion::API::LogsPlugin::Bridge::Range> merged;
     merged.push_back(input_ranges[0]);
 
     for (std::size_t idx = 1; idx < input_ranges.size(); ++idx)
@@ -76,7 +76,7 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
 
     LOG_INFO("::handle<UpdateVisibleLogs>(): cleaning up visible logs indices");
     LOG_INFO("::handle<UpdateVisibleLogs>(): logs indices request: {}", payload.visible_logs_indices);
-    auto final_request_indices{std::vector<Fluxion::API::LogsPlugin::Data::Range>{}};
+    auto final_request_indices{std::vector<Fluxion::API::LogsPlugin::Bridge::Range>{}};
     auto const& visible_logs{application_state.logs.visible.GetBack().logs};
     for (auto const& range : payload.visible_logs_indices)
     {
@@ -124,9 +124,8 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
          &logs_plugin = application_state.logs_plugin](VisibleLogs& visible_logs_chunk) {
             if (!final_request_indices.empty())
             {
-                logs_plugin->GetLogs(
-                    final_request_indices,
-                    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter{visible_logs_chunk.logs});
+                auto writer{Fluxion::API::LogsPlugin::Host::LogWriter{visible_logs_chunk.logs}};
+                logs_plugin->GetLogs(final_request_indices, &writer);
             }
         });
 }

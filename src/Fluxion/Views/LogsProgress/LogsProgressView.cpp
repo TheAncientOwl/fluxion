@@ -5,7 +5,7 @@
 ///
 /// @file LogsProgressView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.3
+/// @version 0.4
 /// @brief Main view responsible for rendering import progress.
 ///
 
@@ -67,7 +67,7 @@ void LogsProgressView::OnRender()
     auto render_progress =
         [&,
          operation = app_state.logs_plugin->GetLogsOperationUnit() ==
-                             Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+                             Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Bytes
                          ? "bytes"
                          : "logs"](const char* icon, const char* action_name, std::size_t total) {
             auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};

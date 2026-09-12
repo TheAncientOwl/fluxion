@@ -5,13 +5,9 @@
 ///
 /// @file SentinelLogsPlugin.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.6
+/// @version 1.0
 /// @brief Do nothing...
 ///
-
-#include <filesystem>
-#include <string_view>
-#include <vector>
 
 #include "Fluxion/SentinelPlugins/Logs/SentinelLogsPlugin.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -27,22 +23,22 @@ SentinelLogsPlugin::SentinelLogsPlugin()
     LOG_INFO("::SentinelLogsPlugin()");
 }
 
-void SentinelLogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/)
+void SentinelLogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Bridge::OnEnableData const& /*data*/)
 {
     LOG_INFO("::OnEnable()");
 }
 
-void SentinelLogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
+void SentinelLogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Bridge::OnDisableData const& /*data*/)
 {
     LOG_INFO("::OnDisable()");
 }
 
-std::string_view SentinelLogsPlugin::GetDisplayName() const
+Bridge::ABI::StringView SentinelLogsPlugin::GetDisplayNameABI() const
 {
     return "SentinelLogsPlugin";
 }
 
-std::string_view SentinelLogsPlugin::GetDirectoryName() const
+Bridge::ABI::StringView SentinelLogsPlugin::GetDirectoryNameABI() const
 {
     return "SentinelLogsPlugin";
 }
@@ -52,26 +48,26 @@ void SentinelLogsPlugin::RenderMenu()
     LOG_INFO("::RenderMenu()");
 }
 
-void SentinelLogsPlugin::ImportLogs(std::filesystem::path const& /*path*/)
+void SentinelLogsPlugin::ImportLogsABI(Bridge::ABI::StringView const /*path*/)
 {
-    LOG_INFO("::ImportLogs()");
+    LOG_INFO("::ImportLogsABI()");
 }
 
-void SentinelLogsPlugin::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> /*_filters*/,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> /*_highlight_only*/)
+void SentinelLogsPlugin::ApplyFiltersABI(
+    Bridge::ABI::Span<Bridge::Filter const> /* filters */,
+    Bridge::ABI::Span<Bridge::Filter const> /* highlight_only */)
 {
-    LOG_SCOPE("::ApplyFilters()");
+    LOG_SCOPE("::ApplyFiltersABI()");
 }
 
 void SentinelLogsPlugin::DisableFilters()
 {
-    LOG_SCOPE("::DisableFilters()");
+    LOG_SCOPE("::DisableFiltersABI()");
 }
 
-std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> SentinelLogsPlugin::GetTableHeader() const
+Bridge::ABI::Span<Bridge::ColumnDetails> SentinelLogsPlugin::GetTableHeaderABI() const
 {
-    LOG_SCOPE("::GetTableHeader()");
+    LOG_SCOPE("::GetTableHeaderABI()");
     return {};
 }
 
@@ -81,27 +77,29 @@ std::size_t SentinelLogsPlugin::GetTotalLogs() const
     return 0;
 }
 
-void SentinelLogsPlugin::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& /*ranges*/,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter /*out_logs*/)
+void SentinelLogsPlugin::GetLogsABI(
+    Bridge::ABI::Span<Bridge::Range> const /* ranges */,
+    Bridge::ILogsWriter* /* out_logs */)
 {
-    LOG_SCOPE("::GetLogs()");
+    LOG_SCOPE("::GetLogsABI()");
 }
 
-std::optional<std::size_t> SentinelLogsPlugin::GetNextLog(
-    Graphite::Common::Utility::UniqueID const& /*filter_id*/,
-    std::size_t const /*current_index*/)
+bool SentinelLogsPlugin::GetNextLogABI(
+    Graphite::Common::Utility::UniqueID const& /* filter_id */,
+    std::size_t const /* current_index */,
+    std::size_t* /* out_index */)
 {
-    LOG_SCOPE("::GetNextLog()");
-    return std::nullopt;
+    LOG_SCOPE("::GetNextLogABI()");
+    return false;
 }
 
-std::optional<std::size_t> SentinelLogsPlugin::GetPrevLog(
-    Graphite::Common::Utility::UniqueID const& /*filter_id*/,
-    std::size_t const /*current_index*/)
+bool SentinelLogsPlugin::GetPrevLogABI(
+    Graphite::Common::Utility::UniqueID const& /* filter_id */,
+    std::size_t const /* current_index */,
+    std::size_t* /* out_index */)
 {
-    LOG_SCOPE("::GetPrevLog()");
-    return std::nullopt;
+    LOG_SCOPE("::GetPrevLogABI()");
+    return false;
 }
 
 std::size_t SentinelLogsPlugin::GetLogsOperationTarget() const
@@ -114,9 +112,9 @@ std::size_t SentinelLogsPlugin::GetLogsOperationProgress() const
     return 0;
 }
 
-Fluxion::API::LogsPlugin::Data::ELogsOperationUnit SentinelLogsPlugin::GetLogsOperationUnit() const
+Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit SentinelLogsPlugin::GetLogsOperationUnit() const
 {
-    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+    return API::LogsPlugin::Bridge::ELogsOperationUnit::Logs;
 }
 
 std::unique_ptr<Fluxion::API::LogsPlugin::IFluxionLogsPlugin> Create()

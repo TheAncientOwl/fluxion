@@ -5,7 +5,7 @@
 ///
 /// @file Formatters.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.11
+/// @version 0.12
 /// @brief IO related utilities.
 ///
 
@@ -20,7 +20,7 @@
 #include "imgui.h"
 
 #include "Data.hpp"
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/API/LogsPlugin/Bridge.hpp"
 
 // ==========================================================================
 // 1. HEADER SHELLS (Declarations)
@@ -31,10 +31,10 @@
 namespace std {
 
 template <>
-struct formatter<Fluxion::API::LogsPlugin::Data::Range> : std::formatter<std::string>
+struct formatter<Fluxion::API::LogsPlugin::Bridge::Range> : std::formatter<std::string>
 {
     template <typename FormatContext>
-    auto format(Fluxion::API::LogsPlugin::Data::Range const& range, FormatContext& ctx) const
+    auto format(Fluxion::API::LogsPlugin::Bridge::Range const& range, FormatContext& ctx) const
         -> decltype(ctx.out())
     {
         return std::format_to(ctx.out(), "[{}, {})", range.begin, range.end);

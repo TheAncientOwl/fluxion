@@ -5,7 +5,7 @@
 ///
 /// @file LogsTableViewActions.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.2
+/// @version 0.3
 /// @brief Actions of @see LogsTableView.hpp
 ///
 
@@ -24,7 +24,7 @@ enum class ELogsViewActionViewType : std::uint8_t
 struct LogsTableViewActionPayload
 {
     ELogsViewActionViewType type{ELogsViewActionViewType::None};
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> visible_logs_indices{};
+    std::vector<Fluxion::API::LogsPlugin::Bridge::Range> visible_logs_indices{};
 };
 
 void HandleLogsTableViewsViewAction(AppState& application_state, LogsTableViewActionPayload const& action);

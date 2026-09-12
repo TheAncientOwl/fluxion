@@ -5,7 +5,7 @@
 ///
 /// @file GetNextLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.0
+/// @version 9.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -17,15 +17,16 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9::GetNextLog);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
-std::optional<std::size_t> RegexTags::GetNextLog(
+bool RegexTags::GetNextLogABI(
     Graphite::Common::Utility::UniqueID const& filter_id,
-    std::size_t const current_index)
+    std::size_t const current_index,
+    std::size_t* out_index)
 {
-    LOG_SCOPE("::GetNextLog()");
+    LOG_SCOPE("::GetNextLogABI()");
 
-    if (m_filtered_logs.empty())
+    if (m_filtered_logs.empty() || !out_index)
     {
-        return std::nullopt;
+        return false;
     }
 
     auto matches = [&](Data::FilteredLog const& item) {
@@ -37,7 +38,8 @@ std::optional<std::size_t> RegexTags::GetNextLog(
     {
         if (matches(m_filtered_logs[i]))
         {
-            return i;
+            *out_index = i;
+            return true;
         }
     }
 
@@ -46,11 +48,12 @@ std::optional<std::size_t> RegexTags::GetNextLog(
     {
         if (matches(m_filtered_logs[i]))
         {
-            return i;
+            *out_index = i;
+            return true;
         }
     }
 
-    return std::nullopt;
+    return false;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V9

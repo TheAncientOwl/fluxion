@@ -6,7 +6,7 @@
 ///
 /// @file Utilityy.hpp
 /// @author Alexandru Delegeanu
-/// @version 4.0
+/// @version 4.2.0
 /// @brief Utilities
 ///
 
@@ -34,7 +34,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V4::SQLite::Utility {
 }
 
 [[nodiscard]] std::vector<std::string> MakeFieldsIDs(
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> const& columns)
+    std::vector<Fluxion::API::LogsPlugin::Bridge::ColumnDetails> const& columns)
 {
     LOG_SCOPE("::MakeFieldsIDs(vector<ColumnDetails>)");
     std::vector<std::string> fields_ids{};

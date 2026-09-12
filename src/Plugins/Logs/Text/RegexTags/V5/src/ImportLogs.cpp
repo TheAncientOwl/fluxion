@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.7
+/// @version 5.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -56,18 +56,18 @@ namespace Utility {
 class LogsOperationUnitResetter
 {
 public:
-    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& target)
+    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit& target)
         : m_target{target}
     {
     }
 
     ~LogsOperationUnitResetter()
     {
-        m_target = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+        m_target = Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Logs;
     };
 
 private:
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& m_target;
+    Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit& m_target;
 };
 
 struct MappedFile
@@ -342,10 +342,11 @@ private:
 
 } // namespace Utility
 
-void RegexTags::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogsABI(Bridge::ABI::StringView const _path)
 {
-    LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path);
+    LOG_SCOPE("::ImportLogsABI()");
+    std::filesystem::path const path{std::string_view(_path)};
+    LOG_INFO("Importing {}", path.string());
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const tags{m_regex_tags.GetFront()};
@@ -363,7 +364,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                 line_regex_pattern += tag->regex_data;
             }
         }
-        LOG_INFO("::ImportLogs(): Full regex pattern: {}", line_regex_pattern);
+        LOG_INFO("::ImportLogsABI(): Full regex pattern: {}", line_regex_pattern);
     }
 
     re2::RE2 const shared_regex(line_regex_pattern);
@@ -378,14 +379,14 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto mapped_file = Utility::MapFile(path);
     if (!mapped_file.IsValid())
     {
-        LOG_ERROR("::ImportLogs(): Failed to map file or file is empty: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Failed to map file or file is empty: {}", path.string());
         return;
     }
 
     m_last_imported_logs_path = path;
     m_logs_operation_progress = 0;
     Utility::LogsOperationUnitResetter logs_operation_unit_resetter{m_logs_operation_unit};
-    m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
+    m_logs_operation_unit = Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Bytes;
     m_logs_operation_target = mapped_file.size;
 
     auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};
@@ -423,7 +424,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     // 1. Single Writer Thread: Consumes chunks sequentially per slice index
     std::size_t total_logs{0};
     auto writer_future = std::async(std::launch::async, [&]() {
-        LOG_SCOPE("::ImportLogs(): writer_thread");
+        LOG_SCOPE("::ImportLogsABI(): writer_thread");
 
         std::ignore = m_sqlite_connection.GetDatabaseRef().Execute("BEGIN TRANSACTION;");
 
@@ -581,7 +582,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     writer_future.wait();
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", total_logs);
+    LOG_INFO("::ImportLogsABI(): Total matched logs: {}", total_logs);
 
     auto settings{GetConfig()};
     settings.set("total_logs", total_logs);

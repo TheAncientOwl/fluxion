@@ -19,11 +19,11 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
-void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data)
+void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Bridge::OnEnableData const& data)
 {
     using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
 
-    m_home_path = data.plugin_home_path;
+    m_home_path = data.GetPath();
 
     LOG_SCOPE("::OnEnable()");
     LOG_TRACE("::OnEnable()");

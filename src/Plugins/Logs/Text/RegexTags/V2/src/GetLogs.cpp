@@ -5,12 +5,13 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.1
+/// @version 2.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <filesystem>
 #include <system_error>
+#include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V2/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -23,11 +24,11 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V2);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V2 {
 
-void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+void RegexTags::GetLogsABI(Bridge::ABI::Span<Bridge::Range> const _ranges, Bridge::ILogsWriter* out_logs)
 {
     LOG_SCOPE("::GetLogs()");
+
+    std::span<Bridge::Range const> const ranges{_ranges};
 
     std::stringstream ss{};
     for (auto range : ranges)
@@ -72,7 +73,7 @@ void RegexTags::GetLogs(
     {
         auto const row_num{reader.get_row_num() - 1};
 
-        if (row_num > last_line_index || row_num > *total_logs_opt)
+        if (row_num > last_line_index || row_num >= *total_logs_opt)
         {
             break;
         }
@@ -84,21 +85,18 @@ void RegexTags::GetLogs(
             continue;
         }
 
-        auto& target_row = out_logs[row_num];
-        auto const actual_row_size{row.size() - 2}; // -2 = first 2 filter IDs
-        if (target_row.data.size() != actual_row_size)
-        {
-            target_row.data.resize(actual_row_size);
-        }
-
+        std::vector<Bridge::ABI::StringView> columns;
+        columns.reserve(row.size() > 2 ? row.size() - 2 : 0);
         for (std::size_t col_idx = 2; col_idx < row.size(); ++col_idx)
         {
-            target_row.data[col_idx - 2] = std::move(row[col_idx]);
+            columns.emplace_back(row[col_idx]);
         }
 
-        target_row.metadata = {
-            .filter_id = Graphite::Common::Utility::UniqueID{row[0]},
-            .highlight_id = Graphite::Common::Utility::UniqueID{row[1]}};
+        out_logs->WriteData(row_num, columns);
+
+        Graphite::Common::Utility::UniqueID const filter_id{row[0]};
+        Graphite::Common::Utility::UniqueID const highlight_id{row[1]};
+        out_logs->WriteMetadata(row_num, filter_id, highlight_id);
     }
 }
 

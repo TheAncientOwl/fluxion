@@ -102,7 +102,7 @@ public:
             config.SetJsonValue("tags", tags_json);
             config.Save();
 
-            m_plugin.OnEnable({.plugin_home_path = m_home_path});
+            m_plugin.OnEnable({.plugin_home_path = std::string_view(m_home_path.string())});
         }
     }
 

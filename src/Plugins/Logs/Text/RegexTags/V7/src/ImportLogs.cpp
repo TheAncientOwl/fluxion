@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.2
+/// @version 7.3
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -24,7 +24,7 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX // Prevent Windows.h from defining min/max macros
+#define NOMINMAX
 #include <windows.h>
 #else
 #include <fcntl.h>
@@ -51,18 +51,18 @@ namespace Utility {
 class LogsOperationUnitResetter
 {
 public:
-    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& target)
+    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit& target)
         : m_target{target}
     {
     }
 
     ~LogsOperationUnitResetter()
     {
-        m_target = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+        m_target = Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Logs;
     };
 
 private:
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& m_target;
+    Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit& m_target;
 };
 
 struct MappedFile
@@ -148,7 +148,6 @@ MappedFile MapFile(std::filesystem::path const& path)
         return {};
     }
 
-    // Windows equivalent of madvise(..., MADV_WILLNEED/SEQUENTIAL)
     WIN32_MEMORY_RANGE_ENTRY rangeEntry;
     rangeEntry.VirtualAddress = mapped_ptr;
     rangeEntry.NumberOfBytes = file_size;
@@ -284,7 +283,6 @@ public:
         }
         lock.unlock();
 
-        // Fallback allocation: prevents pool starvation and deadlocks
         auto chunk = std::make_unique<LogChunk>(m_capacity_per_chunk, m_field_count);
         chunk->slice_id = slice_id;
         chunk->active_populated_rows = 0;
@@ -330,7 +328,6 @@ public:
     void RecycleChunk(std::unique_ptr<LogChunk> chunk)
     {
         std::unique_lock<std::mutex> lock{m_mutex};
-        // TODO: Move Free pool max size to settings
         if (m_free_pool.size() < 64)
         {
             m_free_pool.push_back(std::move(chunk));
@@ -557,10 +554,11 @@ private:
 
 } // namespace Utility
 
-void RegexTags::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogsABI(Bridge::ABI::StringView const path)
 {
-    LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path);
+    LOG_SCOPE("::ImportLogsABI()");
+    std::filesystem::path const path_fs{std::string_view(path)};
+    LOG_INFO("Importing {}", path_fs);
 
     m_filtered_logs.clear();
     m_total_logs_imported = 0;
@@ -581,7 +579,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
                 line_regex_pattern += tag->regex_data;
             }
         }
-        LOG_INFO("::ImportLogs(): Full regex pattern: {}", line_regex_pattern);
+        LOG_INFO("::ImportLogsABI(): Full regex pattern: {}", line_regex_pattern);
     }
 
     re2::RE2 const shared_regex(line_regex_pattern);
@@ -593,47 +591,45 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     UpdateImportedLogsHeader(tags);
 
-    auto mapped_file = Utility::MapFile(path);
+    auto mapped_file = Utility::MapFile(path_fs);
     if (!mapped_file.IsValid())
     {
-        LOG_ERROR("::ImportLogs(): Failed to map file or file is empty: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Failed to map file or file is empty: {}", path_fs);
         return;
     }
 
-    m_last_imported_logs_path = path;
+    m_last_imported_logs_path = path_fs;
     m_logs_operation_progress = 0;
     Utility::LogsOperationUnitResetter logs_operation_unit_resetter{m_logs_operation_unit};
-    m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
+    m_logs_operation_unit = Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Bytes;
     m_logs_operation_target = mapped_file.size;
 
-    // TODO: Move to settings
     static auto constexpr SLICE_SIZE_MB{512};
     auto const whole_file_slice =
         Utility::Multithreading::FileSlice{mapped_file.get(), mapped_file.get() + mapped_file.size};
     auto const slices{
         Utility::Multithreading::SplitFileSlice(whole_file_slice, SLICE_SIZE_MB * 1024 * 1024)};
-    LOG_INFO("::ImportLogs(): Generated {} slices of 512mb", slices.size());
+    LOG_INFO("::ImportLogsABI(): Generated {} slices of 512mb", slices.size());
 
     {
-        LOG_SCOPE("::ImportLogs::OpenScrolls()");
+        LOG_SCOPE("::ImportLogsABI::OpenScrolls()");
         m_scrolls.Close();
-        auto const database_path{MakeDatabasePath(path)};
+        auto const database_path{MakeDatabasePath(path_fs)};
         [[maybe_unused]] std::error_code ec{};
         std::filesystem::remove_all(database_path, ec);
-        // TODO: Move to settings
         if (auto const status = m_scrolls.OpenWrite(
                 database_path, slices.size(), 1024 * 1024 * 1024, m_imported_logs_header.size());
             status != Scrolls::Papyrus::EWriteStatus::Success)
         {
             LOG_ERROR(
-                "::ImportLogs(): failed to open scrolls, status {}",
+                "::ImportLogsABI(): failed to open scrolls, status {}",
                 static_cast<std::uint64_t>(status));
             return;
         }
     }
 
     {
-        LOG_SCOPE("::ImportLogs()::SliceWorkers()");
+        LOG_SCOPE("::ImportLogsABI()::SliceWorkers()");
 
         auto const row_fields_count{m_imported_logs_header.size()};
         auto scroll_writers{m_scrolls.GetWriters()};
@@ -681,7 +677,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     }
 
     m_total_logs_imported = m_filtered_logs.size();
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_total_logs_imported);
+    LOG_INFO("::ImportLogsABI(): Total matched logs: {}", m_total_logs_imported);
 
     m_logs_operation_target = 0;
     m_logs_operation_progress = 0;

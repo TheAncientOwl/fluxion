@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.4
+/// @version 2.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -61,10 +61,11 @@ size_t CountLines(const std::filesystem::path& filepath)
 
 } // namespace Utility
 
-void RegexTags::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogsABI(Bridge::ABI::StringView const _path)
 {
-    LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path);
+    LOG_SCOPE("::ImportLogsABI()");
+    std::filesystem::path const path{std::string_view(_path)};
+    LOG_INFO("Importing {}", path.string());
 
     m_regex_tags.SyncFrontBufferCopy();
     auto const& tags{m_regex_tags.GetFront()};
@@ -83,7 +84,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
     }
     UpdateImportedLogsHeader(tags);
-    LOG_INFO("::ImportLogs(): Full regex pattern: {}", full_pattern);
+    LOG_INFO("::ImportLogsABI(): Full regex pattern: {}", full_pattern);
 
     auto line_regex = std::make_unique<re2::RE2>(full_pattern);
     if (!line_regex->ok())
@@ -96,7 +97,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     std::ifstream raw_logs_file{path};
     if (!raw_logs_file.is_open())
     {
-        LOG_WARN("::ImportLogs(): Could not open file {}", path);
+        LOG_WARN("::ImportLogsABI(): Could not open file {}", path.string());
         return;
     }
 
@@ -166,11 +167,11 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
         else
         {
-            LOG_WARN("::ImportLogs(): Regex did not match entry '{}'", line);
+            LOG_WARN("::ImportLogsABI(): Regex did not match entry '{}'", line);
         }
     }
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
+    LOG_INFO("::ImportLogsABI(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};
     settings.set("total_logs", m_logs_operation_progress);
     settings.set("total_logs_imported", m_logs_operation_progress);

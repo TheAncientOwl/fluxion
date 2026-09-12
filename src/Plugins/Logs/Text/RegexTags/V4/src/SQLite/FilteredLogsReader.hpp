@@ -5,7 +5,7 @@
 ///
 /// @file FilteredLogsReader.hpp
 /// @author Alexandru Delegeanu
-/// @version 4.0
+/// @version 4.2.0
 /// @brief Wrapper for SQLite read operations over logs & filtered_logs tables
 ///
 
@@ -13,11 +13,12 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/API/LogsPlugin/Bridge.hpp"
 #include "Wrapper/DatabaseRef.hpp"
 #include "Wrapper/Statement.hpp"
 
@@ -42,7 +43,7 @@ public: // Public API
      * @return Statement managing the prepared statement lifetime.
      */
     Statement PrepareGetRangesQuery(
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
+        std::span<Fluxion::API::LogsPlugin::Bridge::Range const> const ranges,
         std::vector<std::string> const& fields);
 
     /**

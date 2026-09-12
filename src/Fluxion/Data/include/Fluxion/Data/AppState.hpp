@@ -5,7 +5,7 @@
 ///
 /// @file AppState.hpp
 /// @author Alexandru Delegeanu
-/// @version 0.23
+/// @version 0.24
 /// @brief Application state.
 ///
 
@@ -72,7 +72,7 @@ struct AppState
     struct
     {
         Graphite::Common::DataStructures::TSwapDoubleBuffer<Data::Logs::VisibleLogs> visible{};
-        std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> table_header{};
+        std::vector<Fluxion::API::LogsPlugin::Host::ColumnDetails> table_header{};
 
         Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Data::Logs::SearchedLog> searched_log{};
     } logs{};

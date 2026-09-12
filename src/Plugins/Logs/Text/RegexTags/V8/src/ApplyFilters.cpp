@@ -5,12 +5,13 @@
 ///
 /// @file ApplyFilters.cpp
 /// @author Alexandru Delegeanu
-/// @version 8.1
+/// @version 8.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <memory>
 #include <re2/re2.h>
+#include <span>
 #include <string>
 #include <variant>
 
@@ -26,9 +27,9 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V8 {
 namespace FilterImpl {
 
 struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Bridge::EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, Bridge::EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::unique_ptr<re2::RE2>, std::string> condition{};
@@ -41,14 +42,9 @@ struct ActiveFilter
     std::vector<ComputedCondition> conditions{};
 };
 
-///
-/// @note Conversion has to be done because of plugin specific regex implementation
-/// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
-///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::vector<Bridge::Filter> filters)
 {
     LOG_SCOPE("::Convert()");
-    using namespace Fluxion::API::LogsPlugin::Data;
     LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
@@ -57,28 +53,31 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
     for (auto const& filter : filters)
     {
         std::vector<ComputedCondition> out_conditions{};
-        out_conditions.reserve(filter.conditions.size());
+        std::span<Bridge::Condition const> conditions_span{filter.conditions};
+        out_conditions.reserve(conditions_span.size());
 
-        for (auto const& condition : filter.conditions)
+        for (auto const& condition : conditions_span)
         {
             auto& out_condition = out_conditions.emplace_back();
             out_condition.column_index = condition.column_index;
 
-            out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
-            out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
-            out_condition[EConditionFlag::IsCaseSensitive] =
-                condition[EConditionFlag::IsCaseSensitive];
+            out_condition[Bridge::EConditionFlag::IsRegex] =
+                condition[Bridge::EConditionFlag::IsRegex];
+            out_condition[Bridge::EConditionFlag::IsEquals] =
+                condition[Bridge::EConditionFlag::IsEquals];
+            out_condition[Bridge::EConditionFlag::IsCaseSensitive] =
+                condition[Bridge::EConditionFlag::IsCaseSensitive];
 
             re2::RE2::Options options;
-            options.set_case_sensitive(condition[EConditionFlag::IsCaseSensitive]);
+            options.set_case_sensitive(condition[Bridge::EConditionFlag::IsCaseSensitive]);
 
-            if (condition[EConditionFlag::IsRegex])
+            if (condition[Bridge::EConditionFlag::IsRegex])
             {
                 out_condition.condition = std::make_unique<re2::RE2>(condition.data, options);
             }
             else
             {
-                out_condition.condition = std::move(condition.data);
+                out_condition.condition = std::string(condition.data);
             }
         }
 
@@ -90,23 +89,29 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
 
 }; // namespace FilterImpl
 
-void RegexTags::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+void RegexTags::ApplyFiltersABI(
+    Bridge::ABI::Span<Bridge::Filter const> const _filters,
+    Bridge::ABI::Span<Bridge::Filter const> const _highlight_only)
 {
-    LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
+    LOG_SCOPE("::ApplyFiltersABI()");
 
-    auto const filters = FilterImpl::Convert(std::move(_filters));
-    auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
-    LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
-    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+    std::span<Bridge::Filter const> const filters_span{_filters};
+    std::span<Bridge::Filter const> const highlight_only_span{_highlight_only};
+
+    std::vector<Bridge::Filter> filters_vec(filters_span.begin(), filters_span.end());
+    std::vector<Bridge::Filter> highlight_only_vec(
+        highlight_only_span.begin(), highlight_only_span.end());
+
+    auto const filters = FilterImpl::Convert(std::move(filters_vec));
+    auto const highlight_only = FilterImpl::Convert(std::move(highlight_only_vec));
+    LOG_INFO("::ApplyFiltersABI(): Active filters size: {}", filters.size());
+    LOG_INFO("::ApplyFiltersABI(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
     m_filtered_logs.clear();
 
     if (m_sqlite_storages.empty())
     {
-        LOG_INFO("::ApplyFilters(): No logs were imported, stopping execution");
+        LOG_INFO("::ApplyFiltersABI(): No logs were imported, stopping execution");
         return;
     }
 
@@ -114,7 +119,7 @@ void RegexTags::ApplyFilters(
     m_logs_operation_progress = 0;
 
     {
-        LOG_SCOPE("::ApplyFilters(): filtering");
+        LOG_SCOPE("::ApplyFiltersABI(): filtering");
 
         for (auto const& storage : m_sqlite_storages)
         {
@@ -133,14 +138,14 @@ void RegexTags::ApplyFilters(
                             auto const& target{row[condition.column_index]};
 
                             bool const equals =
-                                condition[EConditionFlag::IsRegex]
+                                condition[Bridge::EConditionFlag::IsRegex]
                                     ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
                                        re2::RE2::FullMatch(
                                            target,
                                            *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
                                     : (target == std::get<std::string>(condition.condition));
 
-                            if (condition[EConditionFlag::IsEquals] != equals)
+                            if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                             {
                                 matches = false;
                                 break;
@@ -164,7 +169,7 @@ void RegexTags::ApplyFilters(
                                     auto const& target{row[condition.column_index]};
 
                                     bool const equals =
-                                        condition[EConditionFlag::IsRegex]
+                                        condition[Bridge::EConditionFlag::IsRegex]
                                             ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
                                                re2::RE2::FullMatch(
                                                    target,
@@ -172,7 +177,7 @@ void RegexTags::ApplyFilters(
                                                        condition.condition)))
                                             : (target == std::get<std::string>(condition.condition));
 
-                                    if (condition[EConditionFlag::IsEquals] != equals)
+                                    if (condition[Bridge::EConditionFlag::IsEquals] != equals)
                                     {
                                         highlight_matches = false;
                                         break;
@@ -197,7 +202,7 @@ void RegexTags::ApplyFilters(
         }
     }
 
-    LOG_INFO("::ApplyFilters(): Total filtered logs: {}", m_filtered_logs.size());
+    LOG_INFO("::ApplyFiltersABI(): Total filtered logs: {}", m_filtered_logs.size());
 
     m_logs_operation_progress = 0;
     m_logs_operation_target = 0;

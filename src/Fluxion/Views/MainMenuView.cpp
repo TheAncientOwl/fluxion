@@ -5,7 +5,7 @@
 ///
 /// @file MainMenuView.cpp
 /// @author Alexandru Delegeanu
-/// @version 0.24
+/// @version 0.25
 /// @brief Implementation of @see MainMenuView.hpp.
 ///
 
@@ -285,7 +285,7 @@ void MainMenuView::RenderMenu()
             auto render_progress = [&,
                                     operation =
                                         app_state.logs_plugin->GetLogsOperationUnit() ==
-                                                Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+                                                Fluxion::API::LogsPlugin::Bridge::ELogsOperationUnit::Bytes
                                             ? "bytes"
                                             : "logs"](
                                        const char* icon, const char* action_name, std::size_t total) {

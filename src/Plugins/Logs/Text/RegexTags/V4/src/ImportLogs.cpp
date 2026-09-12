@@ -5,7 +5,7 @@
 ///
 /// @file ImportLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.5
+/// @version 4.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -90,10 +90,11 @@ std::size_t CountLinesParallel(const char* data, std::size_t size)
 
 } // namespace Utility
 
-void RegexTags::ImportLogs(std::filesystem::path const& path)
+void RegexTags::ImportLogsABI(Bridge::ABI::StringView const _path)
 {
-    LOG_SCOPE("::ImportLogs()");
-    LOG_INFO("Importing {}", path);
+    LOG_SCOPE("::ImportLogsABI()");
+    std::filesystem::path const path{std::string_view(_path)};
+    LOG_INFO("Importing {}", path.string());
 
     m_last_imported_logs_path = path;
 
@@ -105,7 +106,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        LOG_ERROR("::ImportLogs(): Failed to open file handle: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Failed to open file handle: {}", path.string());
         return;
     }
 
@@ -113,7 +114,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     if (!::GetFileSizeEx(hFile, &fileSizeLi) || fileSizeLi.QuadPart == 0)
     {
         ::CloseHandle(hFile);
-        LOG_ERROR("::ImportLogs(): Empty file or size query failure: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Empty file or size query failure: {}", path.string());
         return;
     }
     file_size = static_cast<std::size_t>(fileSizeLi.QuadPart);
@@ -122,7 +123,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     ::CloseHandle(hFile); // Mapping maintains reference
     if (!hMapping)
     {
-        LOG_ERROR("::ImportLogs(): CreateFileMapping failed for path: {}", path);
+        LOG_ERROR("::ImportLogsABI(): CreateFileMapping failed for path: {}", path.string());
         return;
     }
 
@@ -131,7 +132,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     if (!mapped_ptr)
     {
-        LOG_ERROR("::ImportLogs(): MapViewOfFile failed for path: {}", path);
+        LOG_ERROR("::ImportLogsABI(): MapViewOfFile failed for path: {}", path.string());
         return;
     }
     file_data = static_cast<const char*>(mapped_ptr);
@@ -139,7 +140,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     int const fd = ::open(path.c_str(), O_RDONLY);
     if (fd == -1)
     {
-        LOG_ERROR("::ImportLogs(): Failed to open log file descriptor: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Failed to open log file descriptor: {}", path.string());
         return;
     }
 
@@ -147,7 +148,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     if (::fstat(fd, &sb) == -1 || sb.st_size == 0)
     {
         ::close(fd);
-        LOG_ERROR("::ImportLogs(): Empty file or stat failure: {}", path);
+        LOG_ERROR("::ImportLogsABI(): Empty file or stat failure: {}", path.string());
         return;
     }
 
@@ -157,7 +158,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     if (mapped_ptr == MAP_FAILED)
     {
-        LOG_ERROR("::ImportLogs(): mmap failed for path: {}", path);
+        LOG_ERROR("::ImportLogsABI(): mmap failed for path: {}", path.string());
         return;
     }
 
@@ -185,7 +186,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
         }
     }
     UpdateImportedLogsHeader(tags);
-    LOG_INFO("::ImportLogs(): Full regex pattern: {}", full_pattern);
+    LOG_INFO("::ImportLogsABI(): Full regex pattern: {}", full_pattern);
 
     auto line_regex = std::make_unique<re2::RE2>(full_pattern);
     if (!line_regex->ok())
@@ -244,7 +245,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     }
 
     {
-        LOG_SCOPE("::ImportLogs(): writer");
+        LOG_SCOPE("::ImportLogsABI(): writer");
         auto sqlite_writer{
             SQLite::BufferedWriter{m_sqlite_connection.GetDatabaseRef(), 5000, fields_ids}};
 
@@ -302,7 +303,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
 
     auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
 
-    LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
+    LOG_INFO("::ImportLogsABI(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};
     settings.set("total_logs", m_logs_operation_progress);
     settings.set("total_logs_imported", m_logs_operation_progress);

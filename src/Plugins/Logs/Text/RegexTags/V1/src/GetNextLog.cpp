@@ -5,7 +5,7 @@
 ///
 /// @file GetNextLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.0
+/// @version 1.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -20,16 +20,22 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
-std::optional<std::size_t> RegexTags::GetNextLog(
+bool RegexTags::GetNextLogABI(
     Graphite::Common::Utility::UniqueID const& filter_id,
-    std::size_t const current_index)
+    std::size_t const current_index,
+    std::size_t* out_index)
 {
-    LOG_SCOPE("::GetNextLog()");
+    LOG_SCOPE("::GetNextLogABI()");
+
+    if (!out_index)
+    {
+        return false;
+    }
 
     if (!m_last_imported_logs_path)
     {
-        LOG_INFO("::GetNextLog(): No logs imported");
-        return std::nullopt;
+        LOG_INFO("::GetNextLogABI(): No logs imported");
+        return false;
     }
 
     try
@@ -51,7 +57,8 @@ std::optional<std::size_t> RegexTags::GetNextLog(
 
                 if (row_num > current_index && (row[0] == filter_id_str || row[1] == filter_id_str))
                 {
-                    return row_num;
+                    *out_index = row_num;
+                    return true;
                 }
             }
         }
@@ -75,17 +82,18 @@ std::optional<std::size_t> RegexTags::GetNextLog(
 
                 if (row[0] == filter_id_str || row[1] == filter_id_str)
                 {
-                    return row_num;
+                    *out_index = row_num;
+                    return true;
                 }
             }
         }
     }
     catch (std::exception const& e)
     {
-        LOG_WARN("::GetNextLog(): Exception reading CSV: {}", e.what());
+        LOG_WARN("::GetNextLogABI(): Exception reading CSV: {}", e.what());
     }
 
-    return std::nullopt;
+    return false;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V1

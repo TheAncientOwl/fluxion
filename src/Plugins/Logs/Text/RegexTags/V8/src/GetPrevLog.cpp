@@ -5,7 +5,7 @@
 ///
 /// @file GetPrevLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 8.0
+/// @version 8.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -17,15 +17,16 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V8::GetPrevLog);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V8 {
 
-std::optional<std::size_t> RegexTags::GetPrevLog(
+bool RegexTags::GetPrevLogABI(
     Graphite::Common::Utility::UniqueID const& filter_id,
-    std::size_t current_index)
+    std::size_t current_index,
+    std::size_t* out_index)
 {
-    LOG_SCOPE("::GetPrevLog()");
+    LOG_SCOPE("::GetPrevLogABI()");
 
-    if (m_filtered_logs.empty())
+    if (m_filtered_logs.empty() || !out_index)
     {
-        return std::nullopt;
+        return false;
     }
 
     auto matches = [&](Data::FilteredLog const& item) {
@@ -39,7 +40,8 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
         {
             if (matches(m_filtered_logs[i]))
             {
-                return i;
+                *out_index = i;
+                return true;
             }
             if (i == 0)
             {
@@ -53,7 +55,8 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
     {
         if (matches(m_filtered_logs[i]))
         {
-            return i;
+            *out_index = i;
+            return true;
         }
         if (i == 0)
         {
@@ -61,7 +64,7 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
         }
     }
 
-    return std::nullopt;
+    return false;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V8

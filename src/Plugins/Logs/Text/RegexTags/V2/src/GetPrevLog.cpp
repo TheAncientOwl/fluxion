@@ -5,7 +5,7 @@
 ///
 /// @file GetPrevLog.cpp
 /// @author Alexandru Delegeanu
-/// @version 2.0
+/// @version 2.2.0
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -20,16 +20,22 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V2);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V2 {
 
-std::optional<std::size_t> RegexTags::GetPrevLog(
+bool RegexTags::GetPrevLogABI(
     Graphite::Common::Utility::UniqueID const& filter_id,
-    std::size_t current_index)
+    std::size_t const current_index,
+    std::size_t* out_index)
 {
-    LOG_SCOPE("::GetPrevLog()");
+    LOG_SCOPE("::GetPrevLogABI()");
+
+    if (!out_index)
+    {
+        return false;
+    }
 
     if (!m_last_imported_logs_path)
     {
-        LOG_INFO("::GetPrevLog(): No logs imported");
-        return std::nullopt;
+        LOG_INFO("::GetPrevLogABI(): No logs imported");
+        return false;
     }
 
     try
@@ -63,7 +69,8 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
 
             if (found_idx)
             {
-                return found_idx;
+                *out_index = *found_idx;
+                return true;
             }
         }
 
@@ -83,15 +90,20 @@ std::optional<std::size_t> RegexTags::GetPrevLog(
                     found_idx = reader.get_row_num() - 1; // Convert to 0-based
                 }
             }
-            return found_idx;
+
+            if (found_idx)
+            {
+                *out_index = *found_idx;
+                return true;
+            }
         }
     }
     catch (std::exception const& e)
     {
-        LOG_WARN("::GetPrevLog(): Exception reading CSV: {}", e.what());
+        LOG_WARN("::GetPrevLogABI(): Exception reading CSV: {}", e.what());
     }
 
-    return std::nullopt;
+    return false;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V2
