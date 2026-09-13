@@ -33,7 +33,7 @@ USE_LOG_SCOPE(Graphite::Application::Renderer::Vulkan);
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #ifndef NOMINMAX
-#define NOMINMAX
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
 #endif
 #include <dwmapi.h>
 #include <windows.h>

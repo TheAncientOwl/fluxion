@@ -16,8 +16,10 @@
 namespace Graphite::Common::Plugin {
 
 #if defined(_WIN32)
-#include <windows.h>
+#ifndef NOMINMAX
 #define NOMINMAX // Prevent Windows.h from defining min/max macros
+#endif
+#include <windows.h>
 using LibHandle = HMODULE;
 #else
 #include <dlfcn.h>

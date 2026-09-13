@@ -22,7 +22,9 @@
 #include <thread>
 #include <vector>
 #if defined(_WIN32)
+#ifndef NOMINMAX
 #define NOMINMAX // Prevent Windows.h from defining min/max macros
+#endif
 #include <windows.h>
 #else
 #include <sys/mman.h>

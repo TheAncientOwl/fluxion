@@ -25,7 +25,9 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
 #define NOMINMAX // Prevent Windows.h from defining min/max macros
+#endif
 #include <windows.h>
 #else
 #include <fcntl.h>
