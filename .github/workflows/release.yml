@@ -1,4 +1,4 @@
-name: Release
+name: Release [ubuntu/macOS/windows]
 
 on:
   push:
@@ -82,7 +82,7 @@ jobs:
         shell: msys2 {0}
         run: |
           mkdir -p staging/fluxion
-          
+
           # Copy executable, dynamic libraries, assets, and plugins
           cp build/bin/fluxion.exe staging/fluxion/
           cp build/bin/*.dll staging/fluxion/ 2>/dev/null || true
@@ -95,7 +95,7 @@ jobs:
           cp /mingw64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || true
           cp /mingw64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || true
           cp /mingw64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || true
-          
+
           cd staging
           zip -r ../${{ env.ARCHIVE_NAME }} fluxion
           cd ..
@@ -105,7 +105,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p staging/fluxion
-          
+
           if [ "${{ matrix.os }}" == "macos-latest" ]; then
             cp -r build/bin/Fluxion.app staging/fluxion/
             if [ -d "build/bin/plugins" ]; then
