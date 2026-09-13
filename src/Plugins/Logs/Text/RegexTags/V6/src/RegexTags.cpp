@@ -20,15 +20,6 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6::RegexTags);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
 
-Data::FilteredLog::FilteredLog(std::size_t const log_id) : log_id{log_id} {};
-Data::FilteredLog::FilteredLog(
-    std::size_t const log_id,
-    Graphite::Common::Utility::UniqueID const& filter_id,
-    Graphite::Common::Utility::UniqueID const& highlight_filter_id)
-    : log_id{log_id}, filter_id{filter_id}, highlight_filter_id{highlight_filter_id}
-{
-}
-
 Bridge::ABI::StringView RegexTags::GetDisplayNameABI() const
 {
     return "Text::RegexTags::V6";

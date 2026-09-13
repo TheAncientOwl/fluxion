@@ -1,5 +1,11 @@
+file(GLOB PLUGIN_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/SQLite/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/Data.cpp"
+)
+
 # --- Plugin Tests ---
 add_executable(test__fluxion_logs_plugin__text__regex_tags__v8
+    ${PLUGIN_SOURCES}
     PluginTest.cpp
 )
 
@@ -26,9 +32,8 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage
+    ${PLUGIN_SOURCES}
     SQLiteStorageTest.cpp
-    ../src/Data.cpp
-    ../src/SQLite/SQLiteStorage.cpp
 )
 
 target_include_directories(unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage PRIVATE

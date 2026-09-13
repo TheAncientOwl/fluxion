@@ -1,5 +1,10 @@
+file(GLOB PLUGIN_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/Scrolls/*.cpp"
+)
+
 # --- Plugin Tests ---
 add_executable(test__fluxion_logs_plugin__text__regex_tags__v7
+    ${PLUGIN_SOURCES}
     PluginTest.cpp
 )
 
@@ -26,13 +31,10 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(unit_tests__fluxion_logs_plugin__text__regex_tags__v7
+    ${PLUGIN_SOURCES}
     MappedBinaryStringsFileTest.cpp
     PapyrusTest.cpp
     ScribeTest.cpp
-
-    ../src/Scrolls/MappedBinaryStringsFile.cpp
-    ../src/Scrolls/Papyrus.cpp
-    ../src/Scrolls/Scribe.cpp
 )
 
 target_include_directories(unit_tests__fluxion_logs_plugin__text__regex_tags__v7 PUBLIC

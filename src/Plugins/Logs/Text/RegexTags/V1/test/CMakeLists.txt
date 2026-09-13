@@ -1,4 +1,9 @@
+file(GLOB PLUGIN_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/CSV/Wrapper/*.cpp"
+)
+
 add_executable(test__fluxion_logs_plugin__text__regex_tags__v1
+    ${PLUGIN_SOURCES}
     PluginTest.cpp
 )
 

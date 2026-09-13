@@ -60,6 +60,7 @@ add_library(fluxion_logs_plugin__text__regex_tags__v6 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SQLite/Utility.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ApplyFilters.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DisableFilters.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GetLogs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GetNextLog.cpp
