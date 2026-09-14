@@ -21,7 +21,8 @@
 
 std::string generate_payload(int min_len, int max_len)
 {
-    static const std::string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static const std::string chars =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     static std::random_device rd;
     static std::mt19937 gen(rd());
     std::uniform_int_distribution<> len_dist(min_len, max_len);
@@ -65,8 +66,11 @@ std::string generate_payload(int min_len, int max_len)
 }
 
 void generate_and_write_log_entries(
-    const std::string &filename, int count, int start_timestamp,
-    int min_payload_len, int max_payload_len)
+    const std::string& filename,
+    int count,
+    int start_timestamp,
+    int min_payload_len,
+    int max_payload_len)
 {
     std::vector<std::string> channels = {"Channel1", "Channel2", "Channel3", "Channel4"};
     std::vector<std::string> levels = {"info", "warn", "error", "debug"};
@@ -94,7 +98,7 @@ void generate_and_write_log_entries(
     }
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     if (argc < 2)
     {
