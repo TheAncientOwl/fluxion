@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.hpp
 /// @author Alexandru Delegeanu
-/// @version 2.0
+/// @version 2.1
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -388,46 +388,54 @@ protected:
 
 /// Macro accepting a whole TestConfiguration struct via variadic arguments
 #define FLUXION_DEFINE_LOGS_PLUGIN_TESTS(TWrapper, ...)                                         \
-    class LogsPluginTest_##TWrapper                                                             \
+    namespace {                                                                                 \
+    struct TWrapper##_LoggerAutoShutdown                                                        \
+    {                                                                                           \
+        ~TWrapper##_LoggerAutoShutdown() { Graphite::Logger::GetLogger().Shutdown(); }          \
+    };                                                                                          \
+    static TWrapper##_LoggerAutoShutdown logger_auto_shutdown_##TWrapper;                       \
+    }                                                                                           \
+                                                                                                \
+    class TWrapper##_LogsPluginTest                                                             \
         : public ::Fluxion::API::Testing::LogsPluginTestingKit::LogsPluginTestFixture<TWrapper> \
     {                                                                                           \
     public:                                                                                     \
-        LogsPluginTest_##TWrapper()                                                             \
+        TWrapper##_LogsPluginTest()                                                             \
             : ::Fluxion::API::Testing::LogsPluginTestingKit::LogsPluginTestFixture<TWrapper>(   \
                   ::Fluxion::API::Testing::LogsPluginTestingKit::TestConfiguration __VA_ARGS__) \
         {                                                                                       \
         }                                                                                       \
     };                                                                                          \
                                                                                                 \
-    TEST_F(LogsPluginTest_##TWrapper, TestIO)                                                   \
+    TEST_F(TWrapper##_LogsPluginTest, TestIO)                                                   \
     {                                                                                           \
         this->RunTestIO();                                                                      \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestReadAllLogs)                                          \
+    TEST_F(TWrapper##_LogsPluginTest, TestReadAllLogs)                                          \
     {                                                                                           \
         this->RunTestReadAllLogs();                                                             \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestOutOfBoundsQuery)                                     \
+    TEST_F(TWrapper##_LogsPluginTest, TestOutOfBoundsQuery)                                     \
     {                                                                                           \
         this->RunTestOutOfBoundsQuery();                                                        \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestEmptyAndOverlappingRanges)                            \
+    TEST_F(TWrapper##_LogsPluginTest, TestEmptyAndOverlappingRanges)                            \
     {                                                                                           \
         this->RunTestEmptyAndOverlappingRanges();                                               \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestMetadataAndHeader)                                    \
+    TEST_F(TWrapper##_LogsPluginTest, TestMetadataAndHeader)                                    \
     {                                                                                           \
         this->RunTestMetadataAndHeader();                                                       \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestNavigationAPI)                                        \
+    TEST_F(TWrapper##_LogsPluginTest, TestNavigationAPI)                                        \
     {                                                                                           \
         this->RunTestNavigationAPI();                                                           \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestFilterLifecycle)                                      \
+    TEST_F(TWrapper##_LogsPluginTest, TestFilterLifecycle)                                      \
     {                                                                                           \
         this->RunTestFilterLifecycle();                                                         \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestEnableDisableLifecycle)                               \
+    TEST_F(TWrapper##_LogsPluginTest, TestEnableDisableLifecycle)                               \
     {                                                                                           \
         this->RunTestEnableDisableLifecycle();                                                  \
     }

@@ -5,7 +5,7 @@
 ///
 /// @file OnDisable.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -21,6 +21,8 @@ void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Bridge::OnDisableData const&
 {
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");
+
+    m_sqlite_connection.Close();
 
     SaveSettings();
 

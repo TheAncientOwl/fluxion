@@ -5,7 +5,7 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.2.0
+/// @version 1.2.1
 /// @brief Logs::Text::RegexTags::V1 Plugin test
 ///
 
@@ -16,7 +16,7 @@
 
 using namespace Fluxion::API::Testing::LogsPluginTestingKit;
 
-class LogsPluginWrapper : public ILogsPluginTestWrapper
+class Text_RegexTags_V1_LogsPluginWrapper : public ILogsPluginTestWrapper
 {
 public:
     /**
@@ -109,7 +109,7 @@ public:
     /**
      * @brief Cleanup
      */
-    void Teardown() final override {}
+    void Teardown() final override { m_plugin.OnDisable({}); }
 
     /**
      * @brief Used to generate input data file during @see LogsPluginTestSuite::Setup
@@ -160,4 +160,4 @@ private:
     std::ofstream m_raw_logs_file{};
 };
 
-FLUXION_DEFINE_LOGS_PLUGIN_TESTS(LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});
+FLUXION_DEFINE_LOGS_PLUGIN_TESTS(Text_RegexTags_V1_LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});

@@ -49,8 +49,30 @@ target_link_libraries(unit_tests__fluxion_logs_plugin__text__regex_tags__v7 PRIV
     fluxion_logs_plugin__text__regex_tags__v7
 )
 
-include(GoogleTest)
-gtest_discover_tests(
+# Fix: Apply the bin directory to BOTH executables
+set_target_properties(
+    test__fluxion_logs_plugin__text__regex_tags__v7 
     unit_tests__fluxion_logs_plugin__text__regex_tags__v7
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+if(WIN32)
+    add_custom_command(TARGET test__fluxion_logs_plugin__text__regex_tags__v7 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/plugins/logs/$<TARGET_FILE_NAME:fluxion_logs_plugin__text__regex_tags__v7>"
+            $<TARGET_FILE_DIR:test__fluxion_logs_plugin__text__regex_tags__v7>
+        COMMENT "Copying V7 plugin DLL from plugins/logs to test binary directory"
+    )
+    # Note: Since we pushed both executables to the exact same 'bin' directory, 
+    # this one copy command is enough to fix the DLL issue for BOTH of them!
+endif()
+
+include(GoogleTest)
+gtest_discover_tests(test__fluxion_logs_plugin__text__regex_tags__v7
+    DISCOVERY_MODE PRE_TEST
+)
+gtest_discover_tests(unit_tests__fluxion_logs_plugin__text__regex_tags__v7
     DISCOVERY_MODE PRE_TEST
 )

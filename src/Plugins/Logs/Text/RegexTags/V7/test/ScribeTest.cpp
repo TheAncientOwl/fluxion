@@ -5,7 +5,7 @@
 ///
 /// @file ScrollsTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.1
+/// @version 7.2
 /// @brief Logs::Text::RegexTags::V7::Scrolls unit tests
 ///
 
@@ -20,7 +20,15 @@
 
 using namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Scrolls;
 
-struct ScribeTest : public ::testing::Test
+namespace {
+struct LoggerAutoShutdown
+{
+    ~LoggerAutoShutdown() { Graphite::Logger::GetLogger().Shutdown(); }
+};
+static LoggerAutoShutdown logger_auto_shutdown;
+} // namespace
+
+struct Text_RegexTags_V7_ScribeTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -39,6 +47,8 @@ protected:
 
     void TearDown() override
     {
+        Graphite::Logger::GetLogger().Shutdown();
+
         scribe.Close();
 
         std::error_code ec;
@@ -49,7 +59,7 @@ protected:
     Scribe scribe;
 };
 
-TEST_F(ScribeTest, OpenWrite)
+TEST_F(Text_RegexTags_V7_ScribeTest, OpenWrite)
 {
     std::size_t const scrolls_count = 3;
     std::size_t const elements_per_line = 2;
@@ -63,7 +73,7 @@ TEST_F(ScribeTest, OpenWrite)
     EXPECT_EQ(scribe.GetTotalLinesCount(), 0);
 }
 
-TEST_F(ScribeTest, OpenWriteInvalidZeroScrolls)
+TEST_F(Text_RegexTags_V7_ScribeTest, OpenWriteInvalidZeroScrolls)
 {
     auto const status = scribe.OpenWrite(test_path, 0, 1024, 2);
 
@@ -71,7 +81,7 @@ TEST_F(ScribeTest, OpenWriteInvalidZeroScrolls)
     EXPECT_EQ(scribe.GetWriters().size(), 0);
 }
 
-TEST_F(ScribeTest, OpenReadOnly)
+TEST_F(Text_RegexTags_V7_ScribeTest, OpenReadOnly)
 {
     std::size_t const scrolls_count = 2;
     std::size_t const elements_per_line = 2;
@@ -98,7 +108,7 @@ TEST_F(ScribeTest, OpenReadOnly)
     EXPECT_EQ(scribe.GetTotalLinesCount(), 2);
 }
 
-TEST_F(ScribeTest, Close)
+TEST_F(Text_RegexTags_V7_ScribeTest, Close)
 {
     ASSERT_EQ(scribe.OpenWrite(test_path, 2, 1024, 2), Papyrus::EWriteStatus::Success);
     EXPECT_EQ(scribe.GetWriters().size(), 2);
@@ -109,7 +119,7 @@ TEST_F(ScribeTest, Close)
     EXPECT_EQ(scribe.GetTotalLinesCount(), 0);
 }
 
-TEST_F(ScribeTest, WriteOnReadOnlyFails)
+TEST_F(Text_RegexTags_V7_ScribeTest, WriteOnReadOnlyFails)
 {
     ASSERT_EQ(scribe.OpenWrite(test_path, 2, 1024, 2), Papyrus::EWriteStatus::Success);
 
@@ -123,7 +133,7 @@ TEST_F(ScribeTest, WriteOnReadOnlyFails)
     EXPECT_EQ(write_res.bytes_written, 0);
 }
 
-TEST_F(ScribeTest, ReadRangesCrossScrolls)
+TEST_F(Text_RegexTags_V7_ScribeTest, ReadRangesCrossScrolls)
 {
     std::size_t const scrolls_count = 2;
     std::size_t const elements_per_line = 2;
@@ -186,7 +196,7 @@ TEST_F(ScribeTest, ReadRangesCrossScrolls)
     EXPECT_EQ(buffer_pool[3][1], "val3");
 }
 
-TEST_F(ScribeTest, ReadRangesOutOfBoundIsHandled)
+TEST_F(Text_RegexTags_V7_ScribeTest, ReadRangesOutOfBoundIsHandled)
 {
     ASSERT_EQ(scribe.OpenWrite(test_path, 1, 1024, 2), Papyrus::EWriteStatus::Success);
 
@@ -210,7 +220,7 @@ TEST_F(ScribeTest, ReadRangesOutOfBoundIsHandled)
     EXPECT_TRUE(buffer_pool[1].empty());
 }
 
-TEST_F(ScribeTest, CursorSequentialReadCrossScrolls)
+TEST_F(Text_RegexTags_V7_ScribeTest, CursorSequentialReadCrossScrolls)
 {
     std::size_t const scrolls_count = 2;
     std::size_t const elements_per_line = 2;

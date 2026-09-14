@@ -1,4 +1,4 @@
-name: CI Build [ubuntu/macOS/windows]
+name: CI Build / Test [ubuntu/macOS/windows]
 
 on:
   push:
@@ -67,3 +67,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: cmake --build build
+
+      - name: Run Unit Tests (Unix)
+        if: runner.os != 'Windows'
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run Unit Tests (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: ctest --test-dir build --output-on-failure

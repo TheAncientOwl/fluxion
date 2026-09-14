@@ -5,7 +5,7 @@
 ///
 /// @file ScrollsTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.1
+/// @version 7.2
 /// @brief Logs::Text::RegexTags::V7::Scrolls unit tests
 ///
 
@@ -19,7 +19,15 @@
 
 using namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Scrolls;
 
-struct PapyrusTest : public ::testing::Test
+namespace {
+struct LoggerAutoShutdown
+{
+    ~LoggerAutoShutdown() { Graphite::Logger::GetLogger().Shutdown(); }
+};
+static LoggerAutoShutdown logger_auto_shutdown;
+} // namespace
+
+struct Text_RegexTags_V7_PapyrusTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -37,6 +45,8 @@ protected:
 
     void TearDown() override
     {
+        Graphite::Logger::GetLogger().Shutdown();
+
         file.Close();
 
         std::error_code ec;
@@ -47,7 +57,7 @@ protected:
     Papyrus file;
 };
 
-TEST_F(PapyrusTest, OpenWrite)
+TEST_F(Text_RegexTags_V7_PapyrusTest, OpenWrite)
 {
     constexpr std::size_t kCols = 3;
     auto const result = file.OpenWrite(test_path, 512, kCols);
@@ -63,7 +73,7 @@ TEST_F(PapyrusTest, OpenWrite)
     EXPECT_TRUE(std::filesystem::exists(test_path));
 }
 
-TEST_F(PapyrusTest, OpenRead)
+TEST_F(Text_RegexTags_V7_PapyrusTest, OpenRead)
 {
     constexpr std::size_t kCols = 2;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -86,7 +96,7 @@ TEST_F(PapyrusTest, OpenRead)
     EXPECT_EQ(out_line, line1);
 }
 
-TEST_F(PapyrusTest, Close)
+TEST_F(Text_RegexTags_V7_PapyrusTest, Close)
 {
     constexpr std::size_t kCols = 2;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -106,7 +116,7 @@ TEST_F(PapyrusTest, Close)
     EXPECT_EQ(file.GetElementsPerLine(), 0);
 }
 
-TEST_F(PapyrusTest, WriteOnWriteable)
+TEST_F(Text_RegexTags_V7_PapyrusTest, WriteOnWriteable)
 {
     constexpr std::size_t kCols = 2;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -132,7 +142,7 @@ TEST_F(PapyrusTest, WriteOnWriteable)
     EXPECT_EQ(file.GetLinesCount(), 1);
 }
 
-TEST_F(PapyrusTest, WriteOnReadonly)
+TEST_F(Text_RegexTags_V7_PapyrusTest, WriteOnReadonly)
 {
     constexpr std::size_t kCols = 2;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -146,7 +156,7 @@ TEST_F(PapyrusTest, WriteOnReadonly)
     EXPECT_EQ(write_result.bytes_written, 0);
 }
 
-TEST_F(PapyrusTest, ReadAll)
+TEST_F(Text_RegexTags_V7_PapyrusTest, ReadAll)
 {
     constexpr std::size_t kCols = 3;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -176,7 +186,7 @@ TEST_F(PapyrusTest, ReadAll)
     EXPECT_EQ(actual_lines, expected_lines);
 }
 
-TEST_F(PapyrusTest, SeekAndRead)
+TEST_F(Text_RegexTags_V7_PapyrusTest, SeekAndRead)
 {
     constexpr std::size_t kCols = 2;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -206,7 +216,7 @@ TEST_F(PapyrusTest, SeekAndRead)
     }
 }
 
-TEST_F(PapyrusTest, SeekOverSizeAndRead)
+TEST_F(Text_RegexTags_V7_PapyrusTest, SeekOverSizeAndRead)
 {
     constexpr std::size_t kCols = 2;
     ASSERT_EQ(file.OpenWrite(test_path, 512, kCols), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -229,7 +239,7 @@ TEST_F(PapyrusTest, SeekOverSizeAndRead)
     EXPECT_EQ(file.ReadNext(line_buffer).status, MappedBinaryStringsFile::EReadStatus::EOFReached);
 }
 
-TEST_F(PapyrusTest, DynamicGrowthOnOverflow)
+TEST_F(Text_RegexTags_V7_PapyrusTest, DynamicGrowthOnOverflow)
 {
     constexpr std::size_t kCols = 2;
     // Pre-allocate exact size for 1 record: 16 bytes

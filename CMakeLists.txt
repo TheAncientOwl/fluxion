@@ -47,6 +47,9 @@ if(WIN32)
     add_compile_definitions(_WIN32_WINNT=0x0602 WINVER=0x0602)
 endif()
 
+# --- Enable CTest/Testing ---
+enable_testing()
+
 # --- 2. Build Logic & Subdirectories ---
 include(project/cmake/compile-options.cmake)
 include(project/cmake/precompiled-headers.cmake)
