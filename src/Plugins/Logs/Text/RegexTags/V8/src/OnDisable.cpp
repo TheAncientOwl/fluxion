@@ -22,6 +22,10 @@ void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");
 
+    m_imported_logs_header.clear();
+    m_filtered_logs.clear();
+    m_sqlite_storages.clear();
+
     SaveSettings();
 
     SaveRegexTags(m_regex_tags.GetFront());

@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build & Package (${{ matrix.os }})
+    name: Build, Test & Package (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -63,6 +63,15 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: cmake --build build
+
+      - name: Run Unit Tests (Unix)
+        if: runner.os != 'Windows'
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run Unit Tests (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: ctest --test-dir build --output-on-failure
 
       - name: Set Archive Filename
         id: archive-name

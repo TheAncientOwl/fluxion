@@ -5,7 +5,7 @@
 ///
 /// @file ScrollsTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 7.1
+/// @version 7.2
 /// @brief Logs::Text::RegexTags::V7::Scrolls unit tests
 ///
 
@@ -18,7 +18,15 @@
 
 using namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Scrolls;
 
-struct WriteableMappedFileTest : public ::testing::Test
+namespace {
+struct LoggerAutoShutdown
+{
+    ~LoggerAutoShutdown() { Graphite::Logger::GetLogger().Shutdown(); }
+};
+static LoggerAutoShutdown logger_auto_shutdown;
+} // namespace
+
+struct Text_RegexTags_V7_WriteableMappedFileTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -36,6 +44,8 @@ protected:
 
     void TearDown() override
     {
+        Graphite::Logger::GetLogger().Shutdown();
+
         file.Close();
 
         std::error_code ec;
@@ -46,7 +56,7 @@ protected:
     MappedBinaryStringsFile file;
 };
 
-TEST_F(WriteableMappedFileTest, OpenWrite)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, OpenWrite)
 {
     auto const result = file.OpenWrite(test_path, 512);
 
@@ -59,7 +69,7 @@ TEST_F(WriteableMappedFileTest, OpenWrite)
     EXPECT_TRUE(std::filesystem::exists(test_path));
 }
 
-TEST_F(WriteableMappedFileTest, OpenRead)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, OpenRead)
 {
     // Write a record and close
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
@@ -78,7 +88,7 @@ TEST_F(WriteableMappedFileTest, OpenRead)
     EXPECT_EQ(read_result.data, "initial_payload");
 }
 
-TEST_F(WriteableMappedFileTest, Close)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, Close)
 {
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
     EXPECT_TRUE(file.IsOpen());
@@ -92,7 +102,7 @@ TEST_F(WriteableMappedFileTest, Close)
     EXPECT_EQ(file.GetOffset(), 0);
 }
 
-TEST_F(WriteableMappedFileTest, WriteOnWriteable)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, WriteOnWriteable)
 {
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
 
@@ -107,7 +117,7 @@ TEST_F(WriteableMappedFileTest, WriteOnWriteable)
     EXPECT_EQ(file.GetSize(), expected_written);
 }
 
-TEST_F(WriteableMappedFileTest, WriteOnReadonly)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, WriteOnReadonly)
 {
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
     ASSERT_TRUE(file.DowngradeReadOnly());
@@ -119,7 +129,7 @@ TEST_F(WriteableMappedFileTest, WriteOnReadonly)
     EXPECT_EQ(write_result.bytes_written, 0);
 }
 
-TEST_F(WriteableMappedFileTest, ReadAll)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, ReadAll)
 {
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
 
@@ -140,7 +150,7 @@ TEST_F(WriteableMappedFileTest, ReadAll)
     EXPECT_EQ(actual, expected);
 }
 
-TEST_F(WriteableMappedFileTest, SeekAndRead)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, SeekAndRead)
 {
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
 
@@ -167,7 +177,7 @@ TEST_F(WriteableMappedFileTest, SeekAndRead)
     }
 }
 
-TEST_F(WriteableMappedFileTest, SeekOverSizeAndRead)
+TEST_F(Text_RegexTags_V7_WriteableMappedFileTest, SeekOverSizeAndRead)
 {
     ASSERT_EQ(file.OpenWrite(test_path, 512), MappedBinaryStringsFile::EWriteStatus::Success);
     auto const write_result = file.Write("valid_entry");

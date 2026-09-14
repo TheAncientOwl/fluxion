@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.17
+/// @version 1.18
 /// @brief Logging utilities
 ///
 
@@ -174,6 +174,8 @@ public: // API
 
     void SetLevelState(ELogLevel const level, bool const enabled);
     [[nodiscard]] bool IsLevelEnabled(ELogLevel const level) const noexcept;
+
+    void Shutdown();
 
 private:
     static std::filesystem::path GetConfigFilePath();

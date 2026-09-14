@@ -5,26 +5,31 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 5.1
+/// @version 5.2
 /// @brief Logs::Text::RegexTags::V5 Plugin test
 ///
 
 #include <fstream>
+#include <string>
 
 #include "Fluxion/API/testing/LogsPluginTestingToolkit.hpp"
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V5/RegexTags.hpp"
 
 using namespace Fluxion::API::Testing::LogsPluginTestingKit;
 
-class LogsPluginWrapper : public ILogsPluginTestWrapper
+class Text_RegexTags_V5_LogsPluginWrapper : public ILogsPluginTestWrapper
 {
 public:
+    ~Text_RegexTags_V5_LogsPluginWrapper() override { m_plugin.OnDisable({}); }
+
     /**
      * @brief Create logs plugin and setup its internals
      */
     void Setup(std::filesystem::path const& plugin_home_path) final override
     {
         m_home_path = plugin_home_path;
+        m_home_path_string = m_home_path.string();
+
         m_raw_logs_file.open(GetImportLogsFilePath());
 
         if (!m_raw_logs_file.is_open())
@@ -33,83 +38,81 @@ public:
                 "Failed to open log file for writing at: " + GetImportLogsFilePath().string());
         }
 
+        // override tags to match generated test entries style
+        std::vector<Fluxion::Plugins::Logs::Text::RegexTags::V5::Data::RegexTag> tags{};
         {
-            // override tags to match generated test entries style
-            std::vector<Fluxion::Plugins::Logs::Text::RegexTags::V5::Data::RegexTag> tags{};
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "Timestamp";
-                new_tag.regex_data = R"(^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d+)";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = true;
-            }
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "-";
-                new_tag.regex_data = R"(\s+)";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = false;
-            }
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "Channel";
-                new_tag.regex_data = R"(Channel[1-4])";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = true;
-            }
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "-";
-                new_tag.regex_data = R"(\s+)";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = false;
-            }
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "Level";
-                new_tag.regex_data = R"(trace|info|error|debug|warn)";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = true;
-            }
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "-";
-                new_tag.regex_data = R"(\s+)";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = false;
-            }
-            {
-                auto& new_tag = tags.emplace_back();
-                new_tag.display_name = "Payload";
-                new_tag.regex_data = R"(.*)";
-                new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
-                new_tag.visible = true;
-            }
-
-            auto tags_json = nlohmann::json::array();
-
-            for (auto const& tag : tags)
-            {
-                tags_json.push_back(
-                    nlohmann::json{
-                        {"id", tag.id.ToString()},
-                        {"display_name", tag.display_name},
-                        {"regex_data", tag.regex_data},
-                        {"visible", tag.visible}});
-            }
-
-            auto config{Graphite::Settings::PersistentSettings{m_home_path, "config"}};
-            config.SetJsonValue("tags", tags_json);
-            config.Save();
-
-            m_plugin.OnEnable({.plugin_home_path = m_home_path});
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "Timestamp";
+            new_tag.regex_data = R"(^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d+)";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = true;
         }
+        {
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "-";
+            new_tag.regex_data = R"(\s+)";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = false;
+        }
+        {
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "Channel";
+            new_tag.regex_data = R"(Channel[1-4])";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = true;
+        }
+        {
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "-";
+            new_tag.regex_data = R"(\s+)";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = false;
+        }
+        {
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "Level";
+            new_tag.regex_data = R"(trace|info|error|debug|warn)";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = true;
+        }
+        {
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "-";
+            new_tag.regex_data = R"(\s+)";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = false;
+        }
+        {
+            auto& new_tag = tags.emplace_back();
+            new_tag.display_name = "Payload";
+            new_tag.regex_data = R"(.*)";
+            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.visible = true;
+        }
+
+        auto tags_json = nlohmann::json::array();
+
+        for (auto const& tag : tags)
+        {
+            tags_json.push_back(
+                nlohmann::json{
+                    {"id", tag.id.ToString()},
+                    {"display_name", tag.display_name},
+                    {"regex_data", tag.regex_data},
+                    {"visible", tag.visible}});
+        }
+
+        auto config{Graphite::Settings::PersistentSettings{m_home_path, "config"}};
+        config.SetJsonValue("tags", tags_json);
+        config.Save();
+
+        m_plugin.OnEnable({.plugin_home_path = std::string_view(m_home_path_string)});
     }
 
     /**
      * @brief Cleanup
      */
-    void Teardown() final override {}
+    void Teardown() final override { m_plugin.OnDisable({}); }
 
     /**
      * @brief Used to generate input data file during @see LogsPluginTestSuite::Setup
@@ -132,7 +135,13 @@ public:
      * @param header
      * @param entry
      */
-    void OnLogsGenerationProcessDone() final override { m_raw_logs_file.close(); }
+    void OnLogsGenerationProcessDone() final override
+    {
+        if (m_raw_logs_file.is_open())
+        {
+            m_raw_logs_file.close();
+        }
+    }
 
     /**
      * @brief Get the Logs Plugin object
@@ -155,9 +164,10 @@ public:
     }
 
 private:
-    Fluxion::Plugins::Logs::Text::RegexTags::V5::RegexTags m_plugin{};
     std::filesystem::path m_home_path{};
+    std::string m_home_path_string{};
     std::ofstream m_raw_logs_file{};
+    Fluxion::Plugins::Logs::Text::RegexTags::V5::RegexTags m_plugin{}; // Declared last, destroyed first!
 };
 
-FLUXION_DEFINE_LOGS_PLUGIN_TESTS(LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});
+FLUXION_DEFINE_LOGS_PLUGIN_TESTS(Text_RegexTags_V5_LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});

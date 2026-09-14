@@ -5,7 +5,7 @@
 ///
 /// @file PluginTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.1
+/// @version 9.2
 /// @brief Logs::Text::RegexTags::V9 Google Test Suite
 ///
 
@@ -17,7 +17,7 @@
 
 using namespace Fluxion::API::Testing::LogsPluginTestingKit;
 
-class LogsPluginWrapper : public ILogsPluginTestWrapper
+class Text_RegexTags_V9_LogsPluginWrapper : public ILogsPluginTestWrapper
 {
 public:
     /**
@@ -137,7 +137,7 @@ public:
 
     /**
      * @brief Get the Logs Plugin object
-     *
+     *f
      * @return Fluxion::API::LogsPlugin::IFluxionLogsPlugin&
      */
     Fluxion::API::LogsPlugin::IFluxionLogsPlugin& GetLogsPlugin() final override
@@ -161,4 +161,4 @@ private:
     std::ofstream m_raw_logs_file{};
 };
 
-FLUXION_DEFINE_LOGS_PLUGIN_TESTS(LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});
+FLUXION_DEFINE_LOGS_PLUGIN_TESTS(Text_RegexTags_V9_LogsPluginWrapper, {.logs_count = 2000, .seed = 69420});

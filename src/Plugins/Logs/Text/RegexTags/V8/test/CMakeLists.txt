@@ -41,9 +41,29 @@ target_link_libraries(unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqli
     fluxion_logs_plugin__text__regex_tags__v8
 )
 
-include(GoogleTest)
-gtest_discover_tests(
-    unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage
-    DISCOVERY_MODE PRE_TEST
+# Fix: Apply the bin directory to BOTH test executables
+set_target_properties(
+    test__fluxion_logs_plugin__text__regex_tags__v8 
+    unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage 
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+if(WIN32)
+    # Fix: Changed v1 to v8
+    add_custom_command(TARGET test__fluxion_logs_plugin__text__regex_tags__v8 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/plugins/logs/$<TARGET_FILE_NAME:fluxion_logs_plugin__text__regex_tags__v8>"
+            $<TARGET_FILE_DIR:test__fluxion_logs_plugin__text__regex_tags__v8>
+        COMMENT "Copying V8 plugin DLL from plugins/logs to test binary directory"
+    )
+endif()
+
+include(GoogleTest)
+gtest_discover_tests(test__fluxion_logs_plugin__text__regex_tags__v8
+    DISCOVERY_MODE PRE_TEST
+)
+gtest_discover_tests(unit_tests__fluxion_logs_plugin__text__regex_tags__v8_sqlite_storage
+    DISCOVERY_MODE PRE_TEST
+)

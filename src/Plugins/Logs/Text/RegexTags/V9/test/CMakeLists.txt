@@ -41,9 +41,29 @@ target_link_libraries(unit_tests__fluxion_logs_plugin__text__regex_tags__v9_sqli
     fluxion_logs_plugin__text__regex_tags__v9
 )
 
-include(GoogleTest)
-gtest_discover_tests(
+# Fix 1: Apply the bin directory to BOTH executables
+set_target_properties(
+    test__fluxion_logs_plugin__text__regex_tags__v9 
     unit_tests__fluxion_logs_plugin__text__regex_tags__v9_sqlite_storage
-    DISCOVERY_MODE PRE_TEST
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+if(WIN32)
+    # Fix 2: Changed v1 to v9
+    add_custom_command(TARGET test__fluxion_logs_plugin__text__regex_tags__v9 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/plugins/logs/$<TARGET_FILE_NAME:fluxion_logs_plugin__text__regex_tags__v9>"
+            $<TARGET_FILE_DIR:test__fluxion_logs_plugin__text__regex_tags__v9>
+        COMMENT "Copying V9 plugin DLL from plugins/logs to test binary directory"
+    )
+endif()
+
+include(GoogleTest)
+gtest_discover_tests(test__fluxion_logs_plugin__text__regex_tags__v9
+    DISCOVERY_MODE PRE_TEST
+)
+gtest_discover_tests(unit_tests__fluxion_logs_plugin__text__regex_tags__v9_sqlite_storage
+    DISCOVERY_MODE PRE_TEST
+)

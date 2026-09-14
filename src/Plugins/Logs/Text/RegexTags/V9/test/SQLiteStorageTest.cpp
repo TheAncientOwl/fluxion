@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorageTest.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.6
+/// @version 9.7
 /// @brief Logs::Text::RegexTags::V9::SQLiteStorage Google Test Suite
 ///
 
@@ -16,15 +16,26 @@
 
 #include <gtest/gtest.h>
 
+#include "Graphite/Logger.hpp"
 #include "SQLite/SQLiteStorage.hpp"
 
 using namespace Fluxion::Plugins::Logs::Text::RegexTags::V9;
 
-class SQLiteStorageTest : public ::testing::Test
+namespace {
+struct LoggerAutoShutdown
+{
+    ~LoggerAutoShutdown() { Graphite::Logger::GetLogger().Shutdown(); }
+};
+static LoggerAutoShutdown logger_auto_shutdown;
+} // namespace
+
+class Text_RegexTags_V9_SQLiteStorageTest : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
+        Graphite::Logger::DisableAllScopes();
+
         m_database_path =
             std::filesystem::temp_directory_path() / "fluxion_v9_sqlite_storage_test.db";
         std::filesystem::remove(m_database_path);
@@ -46,7 +57,7 @@ protected:
     SQLiteStorage m_storage{};
 };
 
-TEST_F(SQLiteStorageTest, WritesRowsWithConfiguredIdOffset)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, WritesRowsWithConfiguredIdOffset)
 {
     OpenStorage(100);
 
@@ -63,7 +74,7 @@ TEST_F(SQLiteStorageTest, WritesRowsWithConfiguredIdOffset)
     EXPECT_EQ(filtered_logs[1].log_id, 101);
 }
 
-TEST_F(SQLiteStorageTest, WritesRowsWithSingleWriterPath)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, WritesRowsWithSingleWriterPath)
 {
     OpenStorage(100);
 
@@ -85,7 +96,7 @@ TEST_F(SQLiteStorageTest, WritesRowsWithSingleWriterPath)
     EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
 }
 
-TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
 {
     OpenStorage(100);
 
@@ -105,7 +116,7 @@ TEST_F(SQLiteStorageTest, ReadsRowsFromHalfOpenRanges)
     EXPECT_EQ(third_row, (std::vector<std::string>{"third", "three"}));
 }
 
-TEST_F(SQLiteStorageTest, ReadsRowsIntoExistingVectors)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, ReadsRowsIntoExistingVectors)
 {
     OpenStorage(100);
 
@@ -126,7 +137,7 @@ TEST_F(SQLiteStorageTest, ReadsRowsIntoExistingVectors)
     EXPECT_EQ(output.data(), output_storage);
 }
 
-TEST_F(SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
 {
     OpenStorage();
 
@@ -147,7 +158,7 @@ TEST_F(SQLiteStorageTest, ReadsMultipleRangesAndIgnoresEmptyRanges)
     EXPECT_EQ(three_row, (std::vector<std::string>{"three", "3"}));
 }
 
-TEST_F(SQLiteStorageTest, ReadsAllRowsInIdOrder)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, ReadsAllRowsInIdOrder)
 {
     OpenStorage(50);
 
@@ -170,7 +181,7 @@ TEST_F(SQLiteStorageTest, ReadsAllRowsInIdOrder)
     EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
 }
 
-TEST_F(SQLiteStorageTest, WritesOnlyActiveRowsFromChunk)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, WritesOnlyActiveRowsFromChunk)
 {
     OpenStorage();
 
@@ -192,7 +203,7 @@ TEST_F(SQLiteStorageTest, WritesOnlyActiveRowsFromChunk)
     EXPECT_EQ(filtered_logs[0].log_id, 0);
 }
 
-TEST_F(SQLiteStorageTest, MissingIdsAreNotReturned)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, MissingIdsAreNotReturned)
 {
     OpenStorage();
 
@@ -208,7 +219,7 @@ TEST_F(SQLiteStorageTest, MissingIdsAreNotReturned)
     EXPECT_TRUE(output.empty());
 }
 
-TEST_F(SQLiteStorageTest, ReopenReplacesPreviousDatabaseContents)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, ReopenReplacesPreviousDatabaseContents)
 {
     OpenStorage();
 
@@ -236,7 +247,7 @@ TEST_F(SQLiteStorageTest, ReopenReplacesPreviousDatabaseContents)
     EXPECT_EQ(values, (std::vector<std::string>{"new"}));
 }
 
-TEST_F(SQLiteStorageTest, StreamsRowsAsStringViews)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, StreamsRowsAsStringViews)
 {
     OpenStorage(10);
 
@@ -259,7 +270,7 @@ TEST_F(SQLiteStorageTest, StreamsRowsAsStringViews)
     EXPECT_EQ(values, (std::vector<std::string>{"first", "second"}));
 }
 
-TEST_F(SQLiteStorageTest, StreamingReadCanStopEarly)
+TEST_F(Text_RegexTags_V9_SQLiteStorageTest, StreamingReadCanStopEarly)
 {
     OpenStorage();
 

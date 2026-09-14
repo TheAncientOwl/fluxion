@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.10
+/// @version 9.11
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -253,6 +253,7 @@ bool SQLiteStorage::ReadRowsByIDsInto(
     {
         return false;
     }
+    StatementPtr statement_guard{statement};
     while (sqlite3_step(statement) == SQLITE_ROW)
     {
         auto const id = static_cast<std::size_t>(sqlite3_column_int64(statement, 0));
@@ -297,7 +298,6 @@ bool SQLiteStorage::ReadRowsByIDsInto(
             }
         }
     }
-    sqlite3_finalize(statement);
     return true;
 }
 

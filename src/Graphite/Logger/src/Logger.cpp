@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.16
+/// @version 1.17
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -272,12 +272,17 @@ Logger::LogLevels const& Logger::GetLevels()
     return s_levels;
 }
 
-Logger::~Logger()
+void Logger::Shutdown()
 {
     m_running = false;
     m_cv.notify_one();
     if (m_worker.joinable())
         m_worker.join();
+}
+
+Logger::~Logger()
+{
+    Shutdown();
 }
 
 std::filesystem::path Logger::GetLogFilePath()
