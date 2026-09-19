@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.18
+/// @version 1.19
 /// @brief Logging utilities
 ///
 
@@ -117,6 +117,11 @@ struct StringHash
     {
         return std::hash<std::string>{}(str);
     }
+
+    [[nodiscard]] size_t operator()(const char* str) const
+    {
+        return std::hash<std::string_view>{}(str);
+    }
 };
 
 class GRAPHITE_LOGGER_API Logger
@@ -130,37 +135,29 @@ public: // API
     Logger();
     ~Logger();
 
-    std::string_view DefineLogScope(std::string_view scope);
+    // ABI-Safe methods that cross the boundary using only raw C types
+    const char* DefineLogScope(const char* scope);
+    void LogRaw(ELogLevel level, const char* scope, const char* message);
+    bool IsScopeLevelEnabledRaw(const char* scope, ELogLevel level);
 
     template <typename... Args>
-    void Log(ELogLevel level, std::string_view scope, std::format_string<Args...> fmt, Args&&... args)
+    void Log(ELogLevel level, const char* scope, std::format_string<Args...> fmt, Args&&... args)
     {
         if (!IsLevelEnabled(level))
         {
             return;
         }
 
+        // Check if the specific scope level is enabled via the safe ABI boundary
+        if (!IsScopeLevelEnabledRaw(scope, level))
         {
-            std::lock_guard lock{m_scope_mutex};
-            auto it = m_scope_enabled.find(scope);
-
-            if (it == m_scope_enabled.end())
-            {
-                it = m_scope_enabled.emplace(std::string{scope}, GetDefaultScopeFlags()).first;
-            }
-
-            if (!it->second[level])
-            {
-                return;
-            }
+            return;
         }
 
-        Enqueue(
-            LogMessage{
-                level,
-                std::string(scope),
-                std::format(fmt, std::forward<Args>(args)...),
-                std::chrono::system_clock::now()});
+        // Format is executed completely locally in the caller's standard library.
+        // We decay the resulting std::string to a raw const char* before crossing the boundary.
+        std::string formatted_message = std::format(fmt, std::forward<Args>(args)...);
+        LogRaw(level, scope, formatted_message.c_str());
     }
 
     void SaveConfig();
@@ -205,16 +202,99 @@ private:
     Graphite::Settings::PersistentSettings m_settings;
 };
 
-class GRAPHITE_LOGGER_API ScopeLogger
+// Moved fully inline so standard library types (std::string, std::chrono)
+// never cross the DLL/.so boundary.
+class ScopeLogger
 {
 public:
-    // Scope can be string_view because __PRETTY_FUNCTION__ has static lifetime.
-    // Tag MUST be std::string because std::format returns a temporary that would dangle.
-    ScopeLogger(std::string tag, std::string_view scope);
-    ~ScopeLogger();
+    inline ScopeLogger(std::string tag, const char* scope)
+        : m_scope{scope}, m_tag{std::move(tag)}, m_start{}
+    {
+        auto& logger = Graphite::Logger::GetLogger();
+        if (!logger.IsLevelEnabled(ELogLevel::Scope))
+            return;
+        if (!logger.IsScopeLevelEnabledRaw(m_scope, ELogLevel::Scope))
+            return;
+
+        m_start = std::chrono::high_resolution_clock::now();
+
+        static constexpr auto green = "\033[32m";
+        static constexpr auto gray = "\033[90m";
+
+        std::string msg =
+            std::format("{}[{}+{}]{} Begin {}» {}{}", gray, green, gray, green, gray, green, m_tag);
+        logger.LogRaw(ELogLevel::Scope, m_scope, msg.c_str());
+    }
+
+    inline ~ScopeLogger()
+    {
+        auto& logger = Graphite::Logger::GetLogger();
+        if (!logger.IsLevelEnabled(ELogLevel::Scope))
+            return;
+        if (!logger.IsScopeLevelEnabledRaw(m_scope, ELogLevel::Scope))
+            return;
+
+        auto const end = std::chrono::high_resolution_clock::now();
+        auto const elapsed = end - m_start;
+
+        auto const hours = std::chrono::duration_cast<std::chrono::hours>(elapsed);
+        auto const minutes = std::chrono::duration_cast<std::chrono::minutes>(elapsed - hours);
+        auto const seconds =
+            std::chrono::duration_cast<std::chrono::seconds>(elapsed - hours - minutes);
+        auto const milliseconds =
+            std::chrono::duration_cast<std::chrono::milliseconds>(elapsed - hours - minutes - seconds);
+        auto const nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            elapsed - hours - minutes - seconds - milliseconds);
+
+        static constexpr auto red = "\033[91m";
+        static constexpr auto gray = "\033[90m";
+        static constexpr auto reset = "\033[97m";
+
+        std::string time_str;
+        bool started = false;
+
+        if (hours.count() > 0)
+        {
+            time_str += std::to_string(hours.count()) + "h";
+            started = true;
+        }
+        if (started || minutes.count() > 0)
+        {
+            if (started)
+                time_str += ", ";
+            time_str += std::to_string(minutes.count()) + "m";
+            started = true;
+        }
+        if (started || seconds.count() > 0)
+        {
+            if (started)
+                time_str += ", ";
+            time_str += std::to_string(seconds.count()) + "s";
+            started = true;
+        }
+        if (started || milliseconds.count() > 0)
+        {
+            if (started)
+                time_str += ", ";
+            time_str += std::to_string(milliseconds.count()) + "ms";
+            started = true;
+        }
+        if (started || nanoseconds.count() > 0)
+        {
+            if (started)
+                time_str += ", ";
+            time_str += std::to_string(nanoseconds.count()) + "ns";
+        }
+        time_str += reset;
+
+        std::string msg = std::format(
+            "{}[{}-{}]{} End   {}» {}{} ~ elapsed {}", gray, red, gray, red, gray, m_tag, gray, time_str);
+
+        logger.LogRaw(ELogLevel::Scope, m_scope, msg.c_str());
+    }
 
 private:
-    std::string_view m_scope;
+    const char* m_scope;
     std::string m_tag;
     std::chrono::high_resolution_clock::time_point m_start;
 };
