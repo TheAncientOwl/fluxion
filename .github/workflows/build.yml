@@ -4,7 +4,7 @@ on:
   push:
     # branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -45,6 +45,7 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-vulkan-headers
             mingw-w64-ucrt-x86_64-vulkan-loader
+            mingw-w64-ucrt-x86_64-lld
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
