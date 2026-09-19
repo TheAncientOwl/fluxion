@@ -65,5 +65,7 @@
 
   "workbench.colorTheme": "Gruvbox Dark Hard",
   "clangd.path": "clangd",
-  "clang-format.executable": "clang-format"
+  "clang-format.executable": "clang-format",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "cmake.launchBehavior": "breakAndReuseTerminal"
 }

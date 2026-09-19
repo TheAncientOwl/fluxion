@@ -64,5 +64,7 @@
   },
 
   "clangd.path": "/usr/bin/clangd",
-  "clang-format.executable": "/opt/homebrew/bin/clang-format"
+  "clang-format.executable": "/opt/homebrew/bin/clang-format",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "cmake.launchBehavior": "breakAndReuseTerminal"
 }

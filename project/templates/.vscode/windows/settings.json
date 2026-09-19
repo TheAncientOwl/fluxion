@@ -65,5 +65,7 @@
 
   "workbench.colorTheme": "Abyss",
   "clangd.path": "D:\\msys64\\ucrt64\\bin\\clangd.exe",
-  "clang-format.executable": "D:\\msys64\\ucrt64\\bin\\clang-format.exe"
+  "clang-format.executable": "D:\\msys64\\ucrt64\\bin\\clang-format.exe",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "cmake.launchBehavior": "breakAndReuseTerminal"
 }
