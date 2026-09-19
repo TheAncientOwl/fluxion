@@ -9,3 +9,4 @@ benchmark_logs.*
 .fluxion
 Testing/*
 .vscode/settings.json
+staging/*

@@ -24,6 +24,7 @@ target_link_libraries(fluxion_api_impl PRIVATE
     external_imgui
     project_compile_options
     graphite_logger_interface
+    graphite_logger_impl
     graphite_settings_impl
     graphite_common_interface
     fluxion_api_interface

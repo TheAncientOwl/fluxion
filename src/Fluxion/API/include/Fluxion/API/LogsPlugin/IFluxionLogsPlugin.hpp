@@ -146,171 +146,165 @@ public:
 
 } // namespace Fluxion::API::LogsPlugin
 
-#define FLUXION_REGISTER_LOGS_PLUGIN(PluginClass)                                                \
-    extern "C" GRAPHITE_EXPORT void CreateFluxionLogsPluginAPI(                                  \
-        Fluxion::API::LogsPlugin::Private::LogsPluginAPI* out_api)                               \
-    {                                                                                            \
-        using Plugin = PluginClass;                                                              \
-        using API = Fluxion::API::LogsPlugin::Private::LogsPluginAPI;                            \
-        namespace ABI = Fluxion::API::LogsPlugin::Private::ABI;                                  \
-        namespace Safe = Fluxion::API::LogsPlugin::Private::ABI::Safe;                           \
-        namespace Adapter = Fluxion::API::LogsPlugin::Private::ABI::Adapter;                     \
-                                                                                                 \
-        auto* plugin = new Plugin{};                                                             \
-                                                                                                 \
-        *out_api = API{                                                                          \
-            .instance = plugin,                                                                  \
-                                                                                                 \
-            .Destroy = +[](void* instance) { delete static_cast<Plugin*>(instance); },           \
-                                                                                                 \
-            .GetDisplayName =                                                                    \
-                +[](void const* instance) {                                                      \
-                    auto const* plugin = static_cast<Plugin const*>(instance);                   \
-                    return Adapter::ToSafe(plugin->GetDisplayName());                            \
-                },                                                                               \
-                                                                                                 \
-            .GetDirectoryName =                                                                  \
-                +[](void const* instance) {                                                      \
-                    auto const* plugin = static_cast<Plugin const*>(instance);                   \
-                    return Adapter::ToSafe(plugin->GetDirectoryName());                          \
-                },                                                                               \
-                                                                                                 \
-            .OnEnable =                                                                          \
-                +[](void* instance, Safe::OnEnableData const data) {                             \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                                                                                                 \
-                    auto const native_data = Adapter::ToNative(data);                            \
-                                                                                                 \
-                    plugin->OnEnable(native_data);                                               \
-                },                                                                               \
-                                                                                                 \
-            .OnDisable =                                                                         \
-                +[](void* instance, Safe::OnDisableData const data) {                            \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                    auto const native_data = Adapter::ToNative(data);                            \
-                    plugin->OnDisable(native_data);                                              \
-                },                                                                               \
-                                                                                                 \
-            .RenderMenu = +[](void* instance) { static_cast<Plugin*>(instance)->RenderMenu(); }, \
-                                                                                                 \
-            .ImportLogs =                                                                        \
-                +[](void* instance, Safe::StringView const path) {                               \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                    plugin->ImportLogs(std::filesystem::path{Adapter::ToNative(path)});          \
-                },                                                                               \
-                                                                                                 \
-            .GetNextLog =                                                                        \
-                +[](void* instance,                                                              \
-                    Safe::UniqueID const filter_id,                                              \
-                    std::size_t const current_index,                                             \
-                    std::size_t* const out_index) {                                              \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                                                                                                 \
-                    auto const result =                                                          \
-                        plugin->GetNextLog(Adapter::ToNative(filter_id), current_index);         \
-                                                                                                 \
-                    if (!result)                                                                 \
-                        return false;                                                            \
-                                                                                                 \
-                    *out_index = *result;                                                        \
-                    return true;                                                                 \
-                },                                                                               \
-                                                                                                 \
-            .GetPrevLog =                                                                        \
-                +[](void* instance,                                                              \
-                    Safe::UniqueID const filter_id,                                              \
-                    std::size_t const current_index,                                             \
-                    std::size_t* const out_index) {                                              \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                                                                                                 \
-                    auto const result =                                                          \
-                        plugin->GetPrevLog(Adapter::ToNative(filter_id), current_index);         \
-                                                                                                 \
-                    if (!result)                                                                 \
-                        return false;                                                            \
-                                                                                                 \
-                    *out_index = *result;                                                        \
-                    return true;                                                                 \
-                },                                                                               \
-                                                                                                 \
-            .ApplyFilters =                                                                      \
-                +[](void* instance,                                                              \
-                    Safe::FiltersSpan const filters,                                             \
-                    Safe::FiltersSpan const highlight_only) {                                    \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                                                                                                 \
-                    auto const native_filters_view = Adapter::ToNative(filters);                 \
-                    auto const native_highlight_only_view = Adapter::ToNative(highlight_only);   \
-                                                                                                 \
-                    std::vector<ABI::Unsafe::Filter> native_filters;                             \
-                    native_filters.reserve(native_filters_view.size());                          \
-                                                                                                 \
-                    for (auto const& filter : native_filters_view)                               \
-                    {                                                                            \
-                        native_filters.emplace_back(Adapter::ToNative(filter));                  \
-                    }                                                                            \
-                                                                                                 \
-                    std::vector<ABI::Unsafe::Filter> native_highlight_only;                      \
-                    native_highlight_only.reserve(native_highlight_only_view.size());            \
-                                                                                                 \
-                    for (auto const& filter : native_highlight_only_view)                        \
-                    {                                                                            \
-                        native_highlight_only.emplace_back(Adapter::ToNative(filter));           \
-                    }                                                                            \
-                                                                                                 \
-                    plugin->ApplyFilters(native_filters, native_highlight_only);                 \
-                },                                                                               \
-                                                                                                 \
-            .DisableFilters =                                                                    \
-                +[](void* instance) { static_cast<Plugin*>(instance)->DisableFilters(); },       \
-                                                                                                 \
-            .GetTableHeader =                                                                    \
-                +[](void const* instance) {                                                      \
-                    auto const* plugin = static_cast<Plugin const*>(instance);                   \
-                    auto const columns = plugin->GetTableHeader();                               \
-                                                                                                 \
-                    static thread_local std::vector<Safe::ColumnDetails> safe_columns{};         \
-                    safe_columns.clear();                                                        \
-                    safe_columns.reserve(columns.size());                                        \
-                                                                                                 \
-                    for (auto const& column : columns)                                           \
-                    {                                                                            \
-                        safe_columns.emplace_back(Adapter::ToSafe(column));                      \
-                    }                                                                            \
-                                                                                                 \
-                    return Safe::ColumnsDetailsSpan{                                             \
-                        .data = safe_columns.data(), .size = safe_columns.size()};               \
-                },                                                                               \
-                                                                                                 \
-            .GetTotalLogs =                                                                      \
-                +[](void const* instance) {                                                      \
-                    return static_cast<Plugin const*>(instance)->GetTotalLogs();                 \
-                },                                                                               \
-                                                                                                 \
-            .GetLogs =                                                                           \
-                +[](void* instance, Safe::RangesSpan const ranges, Safe::LogRowWriter writer) {  \
-                    auto* plugin = static_cast<Plugin*>(instance);                               \
-                                                                                                 \
-                    plugin->GetLogs(                                                             \
-                        Adapter::ToNative(ranges),                                               \
-                        writer.write_data,                                                       \
-                        writer.write_metadata,                                                   \
-                        writer.user_data);                                                       \
-                },                                                                               \
-                                                                                                 \
-            .GetLogsOperationTarget =                                                            \
-                +[](void const* instance) {                                                      \
-                    return static_cast<Plugin const*>(instance)->GetLogsOperationTarget();       \
-                },                                                                               \
-                                                                                                 \
-            .GetLogsOperationUnit =                                                              \
-                +[](void const* instance) {                                                      \
-                    return static_cast<Plugin const*>(instance)->GetLogsOperationUnit();         \
-                },                                                                               \
-                                                                                                 \
-            .GetLogsOperationProgress =                                                          \
-                +[](void const* instance) {                                                      \
-                    return static_cast<Plugin const*>(instance)->GetLogsOperationProgress();     \
-                },                                                                               \
-        };                                                                                       \
+#define FLUXION_REGISTER_LOGS_PLUGIN(PluginClass)                                                           \
+    namespace {                                                                                             \
+    inline Fluxion::API::LogsPlugin::Private::ABI::Safe::ColumnsDetailsSpan ConvertTableHeaderToSafeBuffer( \
+        PluginClass const* plugin)                                                                          \
+    {                                                                                                       \
+        using namespace Fluxion::API::LogsPlugin::Private;                                                  \
+        thread_local std::vector<ABI::Safe::ColumnDetails> safe_columns{};                                  \
+        auto const columns = plugin->GetTableHeader();                                                      \
+        safe_columns.clear();                                                                               \
+        safe_columns.reserve(columns.size());                                                               \
+        for (auto const& column : columns)                                                                  \
+        {                                                                                                   \
+            safe_columns.emplace_back(ABI::Adapter::ToSafe(column));                                        \
+        }                                                                                                   \
+        return ABI::Safe::ColumnsDetailsSpan{                                                               \
+            .data = safe_columns.data(), .size = safe_columns.size()};                                      \
+    }                                                                                                       \
+    }                                                                                                       \
+                                                                                                            \
+    extern "C" GRAPHITE_EXPORT void CreateFluxionLogsPluginAPI(                                             \
+        Fluxion::API::LogsPlugin::Private::LogsPluginAPI* out_api)                                          \
+    {                                                                                                       \
+        using Plugin = PluginClass;                                                                         \
+        using API = Fluxion::API::LogsPlugin::Private::LogsPluginAPI;                                       \
+        namespace ABI = Fluxion::API::LogsPlugin::Private::ABI;                                             \
+        namespace Safe = Fluxion::API::LogsPlugin::Private::ABI::Safe;                                      \
+        namespace Adapter = Fluxion::API::LogsPlugin::Private::ABI::Adapter;                                \
+                                                                                                            \
+        auto* plugin = new Plugin{};                                                                        \
+                                                                                                            \
+        *out_api = API{                                                                                     \
+            .instance = plugin,                                                                             \
+                                                                                                            \
+            .Destroy = +[](void* instance) { delete static_cast<Plugin*>(instance); },                      \
+                                                                                                            \
+            .GetDisplayName =                                                                               \
+                +[](void const* instance) {                                                                 \
+                    auto const* plugin = static_cast<Plugin const*>(instance);                              \
+                    return Adapter::ToSafe(plugin->GetDisplayName());                                       \
+                },                                                                                          \
+                                                                                                            \
+            .GetDirectoryName =                                                                             \
+                +[](void const* instance) {                                                                 \
+                    auto const* plugin = static_cast<Plugin const*>(instance);                              \
+                    return Adapter::ToSafe(plugin->GetDirectoryName());                                     \
+                },                                                                                          \
+                                                                                                            \
+            .OnEnable =                                                                                     \
+                +[](void* instance, Safe::OnEnableData const data) {                                        \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    auto const native_data = Adapter::ToNative(data);                                       \
+                    plugin->OnEnable(native_data);                                                          \
+                },                                                                                          \
+                                                                                                            \
+            .OnDisable =                                                                                    \
+                +[](void* instance, Safe::OnDisableData const data) {                                       \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    auto const native_data = Adapter::ToNative(data);                                       \
+                    plugin->OnDisable(native_data);                                                         \
+                },                                                                                          \
+                                                                                                            \
+            .RenderMenu = +[](void* instance) { static_cast<Plugin*>(instance)->RenderMenu(); },            \
+                                                                                                            \
+            .ImportLogs =                                                                                   \
+                +[](void* instance, Safe::StringView const path) {                                          \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    plugin->ImportLogs(std::filesystem::path{Adapter::ToNative(path)});                     \
+                },                                                                                          \
+                                                                                                            \
+            .GetNextLog =                                                                                   \
+                +[](void* instance,                                                                         \
+                    Safe::UniqueID const filter_id,                                                         \
+                    std::size_t const current_index,                                                        \
+                    std::size_t* const out_index) {                                                         \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    auto const result =                                                                     \
+                        plugin->GetNextLog(Adapter::ToNative(filter_id), current_index);                    \
+                    if (!result)                                                                            \
+                        return false;                                                                       \
+                    *out_index = *result;                                                                   \
+                    return true;                                                                            \
+                },                                                                                          \
+                                                                                                            \
+            .GetPrevLog =                                                                                   \
+                +[](void* instance,                                                                         \
+                    Safe::UniqueID const filter_id,                                                         \
+                    std::size_t const current_index,                                                        \
+                    std::size_t* const out_index) {                                                         \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    auto const result =                                                                     \
+                        plugin->GetPrevLog(Adapter::ToNative(filter_id), current_index);                    \
+                    if (!result)                                                                            \
+                        return false;                                                                       \
+                    *out_index = *result;                                                                   \
+                    return true;                                                                            \
+                },                                                                                          \
+                                                                                                            \
+            .ApplyFilters =                                                                                 \
+                +[](void* instance,                                                                         \
+                    Safe::FiltersSpan const filters,                                                        \
+                    Safe::FiltersSpan const highlight_only) {                                               \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    auto const native_filters_view = Adapter::ToNative(filters);                            \
+                    auto const native_highlight_only_view = Adapter::ToNative(highlight_only);              \
+                                                                                                            \
+                    std::vector<ABI::Unsafe::Filter> native_filters;                                        \
+                    native_filters.reserve(native_filters_view.size());                                     \
+                    for (auto const& filter : native_filters_view)                                          \
+                    {                                                                                       \
+                        native_filters.emplace_back(Adapter::ToNative(filter));                             \
+                    }                                                                                       \
+                                                                                                            \
+                    std::vector<ABI::Unsafe::Filter> native_highlight_only;                                 \
+                    native_highlight_only.reserve(native_highlight_only_view.size());                       \
+                    for (auto const& filter : native_highlight_only_view)                                   \
+                    {                                                                                       \
+                        native_highlight_only.emplace_back(Adapter::ToNative(filter));                      \
+                    }                                                                                       \
+                                                                                                            \
+                    plugin->ApplyFilters(native_filters, native_highlight_only);                            \
+                },                                                                                          \
+                                                                                                            \
+            .DisableFilters =                                                                               \
+                +[](void* instance) { static_cast<Plugin*>(instance)->DisableFilters(); },                  \
+                                                                                                            \
+            .GetTableHeader =                                                                               \
+                +[](void const* instance) {                                                                 \
+                    auto const* plugin = static_cast<Plugin const*>(instance);                              \
+                    return ConvertTableHeaderToSafeBuffer(plugin);                                          \
+                },                                                                                          \
+                                                                                                            \
+            .GetTotalLogs =                                                                                 \
+                +[](void const* instance) {                                                                 \
+                    return static_cast<Plugin const*>(instance)->GetTotalLogs();                            \
+                },                                                                                          \
+                                                                                                            \
+            .GetLogs =                                                                                      \
+                +[](void* instance, Safe::RangesSpan const ranges, Safe::LogRowWriter writer) {             \
+                    auto* plugin = static_cast<Plugin*>(instance);                                          \
+                    plugin->GetLogs(                                                                        \
+                        Adapter::ToNative(ranges),                                                          \
+                        writer.write_data,                                                                  \
+                        writer.write_metadata,                                                              \
+                        writer.user_data);                                                                  \
+                },                                                                                          \
+                                                                                                            \
+            .GetLogsOperationTarget =                                                                       \
+                +[](void const* instance) {                                                                 \
+                    return static_cast<Plugin const*>(instance)->GetLogsOperationTarget();                  \
+                },                                                                                          \
+                                                                                                            \
+            .GetLogsOperationUnit =                                                                         \
+                +[](void const* instance) {                                                                 \
+                    return static_cast<Plugin const*>(instance)->GetLogsOperationUnit();                    \
+                },                                                                                          \
+                                                                                                            \
+            .GetLogsOperationProgress =                                                                     \
+                +[](void const* instance) {                                                                 \
+                    return static_cast<Plugin const*>(instance)->GetLogsOperationProgress();                \
+                },                                                                                          \
+        };                                                                                                  \
     }

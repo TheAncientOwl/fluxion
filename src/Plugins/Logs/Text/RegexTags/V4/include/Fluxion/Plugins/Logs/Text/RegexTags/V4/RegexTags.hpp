@@ -25,7 +25,7 @@
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V4 {
 
-class RegexTags final : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
+class GRAPHITE_EXPORT RegexTags final : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
     RegexTags();
