@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1::CSV {
 
 class Reader

@@ -11,7 +11,7 @@
 
 #include "FilteredLogsReader.hpp"
 
-#include "Graphite/Common/Utility/UniqueID.hpp"
+#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 #include "Graphite/Logger.hpp"
 
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::SQLite::FilteredLogsReader);
@@ -25,8 +25,8 @@ FilteredLogsReader::FilteredLogsReader(DatabaseRef db) : m_database{db}
 }
 
 Statement FilteredLogsReader::PrepareGetRangesQuery(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    std::vector<std::string> const& fields)
+    std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+    std::span<std::string const> const fields)
 {
     LOG_SCOPE("::PrepareGetRangesQuery()");
 
@@ -116,7 +116,7 @@ bool FilteredLogsReader::NextFilteredRow(
         int const highlight_col_idx = static_cast<int>(col_count - 2);
         int const view_index_col_idx = static_cast<int>(col_count - 1);
 
-        auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
+        auto const default_filter_id{Fluxion::API::LogsPlugin::UniqueID::GetDefault().ToString()};
 
         // If filter_id is NULL in DB, fallback to default Graphite ID
         const char* filter_text = statement.GetColumnText(filter_col_idx);
@@ -147,7 +147,7 @@ std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
 {
     LOG_SCOPE("::GetNextFilteredIndex()");
 
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
+    auto const default_filter_id{Fluxion::API::LogsPlugin::UniqueID::GetDefault().ToString()};
     bool const is_default_filter = (filter_id_str == default_filter_id || filter_id_str.empty());
 
     auto execute_query = [this, &filter_id_str, is_default_filter](
@@ -234,7 +234,7 @@ std::optional<std::size_t> FilteredLogsReader::GetPrevFilteredIndex(
 {
     LOG_SCOPE("::GetPrevFilteredIndex()");
 
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
+    auto const default_filter_id{Fluxion::API::LogsPlugin::UniqueID::GetDefault().ToString()};
     bool const is_default_filter = (filter_id_str == default_filter_id || filter_id_str.empty());
 
     auto execute_query = [this, &filter_id_str, is_default_filter](

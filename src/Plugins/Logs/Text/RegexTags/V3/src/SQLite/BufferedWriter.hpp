@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -22,7 +23,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 class BufferedWriter
 {
 public: // Lifecycle
-    BufferedWriter(DatabaseRef db, std::size_t const batch_size, std::vector<std::string> const& fields);
+    BufferedWriter(DatabaseRef db, std::size_t const batch_size, std::span<std::string const> const fields);
     ~BufferedWriter();
 
     BufferedWriter(BufferedWriter const&) = delete;

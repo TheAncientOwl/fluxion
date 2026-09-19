@@ -23,7 +23,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V4::SQLite {
 BufferedWriter::BufferedWriter(
     DatabaseRef db,
     std::size_t const batch_size,
-    std::vector<std::string> const& fields)
+    std::span<std::string const> const fields)
     : m_database{db}, m_batch_size{batch_size}
 {
     LOG_SCOPE("::BufferedWriter()");

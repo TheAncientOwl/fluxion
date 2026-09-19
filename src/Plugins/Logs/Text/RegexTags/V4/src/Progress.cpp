@@ -28,9 +28,9 @@ std::size_t RegexTags::GetLogsOperationProgress() const
     return m_logs_operation_progress;
 }
 
-Fluxion::API::LogsPlugin::Data::ELogsOperationUnit RegexTags::GetLogsOperationUnit() const
+Fluxion::API::LogsPlugin::ELogsOperationUnit RegexTags::GetLogsOperationUnit() const
 {
-    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+    return Fluxion::API::LogsPlugin::ELogsOperationUnit::Logs;
 }
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V4

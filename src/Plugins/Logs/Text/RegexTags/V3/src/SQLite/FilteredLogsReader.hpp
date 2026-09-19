@@ -13,11 +13,12 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 #include "Wrapper/DatabaseRef.hpp"
 #include "Wrapper/Statement.hpp"
 
@@ -42,8 +43,8 @@ public: // Public API
      * @return Statement managing the prepared statement lifetime.
      */
     Statement PrepareGetRangesQuery(
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        std::vector<std::string> const& fields);
+        std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+        std::span<std::string const> const fields);
 
     /**
      * @brief Fetches the next row, populating log fields, metadata, and the view index.

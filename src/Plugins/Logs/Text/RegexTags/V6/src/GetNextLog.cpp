@@ -19,7 +19,7 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6::GetNextLog);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
 
 std::optional<std::size_t> RegexTags::GetNextLog(
-    Graphite::Common::Utility::UniqueID const& filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& filter_id,
     std::size_t const current_index)
 {
     LOG_SCOPE("::GetNextLog()");

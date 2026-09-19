@@ -14,13 +14,13 @@
 #include <string>
 
 #include <nlohmann/json.hpp>
-#include "Graphite/Common/Utility/UniqueID.hpp"
+#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Data {
 
 struct RegexTag
 {
-    Graphite::Common::Utility::UniqueID id{};
+    Fluxion::API::LogsPlugin::UniqueID id{};
     std::string display_name{};
     std::string regex_data{};
     bool visible{};
@@ -58,15 +58,15 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
 struct FilteredLog
 {
     std::size_t log_id{0};
-    Graphite::Common::Utility::UniqueID filter_id{Graphite::Common::Utility::UniqueID::GetDefault()};
-    Graphite::Common::Utility::UniqueID highlight_filter_id{
-        Graphite::Common::Utility::UniqueID::GetDefault()};
+    Fluxion::API::LogsPlugin::UniqueID filter_id{Fluxion::API::LogsPlugin::UniqueID::GetDefault()};
+    Fluxion::API::LogsPlugin::UniqueID highlight_filter_id{
+        Fluxion::API::LogsPlugin::UniqueID::GetDefault()};
 
     FilteredLog(std::size_t const log_id);
     FilteredLog(
         std::size_t const log_id,
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        Graphite::Common::Utility::UniqueID const& highlight_filter_id);
+        Fluxion::API::LogsPlugin::UniqueID const& filter_id,
+        Fluxion::API::LogsPlugin::UniqueID const& highlight_filter_id);
 };
 
 } // namespace Fluxion::Plugins::Logs::Text::RegexTags::V7::Data

@@ -19,7 +19,7 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V8);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V8 {
 
-void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data)
+void RegexTags::OnEnable(Fluxion::API::LogsPlugin::OnEnableData const& data)
 {
     using RegexTags = std::vector<std::shared_ptr<Data::RegexTag>>;
 
@@ -37,49 +37,49 @@ void RegexTags::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& dat
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "Timestamp";
             new_tag->regex_data = R"(\d+)";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = true;
         }
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "-";
             new_tag->regex_data = R"(\s+)";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = false;
         }
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "Channel";
             new_tag->regex_data = R"(Channel[1-4])";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = true;
         }
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "-";
             new_tag->regex_data = R"(\s+)";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = false;
         }
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "Level";
             new_tag->regex_data = R"(trace|info|error|debug|warn)";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = true;
         }
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "-";
             new_tag->regex_data = R"(\s+)";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = false;
         }
         {
             auto& new_tag = tags.emplace_back(std::make_shared<Data::RegexTag>());
             new_tag->display_name = "Payload";
             new_tag->regex_data = R"(.*)";
-            new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag->visible = true;
         }
     }

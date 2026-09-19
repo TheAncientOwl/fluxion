@@ -64,36 +64,36 @@ void LogsProgressView::OnRender()
     ImGui::SetNextWindowSize(ImVec2(600.0f, 100.0f));
     ImGui::Begin(ICON_CI_OUTPUT " Logs Progress", nullptr, ImGuiWindowFlags_NoResize);
 
-    auto render_progress =
-        [&,
-         operation = app_state.logs_plugin->GetLogsOperationUnit() ==
-                             Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
-                         ? "bytes"
-                         : "logs"](const char* icon, const char* action_name, std::size_t total) {
-            auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};
-            auto const percentage{Fluxion::Common::Utility::Math::Percentage(processed, total)};
+    auto render_progress = [&,
+                            operation = app_state.logs_plugin.GetLogsOperationUnit() ==
+                                                Fluxion::API::LogsPlugin::ELogsOperationUnit::Bytes
+                                            ? "bytes"
+                                            : "logs"](
+                               const char* icon, const char* action_name, std::size_t total) {
+        auto const processed{app_state.logs_plugin.GetLogsOperationProgress()};
+        auto const percentage{Fluxion::Common::Utility::Math::Percentage(processed, total)};
 
-            ImGui::Text("%s %s %zu/%zu %s", icon, action_name, processed, total, operation);
-            Graphite::Common::UI::ProgressBar(percentage);
-        };
+        ImGui::Text("%s %s %zu/%zu %s", icon, action_name, processed, total, operation);
+        Graphite::Common::UI::ProgressBar(percentage);
+    };
 
     switch (app_state.logs_progress.operation)
     {
     case Fluxion::Application::ELogsOperation::Import:
-        render_progress(ICON_CI_ROCKET, "Imported", app_state.logs_plugin->GetLogsOperationTarget());
+        render_progress(ICON_CI_ROCKET, "Imported", app_state.logs_plugin.GetLogsOperationTarget());
         break;
 
     case Fluxion::Application::ELogsOperation::Filter:
-        render_progress(ICON_CI_WAND, "Filtered", app_state.logs_plugin->GetLogsOperationTarget());
+        render_progress(ICON_CI_WAND, "Filtered", app_state.logs_plugin.GetLogsOperationTarget());
         break;
 
     case Fluxion::Application::ELogsOperation::DisableFilter:
         render_progress(
-            ICON_CI_WAND, "Removed filters", app_state.logs_plugin->GetLogsOperationTarget());
+            ICON_CI_WAND, "Removed filters", app_state.logs_plugin.GetLogsOperationTarget());
         break;
 
     case Fluxion::Application::ELogsOperation::Search:
-        render_progress(ICON_CI_SEARCH, "Searched", app_state.logs_plugin->GetLogsOperationTarget());
+        render_progress(ICON_CI_SEARCH, "Searched", app_state.logs_plugin.GetLogsOperationTarget());
         break;
 
     default:

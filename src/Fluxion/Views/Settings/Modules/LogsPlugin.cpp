@@ -8,6 +8,7 @@
 /// @version 0.10
 /// @brief Logs plugin selector + menu.
 ///
+/// --------------------------------------------------------------------------
 
 #include "LogsPlugin.hpp"
 
@@ -15,10 +16,10 @@
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
 #include "Graphite/Logger.hpp"
-
 #include "IconsCodicons.h"
 
 DEFINE_LOG_SCOPE(Fluxion::Application::Views::Modules::SettingsView::LogsPlugin);
+
 USE_LOG_SCOPE(Fluxion::Application::Views::Modules::SettingsView::LogsPlugin);
 
 namespace Fluxion::Application::Views::Modules::SettingsView {
@@ -32,8 +33,11 @@ void LogsPluginRenderer::Render()
         Fluxion::Application::ELogsOperation::None);
 
     // Render the Import button first, then place the combo box on the same line
+
     RenderImportPlugins();
+
     ImGui::SameLine();
+
     RenderPluginSelection();
 
     ImGui::EndDisabled();
@@ -44,6 +48,7 @@ void LogsPluginRenderer::Render()
 void LogsPluginRenderer::OnAdd(Fluxion::Application::FluxionApplication::Ptr app)
 {
     LOG_SCOPE("::OnAdd()");
+
     m_application = std::move(app);
 }
 
@@ -52,6 +57,7 @@ void LogsPluginRenderer::RenderPluginSelection()
     LOG_SCOPE("::RenderPluginSelection()");
 
     auto& app_state{m_application->GetApplicationState()};
+
     std::string const current_display_name =
         app_state.selected_logs_plugin_path.empty()
             ? "Select Logs Plugin :D"
@@ -60,6 +66,7 @@ void LogsPluginRenderer::RenderPluginSelection()
     ScanAvailablePlugins();
 
     // The combo box automatically fills the remaining width on the line
+
     if (m_available_plugins.empty())
     {
         if (ImGui::BeginCombo("##plugin-selection", "No plugins found"))
@@ -74,10 +81,13 @@ void LogsPluginRenderer::RenderPluginSelection()
             for (int i = 0; i < static_cast<int>(m_available_plugins.size()); ++i)
             {
                 auto const& plugin_path = m_available_plugins[static_cast<std::size_t>(i)];
+
                 std::string const display_name = plugin_path.filename().string();
 
                 bool const is_selected{m_selected_plugin_index == i};
+
                 ImGui::PushID(i);
+
                 if (ImGui::Selectable(display_name.c_str(), is_selected))
                 {
                     LOG_INFO("::RenderPluginSelection(): Selected plugin: {}", plugin_path);
@@ -92,72 +102,97 @@ void LogsPluginRenderer::RenderPluginSelection()
                             plugin_path);
 
                         LOG_INFO("::RenderPluginSelection(): Disabling current plugin");
-                        app_state.logs_plugin->OnDisable({});
+
+                        app_state.logs_plugin.OnDisable({});
 
                         LOG_INFO("::RenderPluginSelection(): Clearing table header");
+
                         app_state.logs.table_header.clear();
 
                         LOG_INFO("::RenderPluginSelection(): Clearing searched log index");
+
                         app_state.logs.searched_log.UpdateBackBufferCopyLocking(
                             [](auto& searched_log) { searched_log.index = std::nullopt; });
 
                         LOG_INFO("::RenderPluginSelection(): Clearing visible logs");
+
                         /// @note we have to <clear, swap & clear again> to get rid of front
                         /// artifacts that are being swapped on back the first time
+
                         app_state.logs.visible.UpdateBackBufferSwap(
                             [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
+
                         app_state.logs.visible.SyncFrontBufferSwap();
+
                         app_state.logs.visible.UpdateBackBufferSwap(
                             [](auto&) {}, [](auto& buffer) { buffer.logs.clear(); });
 
                         // Destroy old plugin BEFORE unloading the library
+
                         LOG_INFO("::RenderPluginSelection(): Destroying old plugin");
-                        app_state.logs_plugin.reset();
+
+                        app_state.logs_plugin = {};
+
                         app_state.loaded_plugin_library.reset();
 
                         // Load new plugin with persistent library handle
+
                         app_state.loaded_plugin_library =
                             std::make_unique<Graphite::Common::Plugin::DynamicLibrary>(plugin_path);
+
                         app_state.selected_logs_plugin_path = plugin_path;
 
                         m_application->As<FluxionApplication>()->SavePluginPathToDisk();
 
-                        app_state.logs_plugin.reset(nullptr);
+                        bool plugin_loaded{false};
+
                         if (app_state.loaded_plugin_library &&
                             app_state.loaded_plugin_library->isLoaded())
                         {
-                            using CreateFunc = Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*)();
+                            using CreateFunc =
+                                void (*)(Fluxion::API::LogsPlugin::Private::LogsPluginAPI*);
+
                             auto const factory{reinterpret_cast<CreateFunc>(
-                                app_state.loaded_plugin_library->getSymbol("CreateFluxionLogsPlugin"))};
+                                app_state.loaded_plugin_library->getSymbol(
+                                    "CreateFluxionLogsPluginAPI"))};
 
                             if (factory != nullptr)
                             {
                                 LOG_INFO(
                                     "::RenderPluginSelection(): Creating and enabling new plugin");
-                                auto plugin_ptr{factory()};
-                                if (plugin_ptr != nullptr)
+
+                                Fluxion::API::LogsPlugin::Private::LogsPluginAPI plugin_api{};
+
+                                factory(&plugin_api);
+
+                                if (plugin_api.instance != nullptr && plugin_api.Destroy != nullptr)
                                 {
                                     LOG_INFO("::RenderPluginSelection(): Plugin created");
-                                    app_state.logs_plugin.reset(plugin_ptr);
 
-                                    Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+                                    app_state.logs_plugin =
+                                        Fluxion::API::LogsPlugin::Private::LogsPluginAdapter{plugin_api};
+
+                                    Fluxion::API::LogsPlugin::OnEnableData enable_data{};
 
                                     enable_data.plugin_home_path =
                                         m_application->As<FluxionApplication>()->GetHomePath() /
-                                        std::string(app_state.logs_plugin->GetDirectoryName());
+                                        std::string(app_state.logs_plugin.GetDirectoryName());
+
                                     std::filesystem::create_directories(enable_data.plugin_home_path);
 
-                                    app_state.logs_plugin->OnEnable(enable_data);
+                                    app_state.logs_plugin.OnEnable(enable_data);
 
-                                    app_state.logs.table_header =
-                                        app_state.logs_plugin->GetTableHeader();
+                                    auto const table_header{app_state.logs_plugin.GetTableHeader()};
+                                    app_state.logs.table_header.assign(
+                                        table_header.begin(), table_header.end());
+
+                                    plugin_loaded = true;
                                 }
                                 else
                                 {
                                     LOG_ERROR(
                                         "::RenderPluginSelection(): Failed to create the plugin "
-                                        "from "
-                                        "{}",
+                                        "from '{}'",
                                         plugin_path);
                                 }
                             }
@@ -165,8 +200,7 @@ void LogsPluginRenderer::RenderPluginSelection()
                             {
                                 LOG_ERROR(
                                     "::RenderPluginSelection(): Failed to load "
-                                    "CreateFluxionLogsPlugin "
-                                    "symbol from {}",
+                                    "CreateFluxionLogsPluginAPI symbol from {}",
                                     plugin_path);
                             }
                         }
@@ -178,15 +212,34 @@ void LogsPluginRenderer::RenderPluginSelection()
                         }
 
                         // Fall back to DummyPlugin if loading failed
-                        if (app_state.logs_plugin == nullptr)
+
+                        if (!plugin_loaded)
                         {
                             LOG_WARN(
-                                "::::RenderPluginSelection(): Plugin loading failed, falling back "
-                                "to "
-                                "DummyPlugin");
-                            app_state.logs_plugin = Fluxion::SentinelPlugins::Logs::Create();
+                                "::::RenderPluginSelection(): Plugin loading failed, falling "
+                                "back to DummyPlugin");
+
+                            app_state.logs_plugin =
+                                Fluxion::API::LogsPlugin::Private::LogsPluginAdapter{
+                                    Fluxion::SentinelLogsPlugin::Create()};
+
                             app_state.selected_logs_plugin_path.clear();
+
                             app_state.loaded_plugin_library.reset();
+
+                            Fluxion::API::LogsPlugin::OnEnableData enable_data{};
+
+                            enable_data.plugin_home_path =
+                                m_application->As<FluxionApplication>()->GetHomePath() /
+                                std::string(app_state.logs_plugin.GetDirectoryName());
+
+                            std::filesystem::create_directories(enable_data.plugin_home_path);
+
+                            app_state.logs_plugin.OnEnable(enable_data);
+
+                            auto const table_header{app_state.logs_plugin.GetTableHeader()};
+                            app_state.logs.table_header.assign(
+                                table_header.begin(), table_header.end());
                         }
                     }
                 }
@@ -195,8 +248,10 @@ void LogsPluginRenderer::RenderPluginSelection()
                 {
                     ImGui::SetItemDefaultFocus();
                 }
+
                 ImGui::PopID();
             }
+
             ImGui::EndCombo();
         }
     }
@@ -204,6 +259,7 @@ void LogsPluginRenderer::RenderPluginSelection()
     if (m_available_plugins.empty())
     {
         ImGui::Spacing();
+
         ImGui::TextDisabled("No plugins found in ~/.fluxion/plugins/logs");
     }
 }
@@ -213,18 +269,16 @@ void LogsPluginRenderer::RenderMenu()
     LOG_SCOPE("::RenderMenu()");
 
     auto& app_state{m_application->GetApplicationState()};
-    if (app_state.logs_plugin == nullptr)
-    {
-        return;
-    }
 
     ImGui::SetWindowFontScale(1.35f);
-    ImGui::TextUnformatted(app_state.logs_plugin->GetDisplayName().data());
+
+    ImGui::TextUnformatted(app_state.logs_plugin.GetDisplayName().data());
+
     ImGui::SetWindowFontScale(1.0f);
 
     ImGui::Separator();
 
-    app_state.logs_plugin->RenderMenu();
+    app_state.logs_plugin.RenderMenu();
 
     ImGui::Spacing();
 }
@@ -246,6 +300,7 @@ void LogsPluginRenderer::ScanAvailablePlugins()
         if (!std::filesystem::exists(plugins_dir))
         {
             LOG_INFO("Plugins directory does not exist: {}", plugins_dir.string());
+
             return;
         }
 
@@ -254,11 +309,14 @@ void LogsPluginRenderer::ScanAvailablePlugins()
             if (entry.is_regular_file())
             {
                 const auto& path = entry.path();
+
                 // Check if this is the currently selected plugin
+
                 if (app_state.selected_logs_plugin_path == path)
                 {
                     m_selected_plugin_index = static_cast<int>(m_available_plugins.size());
                 }
+
                 m_available_plugins.push_back(path);
             }
         }
@@ -292,12 +350,15 @@ void LogsPluginRenderer::RenderImportPlugins()
     }
 
     // Render the file dialog if it is open
+
     if (m_file_dialog.IsOpen())
     {
         // Render() returns true while the dialog remains open, and false when closed
+
         if (!m_file_dialog.Render())
         {
             auto const& selected_paths = m_file_dialog.GetSelectedPaths();
+
             if (!selected_paths.empty())
             {
                 auto const plugins_dir = home_path / "plugins" / "logs";
@@ -312,6 +373,7 @@ void LogsPluginRenderer::RenderImportPlugins()
                             std::filesystem::is_regular_file(src_path))
                         {
                             std::filesystem::path dest_path = plugins_dir / src_path.filename();
+
                             LOG_INFO(
                                 "::RenderImportPlugins(): Copying plugin from {} to {}",
                                 src_path,

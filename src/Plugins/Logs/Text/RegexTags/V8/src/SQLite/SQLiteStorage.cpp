@@ -36,11 +36,11 @@ SQLiteStorage::~SQLiteStorage()
 
 bool SQLiteStorage::Open(
     std::filesystem::path const& path,
-    std::vector<std::string> const& fields,
+    std::vector<std::string> fields,
     std::size_t const id_offset)
 {
     Close();
-    m_fields = fields;
+    m_fields = std::move(fields);
     m_id_offset = id_offset;
     m_next_log_id = id_offset;
 

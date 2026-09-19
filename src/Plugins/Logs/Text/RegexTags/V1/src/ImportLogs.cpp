@@ -109,7 +109,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     auto const output_filtered_path{MakeFilteredLogsPath(path)};
     auto filtered_writer = CSV::Writer{output_filtered_path};
     LOG_INFO("Output filtered CSV file {}", output_filtered_path);
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
+    auto const default_filter_id{Fluxion::API::LogsPlugin::UniqueID::GetDefault().ToString()};
 
     std::string line{};
     line.reserve(1024);

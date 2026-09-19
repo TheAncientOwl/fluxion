@@ -5,12 +5,13 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 4.0
+/// @version 4.1
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <filesystem>
 #include <system_error>
+#include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V4/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -24,8 +25,10 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V4::GetLogs);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V4 {
 
 void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+    std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+    Fluxion::API::LogsPlugin::WriteLogRowDataFn write_data,
+    Fluxion::API::LogsPlugin::WriteLogRowMetadataFn write_metadata,
+    void* user_data)
 {
     LOG_SCOPE("::GetLogs()");
 
@@ -35,13 +38,6 @@ void RegexTags::GetLogs(
         LOG_WARN("::GetLogs(): SQLite connection is closed and could not be opened");
         return;
     }
-
-    std::stringstream ss{};
-    for (auto range : ranges)
-    {
-        ss << "[" << range.begin << ", " << range.end << "), ";
-    }
-    LOG_INFO("::GetLogs(): Requested ranges: {}", ss.str());
 
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
@@ -93,13 +89,26 @@ void RegexTags::GetLogs(
             break;
         }
 
-        auto& target_row = out_logs[view_index];
+        // Prepare Row Data
+        std::vector<Fluxion::API::LogsPlugin::LogRowItem> row_data{};
+        row_data.reserve(row_fields.size());
 
-        target_row.data = row_fields;
+        for (auto const& field : row_fields)
+        {
+            row_data.push_back({.data = field.data(), .size = field.size()});
+        }
 
-        target_row.metadata = {
-            .filter_id = Graphite::Common::Utility::UniqueID{filter_id_str},
-            .highlight_id = Graphite::Common::Utility::UniqueID{highlight_id_str}};
+        Fluxion::API::LogsPlugin::LogRowData const safe_data{
+            .data = row_data.data(), .size = row_data.size()};
+        GRAPHITE_ASSERT(write_data != nullptr, "Received nullptr write_data function pointer");
+        write_data(user_data, view_index, &safe_data);
+
+        GRAPHITE_ASSERT(
+            write_metadata != nullptr, "Received nullptr write_metadata function pointer");
+        auto const metadata{Fluxion::API::LogsPlugin::Adapter::MakeMetadata(
+            Fluxion::API::LogsPlugin::UniqueID(filter_id_str),
+            Fluxion::API::LogsPlugin::UniqueID(highlight_id_str))};
+        write_metadata(user_data, view_index, &metadata);
 
         row_fields.clear();
     }

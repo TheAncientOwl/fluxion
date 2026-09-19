@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -22,7 +23,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V5::SQLite {
 class LogsWriter
 {
 public: // Lifecycle
-    LogsWriter(DatabaseRef db, std::vector<std::string> const& fields);
+    LogsWriter(DatabaseRef db, std::span<std::string const> const fields);
     ~LogsWriter() = default;
 
     LogsWriter(LogsWriter const&) = delete;

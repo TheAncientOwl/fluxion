@@ -18,7 +18,7 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::GetTableHeader);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V5 {
 
-std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> RegexTags::GetTableHeader() const
+std::span<Fluxion::API::LogsPlugin::ColumnDetails const> RegexTags::GetTableHeader() const
 {
     return m_imported_logs_header;
 }

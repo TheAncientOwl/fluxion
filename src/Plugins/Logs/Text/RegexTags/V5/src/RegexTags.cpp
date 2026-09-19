@@ -18,6 +18,8 @@
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::RegexTags);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V5::RegexTags);
 
+FLUXION_REGISTER_LOGS_PLUGIN(Fluxion::Plugins::Logs::Text::RegexTags::V5::RegexTags);
+
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V5 {
 
 RegexTags::RegexTags() = default;
@@ -84,7 +86,7 @@ std::vector<std::shared_ptr<Data::RegexTag>> RegexTags::LoadRegexTags() const
         try
         {
             auto tag = std::make_shared<Data::RegexTag>();
-            tag->id = Graphite::Common::Utility::UniqueID(tag_obj.at("id").get<std::string>());
+            tag->id = Fluxion::API::LogsPlugin::UniqueID(tag_obj.at("id").get<std::string>());
             tag->display_name = tag_obj.at("display_name").get<std::string>();
             tag->regex_data = tag_obj.at("regex_data").get<std::string>();
             tag->visible = tag_obj.at("visible").get<bool>();

@@ -79,8 +79,9 @@ void MainMenuView::OnAdd()
 
                 auto& app_state{m_application->GetApplicationState()};
 
-                app_state.logs_plugin->ImportLogs(file_path);
-                app_state.logs.table_header = app_state.logs_plugin->GetTableHeader();
+                app_state.logs_plugin.ImportLogs(file_path);
+                auto const table_header = app_state.logs_plugin.GetTableHeader();
+                app_state.logs.table_header.assign(table_header.begin(), table_header.end());
                 app_state.logs_progress.operation = ELogsOperation::None;
                 app_state.logs_progress.end_time = std::chrono::steady_clock::now();
 
@@ -283,13 +284,12 @@ void MainMenuView::RenderMenu()
         if (app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None)
         {
             auto render_progress = [&,
-                                    operation =
-                                        app_state.logs_plugin->GetLogsOperationUnit() ==
-                                                Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
-                                            ? "bytes"
-                                            : "logs"](
+                                    operation = app_state.logs_plugin.GetLogsOperationUnit() ==
+                                                        Fluxion::API::LogsPlugin::ELogsOperationUnit::Bytes
+                                                    ? "bytes"
+                                                    : "logs"](
                                        const char* icon, const char* action_name, std::size_t total) {
-                auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};
+                auto const processed{app_state.logs_plugin.GetLogsOperationProgress()};
                 auto const percentage{Fluxion::Common::Utility::Math::Percentage(processed, total)};
 
                 char overlay_buf[128];
@@ -318,22 +318,22 @@ void MainMenuView::RenderMenu()
             {
             case Fluxion::Application::ELogsOperation::Import:
                 render_progress(
-                    ICON_CI_ROCKET, "Imported", app_state.logs_plugin->GetLogsOperationTarget());
+                    ICON_CI_ROCKET, "Imported", app_state.logs_plugin.GetLogsOperationTarget());
                 break;
 
             case Fluxion::Application::ELogsOperation::Filter:
                 render_progress(
-                    ICON_CI_WAND, "Filtered", app_state.logs_plugin->GetLogsOperationTarget());
+                    ICON_CI_WAND, "Filtered", app_state.logs_plugin.GetLogsOperationTarget());
                 break;
 
             case Fluxion::Application::ELogsOperation::DisableFilter:
                 render_progress(
-                    ICON_CI_WAND, "Removed filters", app_state.logs_plugin->GetLogsOperationTarget());
+                    ICON_CI_WAND, "Removed filters", app_state.logs_plugin.GetLogsOperationTarget());
                 break;
 
             case Fluxion::Application::ELogsOperation::Search:
                 render_progress(
-                    ICON_CI_SEARCH, "Searched", app_state.logs_plugin->GetLogsOperationTarget());
+                    ICON_CI_SEARCH, "Searched", app_state.logs_plugin.GetLogsOperationTarget());
                 break;
 
             default:

@@ -18,7 +18,7 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite::LogsWriter);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6::SQLite {
 
-LogsWriter::LogsWriter(DatabaseRef db, std::vector<std::string> const& fields) : m_database{db}
+LogsWriter::LogsWriter(DatabaseRef db, std::span<std::string const> const fields) : m_database{db}
 {
     LOG_SCOPE("::LogsWriter()");
 

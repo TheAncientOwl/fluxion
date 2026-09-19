@@ -5,12 +5,13 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 1.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <filesystem>
 #include <system_error>
+#include <vector>
 
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V1/RegexTags.hpp"
 #include "Graphite/Common/UI/ImGuiHelpers.hpp"
@@ -24,17 +25,12 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
 void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+    std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+    Fluxion::API::LogsPlugin::WriteLogRowDataFn write_data,
+    Fluxion::API::LogsPlugin::WriteLogRowMetadataFn write_metadata,
+    void* user_data)
 {
     LOG_SCOPE("::GetLogs()");
-
-    std::stringstream ss{};
-    for (auto range : ranges)
-    {
-        ss << "[" << range.begin << ", " << range.end << "), ";
-    }
-    LOG_INFO("::GetLogs(): Requested ranges: {}", ss.str());
 
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
@@ -51,7 +47,7 @@ void RegexTags::GetLogs(
 
     auto const last_line_index{[&ranges]() {
         std::size_t last_idx{std::numeric_limits<std::size_t>::min()};
-        for (auto& range : ranges)
+        for (auto const& range : ranges)
         {
             last_idx = std::max(last_idx, range.end);
         }
@@ -84,21 +80,26 @@ void RegexTags::GetLogs(
             continue;
         }
 
-        auto& target_row = out_logs[row_num];
+        // Prepare Row Data
+        std::vector<Fluxion::API::LogsPlugin::LogRowItem> row_data{};
         auto const actual_row_size{row.size() - 2}; // -2 = first 2 filter IDs
-        if (target_row.data.size() != actual_row_size)
-        {
-            target_row.data.resize(actual_row_size);
-        }
+        row_data.reserve(actual_row_size);
 
         for (std::size_t col_idx = 2; col_idx < row.size(); ++col_idx)
         {
-            target_row.data[col_idx - 2] = std::move(row[col_idx]);
+            row_data.push_back({.data = row[col_idx].data(), .size = row[col_idx].size()});
         }
 
-        target_row.metadata = {
-            .filter_id = Graphite::Common::Utility::UniqueID{row[0]},
-            .highlight_id = Graphite::Common::Utility::UniqueID{row[1]}};
+        Fluxion::API::LogsPlugin::LogRowData const safe_data{
+            .data = row_data.data(), .size = row_data.size()};
+        GRAPHITE_ASSERT(write_data != nullptr, "Received nullptr write_data function pointer");
+        write_data(user_data, row_num, &safe_data);
+
+        GRAPHITE_ASSERT(
+            write_metadata != nullptr, "Received nullptr write_metadata function pointer");
+        auto const metadata{Fluxion::API::LogsPlugin::Adapter::MakeMetadata(
+            Fluxion::API::LogsPlugin::UniqueID(row[0]), Fluxion::API::LogsPlugin::UniqueID(row[1]))};
+        write_metadata(user_data, row_num, &metadata);
     }
 }
 

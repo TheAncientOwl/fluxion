@@ -5,7 +5,7 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.3
+/// @version 9.4
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -22,8 +22,10 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V9::GetLogs);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V9 {
 
 void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+    std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+    Fluxion::API::LogsPlugin::WriteLogRowDataFn write_data,
+    Fluxion::API::LogsPlugin::WriteLogRowMetadataFn write_metadata,
+    void* user_data)
 {
     LOG_SCOPE("::GetLogs()");
 
@@ -32,9 +34,25 @@ void RegexTags::GetLogs(
         return;
     }
 
-    std::size_t const expected_fields_count = m_imported_logs_header.size();
+    // Temporary storage for the strings read from SQLite
+    struct ViewIndexData
+    {
+        std::size_t view_idx;
+        std::vector<std::string> data;
+    };
+
     std::vector<std::pair<std::size_t, std::vector<std::string>*>> log_id_to_output;
+    std::vector<ViewIndexData> view_data_storage;
     std::vector<SQLiteStorage::Range> requested_id_ranges;
+
+    std::size_t total_requested_logs = 0;
+    for (auto const& range : ranges)
+    {
+        total_requested_logs += (range.end - range.begin);
+    }
+
+    view_data_storage.reserve(total_requested_logs);
+    log_id_to_output.reserve(total_requested_logs);
 
     for (auto const& range : ranges)
     {
@@ -53,20 +71,19 @@ void RegexTags::GetLogs(
         {
             auto const& filtered_item = m_filtered_logs[view_idx];
 
-            auto& target_row = out_logs[view_idx];
-            target_row.metadata = {
-                .filter_id = filtered_item.filter_id,
-                .highlight_id = filtered_item.highlight_filter_id};
-
-            // Reset column values while preserving vector and string capacity.
-            target_row.data.resize(expected_fields_count);
-            for (auto& value : target_row.data)
-            {
-                value.clear();
-            }
+            GRAPHITE_ASSERT(
+                write_metadata != nullptr, "Received nullptr write_metadata function pointer");
+            auto const metadata{Fluxion::API::LogsPlugin::Adapter::MakeMetadata(
+                filtered_item.filter_id, filtered_item.highlight_filter_id)};
+            write_metadata(user_data, view_idx, &metadata);
 
             std::size_t const log_id = filtered_item.log_id;
-            log_id_to_output.emplace_back(log_id, &target_row.data);
+
+            auto& storage = view_data_storage.emplace_back();
+            storage.view_idx = view_idx;
+            storage.data.resize(m_imported_logs_header.size());
+
+            log_id_to_output.emplace_back(log_id, &storage.data);
         }
     }
 
@@ -103,6 +120,23 @@ void RegexTags::GetLogs(
         {
             storage->ReadRowsByIDsInto(shard_id_ranges, log_id_to_output);
         }
+    }
+
+    // Now write all the data out
+    for (auto const& storage_item : view_data_storage)
+    {
+        std::vector<Fluxion::API::LogsPlugin::LogRowItem> row_data{};
+        row_data.reserve(storage_item.data.size());
+
+        for (auto const& field : storage_item.data)
+        {
+            row_data.push_back({.data = field.data(), .size = field.size()});
+        }
+
+        Fluxion::API::LogsPlugin::LogRowData const safe_data{
+            .data = row_data.data(), .size = row_data.size()};
+        GRAPHITE_ASSERT(write_data != nullptr, "Received nullptr write_data function pointer");
+        write_data(user_data, storage_item.view_idx, &safe_data);
     }
 }
 

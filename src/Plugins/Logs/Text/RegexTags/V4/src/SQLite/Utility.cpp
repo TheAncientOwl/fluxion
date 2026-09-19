@@ -34,7 +34,7 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V4::SQLite::Utility {
 }
 
 [[nodiscard]] std::vector<std::string> MakeFieldsIDs(
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> const& columns)
+    std::vector<Fluxion::API::LogsPlugin::ColumnDetails> const& columns)
 {
     LOG_SCOPE("::MakeFieldsIDs(vector<ColumnDetails>)");
     std::vector<std::string> fields_ids{};

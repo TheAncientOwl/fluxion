@@ -44,49 +44,49 @@ public:
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "Timestamp";
             new_tag.regex_data = R"(^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d+)";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = true;
         }
         {
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "-";
             new_tag.regex_data = R"(\s+)";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = false;
         }
         {
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "Channel";
             new_tag.regex_data = R"(Channel[1-4])";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = true;
         }
         {
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "-";
             new_tag.regex_data = R"(\s+)";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = false;
         }
         {
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "Level";
             new_tag.regex_data = R"(trace|info|error|debug|warn)";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = true;
         }
         {
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "-";
             new_tag.regex_data = R"(\s+)";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = false;
         }
         {
             auto& new_tag = tags.emplace_back();
             new_tag.display_name = "Payload";
             new_tag.regex_data = R"(.*)";
-            new_tag.id = Graphite::Common::Utility::UniqueID::Generate();
+            new_tag.id = Fluxion::API::LogsPlugin::UniqueID::Generate();
             new_tag.visible = true;
         }
 

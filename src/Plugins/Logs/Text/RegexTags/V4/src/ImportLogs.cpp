@@ -300,7 +300,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     ::munmap(mapped_ptr, file_size);
 #endif
 
-    auto const default_filter_id{Graphite::Common::Utility::UniqueID::GetDefault().ToString()};
+    auto const default_filter_id{Fluxion::API::LogsPlugin::UniqueID::GetDefault().ToString()};
 
     LOG_INFO("::ImportLogs(): Total matched logs: {}", m_logs_operation_progress);
     auto settings{GetConfig()};
