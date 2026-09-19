@@ -40,7 +40,7 @@ jobs:
           msystem: UCRT64
           update: true
           install: >-
-            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-clang
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-vulkan-headers
@@ -57,7 +57,7 @@ jobs:
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFLUXION_VERSION=${{ github.ref_name }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Build Application (Unix)
         if: runner.os != 'Windows'

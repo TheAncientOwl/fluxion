@@ -35,7 +35,7 @@ jobs:
           msystem: UCRT64
           update: true
           install: >-
-            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-clang
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-vulkan-headers
@@ -53,7 +53,7 @@ jobs:
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFLUXION_VERSION=${{ github.ref_name }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Build Application (Unix)
         if: runner.os != 'Windows'
@@ -101,10 +101,10 @@ jobs:
           fi
 
           # Ensure GCC/MinGW C++ runtime DLLs are explicitly packaged
-          cp /mingw64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || true
-          cp /mingw64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || true
-          cp /mingw64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || cp /ucrt64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || true
-          
+          cp /ucrt64/bin/libstdc++-6.dll staging/fluxion/ 2>/dev/null || true
+          cp /ucrt64/bin/libgcc_s_seh-1.dll staging/fluxion/ 2>/dev/null || true
+          cp /ucrt64/bin/libwinpthread-1.dll staging/fluxion/ 2>/dev/null || true
+
           cd staging
           zip -r ../${{ env.ARCHIVE_NAME }} fluxion
           cd ..
