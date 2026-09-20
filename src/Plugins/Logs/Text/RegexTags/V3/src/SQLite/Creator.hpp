@@ -13,8 +13,8 @@
 
 #include "Wrapper/DatabaseRef.hpp"
 
+#include <span>
 #include <string>
-#include <vector>
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3::SQLite {
 
@@ -47,7 +47,7 @@ public: // Lifecycle
     Creator& operator=(Creator&&) noexcept = default;
 
 public: // Public API
-    bool CreateTables(std::vector<std::string> const& fields_ids);
+    bool CreateTables(std::span<std::string const> const fields_ids);
 
 private:
     DatabaseRef m_database;

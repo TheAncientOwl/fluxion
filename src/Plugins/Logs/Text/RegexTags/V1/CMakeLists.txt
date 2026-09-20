@@ -1,3 +1,11 @@
+# --- Global MinGW Options ---
+if(WIN32 AND MINGW)
+    add_compile_options(
+        -ffunction-sections
+        -fdata-sections
+    )
+endif()
+
 # --- 1. Interface ---
 add_library(fluxion_logs_plugin__text__regex_tags__v1_interface INTERFACE)
 
@@ -22,6 +30,15 @@ add_library(fluxion_logs_plugin__text__regex_tags__v1 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RenderMenu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Progress.cpp
 )
+
+if(WIN32 AND MINGW)
+    target_link_options(fluxion_logs_plugin__text__regex_tags__v1 PRIVATE
+        -static-libstdc++
+        -static-libgcc
+        -Wl,--gc-sections
+        -fuse-ld=lld
+)
+endif()
 
 target_compile_definitions(fluxion_logs_plugin__text__regex_tags__v1 PRIVATE
     GRAPHITE_EXPORTS

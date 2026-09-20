@@ -14,13 +14,13 @@
 #include <string>
 
 #include <nlohmann/json.hpp>
-#include "Graphite/Common/Utility/UniqueID.hpp"
+#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V5::Data {
 
 struct RegexTag
 {
-    Graphite::Common::Utility::UniqueID id{};
+    Fluxion::API::LogsPlugin::UniqueID id{};
     std::string display_name{};
     std::string regex_data{};
     bool visible{};

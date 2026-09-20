@@ -17,10 +17,14 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V8);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V8 {
 
-void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
+void RegexTags::OnDisable(Fluxion::API::LogsPlugin::OnDisableData const& /*data*/)
 {
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");
+
+    m_imported_logs_header.clear();
+    m_filtered_logs.clear();
+    m_sqlite_storages.clear();
 
     SaveSettings();
 

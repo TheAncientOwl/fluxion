@@ -9,6 +9,8 @@
 /// @brief Implementation @see RegexTags.hpp
 ///
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 #include <re2/re2.h>
 #include <string>
@@ -27,10 +29,11 @@ namespace Fluxion::Plugins::Logs::Text::RegexTags::V2 {
 
 namespace FilterImpl {
 
-struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+using EConditionFlag = Fluxion::API::LogsPlugin::EConditionFlag;
+
+struct ComputedCondition : Graphite::Common::Utility::TWithFlags<ComputedCondition, EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::unique_ptr<re2::RE2>, std::string> condition{};
@@ -38,18 +41,69 @@ struct ComputedCondition
 
 struct ActiveFilter
 {
-    Graphite::Common::Utility::UniqueID id;
+    Fluxion::API::LogsPlugin::UniqueID id;
     std::uint8_t priority{};
     std::vector<ComputedCondition> conditions{};
 };
+
+inline bool MatchesCondition(ComputedCondition const& condition, std::string_view target)
+{
+    bool equals = false;
+
+    if (condition[EConditionFlag::IsRegex])
+    {
+        auto const* re = std::get_if<std::unique_ptr<re2::RE2>>(&condition.condition);
+        if (re && *re && (*re)->ok())
+        {
+            equals = re2::RE2::FullMatch(target, **re);
+        }
+    }
+    else
+    {
+        auto const* str = std::get_if<std::string>(&condition.condition);
+        if (str)
+        {
+            if (!condition[EConditionFlag::IsCaseSensitive])
+            {
+                equals = std::equal(
+                    target.begin(), target.end(), str->begin(), str->end(), [](char a, char b) {
+                        return std::tolower(static_cast<unsigned char>(a)) ==
+                               std::tolower(static_cast<unsigned char>(b));
+                    });
+            }
+            else
+            {
+                equals = (target == *str);
+            }
+        }
+    }
+
+    return condition[EConditionFlag::IsEquals] == equals;
+}
+
+inline bool MatchesFilter(ActiveFilter const& filter, auto const& row)
+{
+    for (auto const& condition : filter.conditions)
+    {
+        if (condition.column_index >= row.size())
+        {
+            return false;
+        }
+
+        if (!MatchesCondition(condition, row[condition.column_index]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
 
 ///
 /// @note Conversion has to be done because of plugin specific regex implementation
 /// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
 ///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::span<Fluxion::API::LogsPlugin::Filter const> const filters)
 {
-    using namespace Fluxion::API::LogsPlugin::Data;
     LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
@@ -70,16 +124,24 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
             out_condition[EConditionFlag::IsCaseSensitive] =
                 condition[EConditionFlag::IsCaseSensitive];
 
-            re2::RE2::Options options;
-            options.set_case_sensitive(condition[EConditionFlag::IsCaseSensitive]);
-
             if (condition[EConditionFlag::IsRegex])
             {
-                out_condition.condition = std::make_unique<re2::RE2>(condition.data, options);
+                re2::RE2::Options options;
+                options.set_case_sensitive(condition[EConditionFlag::IsCaseSensitive]);
+
+                auto re = std::make_unique<re2::RE2>(condition.data, options);
+                if (!re->ok())
+                {
+                    LOG_ERROR(
+                        "::FilterImpl::Convert(): Invalid RE2 pattern '{}': {}",
+                        condition.data,
+                        re->error());
+                }
+                out_condition.condition = std::move(re);
             }
             else
             {
-                out_condition.condition = std::move(condition.data);
+                out_condition.condition = condition.data;
             }
         }
 
@@ -89,17 +151,16 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
     return out;
 }
 
-}; // namespace FilterImpl
+} // namespace FilterImpl
 
 void RegexTags::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+    std::span<Fluxion::API::LogsPlugin::Filter const> const _filters,
+    std::span<Fluxion::API::LogsPlugin::Filter const> const _highlight_only)
 {
     LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
 
-    auto const filters = FilterImpl::Convert(std::move(_filters));
-    auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
+    auto const filters = FilterImpl::Convert(_filters);
+    auto const highlight_only = FilterImpl::Convert(_highlight_only);
     LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
     LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
 
@@ -123,53 +184,18 @@ void RegexTags::ApplyFilters(
         ++m_logs_operation_progress;
         for (auto const& filter : filters)
         {
-            bool matches{true};
-            for (auto const& condition : filter.conditions)
-            {
-                auto const& target{row[condition.column_index]};
-
-                bool const equals =
-                    condition[EConditionFlag::IsRegex]
-                        ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
-                           re2::RE2::FullMatch(
-                               target, *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
-                        : (target == std::get<std::string>(condition.condition));
-
-                if (condition[EConditionFlag::IsEquals] != equals)
-                {
-                    matches = false;
-                    break;
-                }
-            }
-
-            if (matches)
+            if (FilterImpl::MatchesFilter(filter, row))
             {
                 ++total_filtered_logs;
 
-                Graphite::Common::Utility::UniqueID highlight_id{filter.id};
+                Fluxion::API::LogsPlugin::UniqueID highlight_id{filter.id};
                 auto highlight_priority{filter.priority};
+
                 for (auto const& highlight_filter : highlight_only)
                 {
-                    bool highlight_matches{true};
-                    for (auto const& condition : highlight_filter.conditions)
-                    {
-                        auto const& target{row[condition.column_index]};
-
-                        bool const equals =
-                            condition[EConditionFlag::IsRegex]
-                                ? (std::get<std::unique_ptr<re2::RE2>>(condition.condition) &&
-                                   re2::RE2::FullMatch(
-                                       target,
-                                       *std::get<std::unique_ptr<re2::RE2>>(condition.condition)))
-                                : (target == std::get<std::string>(condition.condition));
-
-                        if (condition[EConditionFlag::IsEquals] != equals)
-                        {
-                            highlight_matches = false;
-                            break;
-                        }
-                    }
-                    if (highlight_matches && highlight_filter.priority > highlight_priority)
+                    // Priority Short-Circuit: Skip regex evaluation if priority is not higher
+                    if (highlight_filter.priority > highlight_priority &&
+                        FilterImpl::MatchesFilter(highlight_filter, row))
                     {
                         highlight_id = highlight_filter.id;
                         highlight_priority = highlight_filter.priority;

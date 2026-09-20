@@ -12,57 +12,54 @@
 #include <vector>
 
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
-#include "Graphite/Common/Plugin/GraphiteExport.hpp"
 
-namespace Fluxion::Plugins::Logs::DummyLogsPlugin {
+namespace Fluxion::LogsPlugin::DummyLogsPlugin {
 
-class GRAPHITE_EXPORT DummyLogsPlugin : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
+class DummyLogsPlugin final : public Fluxion::API::LogsPlugin::IFluxionLogsPlugin
 {
 public:
     DummyLogsPlugin();
 
 public:
-    std::string_view GetDisplayName() const override final;
-    std::string_view GetDirectoryName() const override final;
+    std::string_view GetDisplayName() const override;
+    std::string_view GetDirectoryName() const override;
 
-    void OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& data) override final;
-    void OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& data) override final;
+    void OnEnable(Fluxion::API::LogsPlugin::OnEnableData const& data) override;
+    void OnDisable(Fluxion::API::LogsPlugin::OnDisableData const& data) override;
 
-    void RenderMenu() override final;
+    void RenderMenu() override;
 
-    void ImportLogs(std::filesystem::path const& path) override final;
+    void ImportLogs(std::filesystem::path const& path) override;
 
     std::optional<std::size_t> GetNextLog(
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index = 0) override final;
+        Fluxion::API::LogsPlugin::UniqueID const& filter_id,
+        std::size_t const current_index = 0) override;
     std::optional<std::size_t> GetPrevLog(
-        Graphite::Common::Utility::UniqueID const& filter_id,
-        std::size_t const current_index = 0) override final;
+        Fluxion::API::LogsPlugin::UniqueID const& filter_id,
+        std::size_t const current_index = 0) override;
 
     void ApplyFilters(
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters,
-        std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only) override final;
-    void DisableFilters() override final;
+        std::span<Fluxion::API::LogsPlugin::Filter const> const filters,
+        std::span<Fluxion::API::LogsPlugin::Filter const> const highlight_only) override;
+    void DisableFilters() override;
 
-    std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> GetTableHeader() const override final;
+    std::span<Fluxion::API::LogsPlugin::ColumnDetails const> GetTableHeader() const override;
 
-    std::size_t GetTotalLogs() const override final;
+    std::size_t GetTotalLogs() const override;
 
     void GetLogs(
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs) override final;
+        std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+        Fluxion::API::LogsPlugin::WriteLogRowDataFn write_data,
+        Fluxion::API::LogsPlugin::WriteLogRowMetadataFn write_metadata,
+        void* user_data) override;
 
-    std::size_t GetLogsOperationTarget() const override final;
-    std::size_t GetLogsOperationProgress() const override final;
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit GetLogsOperationUnit() const override final;
+    std::size_t GetLogsOperationTarget() const override;
+    std::size_t GetLogsOperationProgress() const override;
+    Fluxion::API::LogsPlugin::ELogsOperationUnit GetLogsOperationUnit() const override;
 
 private:
     std::vector<std::vector<std::string>> m_logs;
-    std::vector<Fluxion::API::LogsPlugin::Data::LogRow> m_filtered_logs;
+    std::vector<Fluxion::API::LogsPlugin::OwningLogRow> m_filtered_logs;
 };
 
-} // namespace Fluxion::Plugins::Logs::DummyLogsPlugin
-
-extern "C" GRAPHITE_EXPORT Fluxion::API::LogsPlugin::IFluxionLogsPlugin* CreateFluxionLogsPlugin();
-typedef Fluxion::API::LogsPlugin::IFluxionLogsPlugin* (*CreateFluxionLogsPluginFactory)();
+} // namespace Fluxion::LogsPlugin::DummyLogsPlugin

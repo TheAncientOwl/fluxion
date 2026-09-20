@@ -19,8 +19,8 @@ FilteredLog::FilteredLog(std::size_t const log_id) : log_id{log_id}
 
 FilteredLog::FilteredLog(
     std::size_t const log_id,
-    Graphite::Common::Utility::UniqueID const& filter_id,
-    Graphite::Common::Utility::UniqueID const& highlight_filter_id)
+    Fluxion::API::LogsPlugin::UniqueID const& filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& highlight_filter_id)
     : log_id{log_id}, filter_id{filter_id}, highlight_filter_id{highlight_filter_id}
 {
 }

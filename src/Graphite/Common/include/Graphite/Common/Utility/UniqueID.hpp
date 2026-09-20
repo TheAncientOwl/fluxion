@@ -72,6 +72,19 @@ public: // public API
     static inline constexpr std::size_t GetMinDumpSize() { return 37; }
 
     ///
+    /// @brief Access raw 16-byte ID representation.
+    /// @return Reference to the underlying ID bytes.
+    ///
+    [[nodiscard]] std::array<unsigned char, 16> const& Data() const noexcept;
+
+    ///
+    /// @brief Create a UniqueID from its raw 16-byte representation.
+    /// @param data Raw ID bytes.
+    /// @return UniqueID containing the provided bytes.
+    ///
+    [[nodiscard]] static UniqueID FromData(std::array<unsigned char, 16> const& data) noexcept;
+
+    ///
     /// @return true if object was created via UniqueID::generate, false otherwise
     ///
     bool initialized() const;
@@ -100,7 +113,7 @@ public: // operators
 
 private: // fields
     static const UniqueID s_default;
-    std::array<unsigned char, 16> m_data{};
+    std::array<std::uint8_t, 16> m_data{};
 };
 
 std::string operator+(std::string_view const lhs, UniqueID const& rhs);

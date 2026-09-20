@@ -167,7 +167,8 @@ void handle<EFilterActionType::DuplicateTab>(
             auto filter_dup = std::make_shared<Filter>(*filter_ptr);
             filter_dup->id = Graphite::Common::Utility::UniqueID::Generate();
             id_to_metadata_updates.emplace_back(
-                filter_dup->id, Fluxion::API::Data::Common::Highlight{filter_dup->colors});
+                filter_dup->id,
+                Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight{filter_dup->colors});
 
             auto current_comps = filter_dup->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -315,7 +316,8 @@ void handle<EFilterActionType::DuplicateFilter>(
             duplicate_filter->id = Graphite::Common::Utility::UniqueID::Generate();
             duplicate_filter->name += "*";
             id_to_metadata_updates.emplace_back(
-                duplicate_filter->id, Fluxion::API::Data::Common::Highlight{duplicate_filter->colors});
+                duplicate_filter->id,
+                Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight{duplicate_filter->colors});
 
             auto current_comps = duplicate_filter->conditions.GetBack();
             std::vector<Condition::Ptr> new_comps_list;
@@ -431,7 +433,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
 {
     LOG_SCOPE("::handle<ApplyFilters>()");
 
-    if (application_state.logs_plugin->GetTotalLogs() == 0)
+    if (application_state.logs_plugin.GetTotalLogs() == 0)
     {
         LOG_INFO(
             "::handle<ApplyFilters>(): No logs recorded; Next steps -> save tabs -> update "
@@ -446,11 +448,11 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
         return;
     }
 
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters{};
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> highlight_only{};
+    std::vector<Fluxion::API::LogsPlugin::Filter> filters{};
+    std::vector<Fluxion::API::LogsPlugin::Filter> highlight_only{};
 
     auto const& tabs{application_state.filters.tabs.GetBack()};
-    auto const& header{application_state.logs_plugin->GetTableHeader()};
+    auto const& header{application_state.logs_plugin.GetTableHeader()};
 
     auto get_column_index =
         [&header](std::string_view const display_name) -> std::optional<std::size_t> {
@@ -481,7 +483,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
                 continue;
             }
 
-            std::vector<Fluxion::API::LogsPlugin::Data::Condition> out_conditions{};
+            std::vector<Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Condition> out_conditions{};
             out_conditions.reserve(filter.conditions.GetBack().size());
             for (auto const& condition_ptr : filter.conditions.GetBack())
             {
@@ -498,7 +500,8 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
                 out_condition.data = condition.data;
 
                 using EInternalConditionFlag = EConditionFlag;
-                using EBridgeConditionFlag = Fluxion::API::LogsPlugin::Data::EConditionFlag;
+                using EBridgeConditionFlag =
+                    Fluxion::API::LogsPlugin::Private::ABI::Safe::EConditionFlag;
 
                 out_condition[EBridgeConditionFlag::IsRegex] =
                     condition[EInternalConditionFlag::IsRegex];
@@ -539,7 +542,7 @@ void handle<EFilterActionType::ApplyFilters>(AppState& application_state, Payloa
     auto worker{std::thread{[&application_state,
                              filters = std::move(filters),
                              highlight_only = std::move(highlight_only)]() {
-        application_state.logs_plugin->ApplyFilters(std::move(filters), std::move(highlight_only));
+        application_state.logs_plugin.ApplyFilters(std::move(filters), std::move(highlight_only));
         application_state.logs_progress.operation = ELogsOperation::None;
         application_state.logs_progress.end_time = std::chrono::steady_clock::now();
     }}};
@@ -561,7 +564,7 @@ void handle<EFilterActionType::DisableFilters>(
     application_state.logs_progress.end_time = std::nullopt;
 
     auto worker{std::thread{[&application_state]() {
-        application_state.logs_plugin->DisableFilters();
+        application_state.logs_plugin.DisableFilters();
         application_state.logs_progress.operation = Fluxion::Application::ELogsOperation::None;
         application_state.logs_progress.end_time = std::chrono::steady_clock::now();
     }}};
@@ -579,7 +582,7 @@ void handle<EFilterActionType::NextLog>(AppState& application_state, Payloads::S
         [&](Data::Logs::SearchedLog& searched_log) {
             std::size_t current_index = searched_log.index.value_or(0);
             searched_log.index =
-                application_state.logs_plugin->GetNextLog(payload.filter_id, current_index);
+                application_state.logs_plugin.GetNextLog(payload.filter_id, current_index);
             LOG_INFO("::handle<NextLog>(): log index == {}", searched_log.index);
         });
 }
@@ -592,7 +595,7 @@ void handle<EFilterActionType::PrevLog>(AppState& application_state, Payloads::S
         [&](Data::Logs::SearchedLog& searched_log) {
             std::size_t current_index = searched_log.index.value_or(0);
             searched_log.index =
-                application_state.logs_plugin->GetPrevLog(payload.filter_id, current_index);
+                application_state.logs_plugin.GetPrevLog(payload.filter_id, current_index);
             LOG_INFO("::handle<PrevLog>(): log index == {}", searched_log.index);
         });
 }

@@ -24,12 +24,13 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V1);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V1 {
 
+using EConditionFlag = Fluxion::API::LogsPlugin::EConditionFlag;
+
 namespace FilterImpl {
 
-struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+struct ComputedCondition : Graphite::Common::Utility::TWithFlags<ComputedCondition, EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
@@ -37,7 +38,7 @@ struct ComputedCondition
 
 struct ActiveFilter
 {
-    Graphite::Common::Utility::UniqueID id;
+    Fluxion::API::LogsPlugin::UniqueID id;
     std::uint8_t priority{};
     std::vector<ComputedCondition> conditions{};
 };
@@ -46,9 +47,8 @@ struct ActiveFilter
 /// @note Conversion has to be done because of plugin specific regex implementation
 /// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
 ///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+inline std::vector<ActiveFilter> Convert(std::span<Fluxion::API::LogsPlugin::Filter const> const filters)
 {
-    using namespace Fluxion::API::LogsPlugin::Data;
     LOG_INFO("::FilterImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
@@ -88,11 +88,10 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
 }; // namespace FilterImpl
 
 void RegexTags::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+    std::span<Fluxion::API::LogsPlugin::Filter const> const _filters,
+    std::span<Fluxion::API::LogsPlugin::Filter const> const _highlight_only)
 {
     LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
 
     auto const filters = FilterImpl::Convert(std::move(_filters));
     auto const highlight_only = FilterImpl::Convert(std::move(_highlight_only));
@@ -140,7 +139,7 @@ void RegexTags::ApplyFilters(
             {
                 ++total_filtered_logs;
 
-                Graphite::Common::Utility::UniqueID highlight_id{filter.id};
+                Fluxion::API::LogsPlugin::UniqueID highlight_id{filter.id};
                 auto highlight_priority{filter.priority};
                 for (auto const& highlight_filter : highlight_only)
                 {

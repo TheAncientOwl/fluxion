@@ -25,7 +25,9 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
 #define NOMINMAX // Prevent Windows.h from defining min/max macros
+#endif
 #include <windows.h>
 #else
 #include <fcntl.h>
@@ -56,18 +58,15 @@ namespace Utility {
 class LogsOperationUnitResetter
 {
 public:
-    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& target)
+    LogsOperationUnitResetter(Fluxion::API::LogsPlugin::ELogsOperationUnit& target)
         : m_target{target}
     {
     }
 
-    ~LogsOperationUnitResetter()
-    {
-        m_target = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Logs;
-    };
+    ~LogsOperationUnitResetter() { m_target = Fluxion::API::LogsPlugin::ELogsOperationUnit::Logs; };
 
 private:
-    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit& m_target;
+    Fluxion::API::LogsPlugin::ELogsOperationUnit& m_target;
 };
 
 struct MappedFile
@@ -385,7 +384,7 @@ void RegexTags::ImportLogs(std::filesystem::path const& path)
     m_last_imported_logs_path = path;
     m_logs_operation_progress = 0;
     Utility::LogsOperationUnitResetter logs_operation_unit_resetter{m_logs_operation_unit};
-    m_logs_operation_unit = Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes;
+    m_logs_operation_unit = Fluxion::API::LogsPlugin::ELogsOperationUnit::Bytes;
     m_logs_operation_target = mapped_file.size;
 
     auto const fields_ids{SQLite::Utility::MakeFieldsIDs(tags)};

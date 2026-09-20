@@ -22,7 +22,7 @@ Creator::Creator(DatabaseRef db) : m_database{db}
 {
 }
 
-bool Creator::CreateTable(std::vector<std::string> const& fields_ids)
+bool Creator::CreateTable(std::span<std::string const> const fields_ids)
 {
     LOG_SCOPE("::CreateTable()");
 

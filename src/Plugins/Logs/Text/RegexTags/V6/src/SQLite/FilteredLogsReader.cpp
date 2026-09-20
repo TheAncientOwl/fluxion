@@ -24,7 +24,7 @@ FilteredLogsReader::FilteredLogsReader(DatabaseRef db) : m_database{db}
 
 Statement FilteredLogsReader::PrepareGetLogsByIDsQuery(
     std::vector<std::uint64_t> const& log_ids,
-    std::vector<std::string> const& fields)
+    std::span<std::string const> const fields)
 {
     LOG_SCOPE("::PrepareGetLogsByIDsQuery()");
 
@@ -66,7 +66,7 @@ Statement FilteredLogsReader::PrepareGetLogsByIDsQuery(
 
 std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
     std::vector<Data::FilteredLog> const& filtered_logs,
-    Graphite::Common::Utility::UniqueID const& target_filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& target_filter_id,
     std::size_t current_index)
 {
     LOG_SCOPE("::GetNextFilteredIndex()");
@@ -97,7 +97,7 @@ std::optional<std::size_t> FilteredLogsReader::GetNextFilteredIndex(
 
 std::optional<std::size_t> FilteredLogsReader::GetPrevFilteredIndex(
     std::vector<Data::FilteredLog> const& filtered_logs,
-    Graphite::Common::Utility::UniqueID const& target_filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& target_filter_id,
     std::size_t current_index)
 {
     LOG_SCOPE("::GetPrevFilteredIndex()");

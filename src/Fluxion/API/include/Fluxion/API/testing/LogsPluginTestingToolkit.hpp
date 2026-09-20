@@ -5,7 +5,7 @@
 ///
 /// @file LogsPluginTestingToolkit.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.1
+/// @version 2.1
 /// @brief Helper toolkit for testing IFluxionLogsPlugins
 ///
 
@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
+#include "Fluxion/API/LogsPlugin/Private/ABI/Adapter.hpp"
 #include "Graphite/Logger.hpp"
 
 namespace Fluxion::API::Testing::LogsPluginTestingKit {
@@ -148,11 +149,34 @@ protected:
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
         EXPECT_EQ(logs_plugin.GetTotalLogs(), m_generated_logs.size());
 
-        static std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{0, 2}, {2, 5}};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        static std::vector<Fluxion::API::LogsPlugin::Range> const ranges{{0, 2}, {2, 5}};
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::IndexToLogRowMap index_to_log_row_map{};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(
+            ranges,
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowData const* data) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                auto& log = logs[index];
+                log.data.clear();
+                log.data.reserve(data->size);
+
+                for (auto const& value : std::span{data->data, data->size})
+                {
+                    log.data.emplace_back(value.data, value.size);
+                }
+            },
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowMetadata const* metadata) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                logs[index].metadata =
+                    Fluxion::API::LogsPlugin::Private::ABI::Adapter::ToNative(*metadata);
+            },
+            &index_to_log_row_map);
 
         static std::initializer_list<std::size_t> const target_indices{0u, 1u, 2u, 3u, 4u};
         for (auto const index : target_indices)
@@ -180,12 +204,35 @@ protected:
             return;
         }
 
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{0, total_logs}};
+        std::vector<Fluxion::API::LogsPlugin::Range> const ranges{{0, total_logs}};
 
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::IndexToLogRowMap index_to_log_row_map{};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(
+            ranges,
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowData const* data) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                auto& log = logs[index];
+                log.data.clear();
+                log.data.reserve(data->size);
+
+                for (auto const& value : std::span{data->data, data->size})
+                {
+                    log.data.emplace_back(value.data, value.size);
+                }
+            },
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowMetadata const* metadata) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                logs[index].metadata =
+                    Fluxion::API::LogsPlugin::Private::ABI::Adapter::ToNative(*metadata);
+            },
+            &index_to_log_row_map);
 
         for (std::size_t index = 0; index < total_logs; ++index)
         {
@@ -207,25 +254,70 @@ protected:
     {
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
         const std::size_t total_logs = logs_plugin.GetTotalLogs();
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{
-            {total_logs + 10, total_logs + 20}};
+        std::vector<Fluxion::API::LogsPlugin::Range> const ranges{{total_logs + 10, total_logs + 20}};
 
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::IndexToLogRowMap index_to_log_row_map{};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(
+            ranges,
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowData const* data) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                auto& log = logs[index];
+                log.data.clear();
+                log.data.reserve(data->size);
+
+                for (auto const& value : std::span{data->data, data->size})
+                {
+                    log.data.emplace_back(value.data, value.size);
+                }
+            },
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowMetadata const* metadata) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                logs[index].metadata =
+                    Fluxion::API::LogsPlugin::Private::ABI::Adapter::ToNative(*metadata);
+            },
+            &index_to_log_row_map);
         EXPECT_TRUE(index_to_log_row_map.empty());
     }
 
     void RunTestEmptyAndOverlappingRanges()
     {
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> const ranges{{1, 4}, {3, 5}, {10, 10}};
+        std::vector<Fluxion::API::LogsPlugin::Range> const ranges{{1, 4}, {3, 5}, {10, 10}};
 
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMap index_to_log_row_map{};
-        Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter writer{index_to_log_row_map};
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::IndexToLogRowMap index_to_log_row_map{};
 
-        logs_plugin.GetLogs(ranges, writer);
+        logs_plugin.GetLogs(
+            ranges,
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowData const* data) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                auto& log = logs[index];
+                log.data.clear();
+                log.data.reserve(data->size);
+
+                for (auto const& value : std::span{data->data, data->size})
+                {
+                    log.data.emplace_back(value.data, value.size);
+                }
+            },
+            +[](void* user_data,
+                std::size_t const index,
+                Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowMetadata const* metadata) {
+                auto& logs = *static_cast<decltype(index_to_log_row_map)*>(user_data);
+
+                logs[index].metadata =
+                    Fluxion::API::LogsPlugin::Private::ABI::Adapter::ToNative(*metadata);
+            },
+            &index_to_log_row_map);
 
         static std::initializer_list<std::size_t> const expected_indices{1u, 2u, 3u, 4u};
         for (auto const index : expected_indices)
@@ -283,10 +375,10 @@ protected:
     void RunTestEnableDisableLifecycle()
     {
         auto& logs_plugin = m_wrapper->GetLogsPlugin();
-        Fluxion::API::LogsPlugin::Data::OnEnableData enable_data{};
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::OnEnableData enable_data{};
         logs_plugin.OnEnable(enable_data);
 
-        Fluxion::API::LogsPlugin::Data::OnDisableData disable_data{};
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::OnDisableData disable_data{};
         logs_plugin.OnDisable(disable_data);
     }
 
@@ -300,46 +392,54 @@ protected:
 
 /// Macro accepting a whole TestConfiguration struct via variadic arguments
 #define FLUXION_DEFINE_LOGS_PLUGIN_TESTS(TWrapper, ...)                                         \
-    class LogsPluginTest_##TWrapper                                                             \
+    namespace {                                                                                 \
+    struct TWrapper##_LoggerAutoShutdown                                                        \
+    {                                                                                           \
+        ~TWrapper##_LoggerAutoShutdown() { Graphite::Logger::GetLogger().Shutdown(); }          \
+    };                                                                                          \
+    static TWrapper##_LoggerAutoShutdown logger_auto_shutdown_##TWrapper;                       \
+    }                                                                                           \
+                                                                                                \
+    class TWrapper##_LogsPluginTest                                                             \
         : public ::Fluxion::API::Testing::LogsPluginTestingKit::LogsPluginTestFixture<TWrapper> \
     {                                                                                           \
     public:                                                                                     \
-        LogsPluginTest_##TWrapper()                                                             \
+        TWrapper##_LogsPluginTest()                                                             \
             : ::Fluxion::API::Testing::LogsPluginTestingKit::LogsPluginTestFixture<TWrapper>(   \
                   ::Fluxion::API::Testing::LogsPluginTestingKit::TestConfiguration __VA_ARGS__) \
         {                                                                                       \
         }                                                                                       \
     };                                                                                          \
                                                                                                 \
-    TEST_F(LogsPluginTest_##TWrapper, TestIO)                                                   \
+    TEST_F(TWrapper##_LogsPluginTest, TestIO)                                                   \
     {                                                                                           \
         this->RunTestIO();                                                                      \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestReadAllLogs)                                          \
+    TEST_F(TWrapper##_LogsPluginTest, TestReadAllLogs)                                          \
     {                                                                                           \
         this->RunTestReadAllLogs();                                                             \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestOutOfBoundsQuery)                                     \
+    TEST_F(TWrapper##_LogsPluginTest, TestOutOfBoundsQuery)                                     \
     {                                                                                           \
         this->RunTestOutOfBoundsQuery();                                                        \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestEmptyAndOverlappingRanges)                            \
+    TEST_F(TWrapper##_LogsPluginTest, TestEmptyAndOverlappingRanges)                            \
     {                                                                                           \
         this->RunTestEmptyAndOverlappingRanges();                                               \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestMetadataAndHeader)                                    \
+    TEST_F(TWrapper##_LogsPluginTest, TestMetadataAndHeader)                                    \
     {                                                                                           \
         this->RunTestMetadataAndHeader();                                                       \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestNavigationAPI)                                        \
+    TEST_F(TWrapper##_LogsPluginTest, TestNavigationAPI)                                        \
     {                                                                                           \
         this->RunTestNavigationAPI();                                                           \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestFilterLifecycle)                                      \
+    TEST_F(TWrapper##_LogsPluginTest, TestFilterLifecycle)                                      \
     {                                                                                           \
         this->RunTestFilterLifecycle();                                                         \
     }                                                                                           \
-    TEST_F(LogsPluginTest_##TWrapper, TestEnableDisableLifecycle)                               \
+    TEST_F(TWrapper##_LogsPluginTest, TestEnableDisableLifecycle)                               \
     {                                                                                           \
         this->RunTestEnableDisableLifecycle();                                                  \
     }

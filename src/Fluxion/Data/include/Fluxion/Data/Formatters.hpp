@@ -20,7 +20,8 @@
 #include "imgui.h"
 
 #include "Data.hpp"
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
+#include "Fluxion/API/LogsPlugin/Private/ABI/Safe.hpp"
+#include "Fluxion/API/LogsPlugin/Private/ABI/Unsafe.hpp"
 
 // ==========================================================================
 // 1. HEADER SHELLS (Declarations)
@@ -31,10 +32,10 @@
 namespace std {
 
 template <>
-struct formatter<Fluxion::API::LogsPlugin::Data::Range> : std::formatter<std::string>
+struct formatter<Fluxion::API::LogsPlugin::Private::ABI::Safe::Range> : std::formatter<std::string>
 {
     template <typename FormatContext>
-    auto format(Fluxion::API::LogsPlugin::Data::Range const& range, FormatContext& ctx) const
+    auto format(Fluxion::API::LogsPlugin::Private::ABI::Safe::Range const& range, FormatContext& ctx) const
         -> decltype(ctx.out())
     {
         return std::format_to(ctx.out(), "[{}, {})", range.begin, range.end);
@@ -104,9 +105,10 @@ struct std::formatter<ImVec4> : std::formatter<std::string_view>
 };
 
 template <>
-struct std::formatter<Fluxion::API::Data::Common::Highlight> : std::formatter<std::string_view>
+struct std::formatter<Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight>
+    : std::formatter<std::string_view>
 {
-    auto format(const Fluxion::API::Data::Common::Highlight& c, format_context& ctx) const
+    auto format(const Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight& c, format_context& ctx) const
     {
         return std::formatter<std::string_view>::format(
             std::format("FG:{} BG:{}", c.foreground, c.background), ctx);

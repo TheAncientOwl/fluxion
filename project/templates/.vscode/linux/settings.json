@@ -5,11 +5,13 @@
     "**/.hg": true,
     "**/.DS_Store": true
   },
+
   "search.exclude": {
     "external/imgui/*": true,
     "external/MIOCSV/*": true,
     "external/nlohmann_json/*": true
   },
+
   "clangd.arguments": [
     "-j=2",
     "--compile-commands-dir=build",
@@ -18,6 +20,7 @@
     "--limit-results=50",
     "--header-insertion=never"
   ],
+
   "material-icon-theme.folders.customClones": [
     {
       "name": "scrolls",
@@ -59,5 +62,10 @@
   "material-icon-theme.folders.associations": {
     "SQLite": "database"
   },
-  "python-envs.defaultEnvManager": "ms-python.python:system"
+
+  "workbench.colorTheme": "Gruvbox Dark Hard",
+  "clangd.path": "clangd",
+  "clang-format.executable": "clang-format",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "cmake.launchBehavior": "breakAndReuseTerminal"
 }

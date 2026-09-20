@@ -19,7 +19,7 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V3::GetPrevLog);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V3 {
 
 std::optional<std::size_t> RegexTags::GetPrevLog(
-    Graphite::Common::Utility::UniqueID const& filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& filter_id,
     std::size_t current_index)
 {
     LOG_SCOPE("::GetPrevLog()");

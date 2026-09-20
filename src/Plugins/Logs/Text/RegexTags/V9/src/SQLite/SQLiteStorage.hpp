@@ -89,7 +89,7 @@ public:
     ///
     bool Open(
         std::filesystem::path const& path,
-        std::vector<std::string> const& fields,
+        std::vector<std::string> fields,
         std::size_t const id_offset = 0);
 
     ///

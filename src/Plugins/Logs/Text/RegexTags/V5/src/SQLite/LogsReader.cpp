@@ -22,7 +22,7 @@ LogsReader::LogsReader(DatabaseRef db) : m_database{db}
     LOG_SCOPE("::LogsReader()");
 }
 
-Statement LogsReader::PrepareGetAllLogsQuery(std::vector<std::string> const& fields)
+Statement LogsReader::PrepareGetAllLogsQuery(std::span<std::string const> const fields)
 {
     LOG_SCOPE("::PrepareGetAllLogsQuery()");
 

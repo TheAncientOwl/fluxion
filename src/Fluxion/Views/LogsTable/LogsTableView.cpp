@@ -83,23 +83,23 @@ void LogsTableView::OnRender()
 
     if (app_state.logs_progress.operation != Fluxion::Application::ELogsOperation::None)
     {
-        auto const processed{app_state.logs_plugin->GetLogsOperationProgress()};
+        auto const processed{app_state.logs_plugin.GetLogsOperationProgress()};
         auto const total{
             app_state.logs_progress.operation == Fluxion::Application::ELogsOperation::Import
-                ? app_state.logs_plugin->GetLogsOperationTarget()
-                : app_state.logs_plugin->GetTotalLogs()};
+                ? app_state.logs_plugin.GetLogsOperationTarget()
+                : app_state.logs_plugin.GetTotalLogs()};
 
         ImGui::Text(
             ICON_CI_COFFEE " Operation in progress... %zu/%zu %s (%.1f%%)",
             processed,
             total,
-            app_state.logs_plugin->GetLogsOperationUnit() ==
-                    Fluxion::API::LogsPlugin::Data::ELogsOperationUnit::Bytes
+            app_state.logs_plugin.GetLogsOperationUnit() ==
+                    Fluxion::API::LogsPlugin::ELogsOperationUnit::Bytes
                 ? "bytes"
                 : "logs",
             static_cast<double>(Fluxion::Common::Utility::Math::Percentage(processed, total)));
     }
-    else if (app_state.logs_plugin->GetTotalLogs())
+    else if (app_state.logs_plugin.GetTotalLogs())
     {
         RenderLogsTable();
     }
@@ -130,14 +130,17 @@ void LogsTableView::RenderLogsTable()
 {
     LOG_SCOPE("::RenderLogsTable()");
     auto& app_state{m_application->GetApplicationState()};
-    auto table_header{app_state.logs_plugin->GetTableHeader()};
+    auto const table_header_span{app_state.logs_plugin.GetTableHeader()};
+    std::vector<Fluxion::API::LogsPlugin::ColumnDetails> table_header{
+        table_header_span.begin(), table_header_span.end()};
+
     static Graphite::Common::Utility::UniqueID s_index_id{
         Graphite::Common::Utility::UniqueID::Generate()};
     if (app_state.app_options.show_logs_table_idx)
     {
         table_header.insert(
             table_header.begin(),
-            API::LogsPlugin::Data::ColumnDetails{.id = s_index_id, .display_name = "Index"});
+            Fluxion::API::LogsPlugin::ColumnDetails{.id = s_index_id, .display_name = "Index"});
     }
 
     if (table_header.empty())
@@ -199,12 +202,12 @@ void LogsTableView::RenderLogsTable()
         ImGuiListClipper clipper{};
         LOG_DEBUG(
             "::RenderLogsTable(): clipper.Begin({}, {})",
-            app_state.logs_plugin->GetTotalLogs(),
+            app_state.logs_plugin.GetTotalLogs(),
             clipper_row_height);
-        clipper.Begin(static_cast<int>(app_state.logs_plugin->GetTotalLogs()), clipper_row_height);
+        clipper.Begin(static_cast<int>(app_state.logs_plugin.GetTotalLogs()), clipper_row_height);
 
         auto const& front_buffer = app_state.logs.visible.GetFront();
-        std::vector<Fluxion::API::LogsPlugin::Data::Range> ranges{};
+        std::vector<Fluxion::API::LogsPlugin::Range> ranges{};
 
         while (clipper.Step())
         {
@@ -220,7 +223,7 @@ void LogsTableView::RenderLogsTable()
             ranges.emplace_back(
                 static_cast<std::size_t>(std::max(0, clipper.DisplayStart - margin)),
                 static_cast<std::size_t>(std::min(
-                    static_cast<int>(app_state.logs_plugin->GetTotalLogs()),
+                    static_cast<int>(app_state.logs_plugin.GetTotalLogs()),
                     clipper.DisplayEnd + margin)));
 
             for (auto row_idx = clipper.DisplayStart; row_idx < clipper.DisplayEnd; ++row_idx)

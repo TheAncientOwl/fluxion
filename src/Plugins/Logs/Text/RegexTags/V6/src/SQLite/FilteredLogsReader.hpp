@@ -17,8 +17,8 @@
 #include <string>
 #include <vector>
 
+#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
 #include "Fluxion/Plugins/Logs/Text/RegexTags/V6/Data.hpp"
-#include "Graphite/Common/Utility/UniqueID.hpp"
 #include "Wrapper/DatabaseRef.hpp"
 #include "Wrapper/Statement.hpp"
 
@@ -45,7 +45,7 @@ public: // Public API
      */
     Statement PrepareGetLogsByIDsQuery(
         std::vector<std::uint64_t> const& log_ids,
-        std::vector<std::string> const& fields);
+        std::span<std::string const> const fields);
 
     /**
      * @brief Finds the next view index matching the given filter ID, with wrap-around.
@@ -56,7 +56,7 @@ public: // Public API
      */
     [[nodiscard]] std::optional<std::size_t> GetNextFilteredIndex(
         std::vector<Data::FilteredLog> const& filtered_logs,
-        Graphite::Common::Utility::UniqueID const& target_filter_id,
+        Fluxion::API::LogsPlugin::UniqueID const& target_filter_id,
         std::size_t current_index);
 
     /**
@@ -68,7 +68,7 @@ public: // Public API
      */
     [[nodiscard]] std::optional<std::size_t> GetPrevFilteredIndex(
         std::vector<Data::FilteredLog> const& filtered_logs,
-        Graphite::Common::Utility::UniqueID const& target_filter_id,
+        Fluxion::API::LogsPlugin::UniqueID const& target_filter_id,
         std::size_t current_index);
 
 private:

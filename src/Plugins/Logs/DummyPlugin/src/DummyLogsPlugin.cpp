@@ -3,11 +3,13 @@
 /// --------------------------------------------------------------------------
 /// @license https://github.com/TheAncientOwl/fluxion/blob/main/LICENSE
 ///
+///
 /// @file DummyLogsPlugin.cpp
 /// @author Alexandru Delegeanu
 /// @version 0.13
 /// @brief Implementation of @see DummyLogsPlugin.hpp
 ///
+/// --------------------------------------------------------------------------
 
 #include <algorithm>
 #include <filesystem>
@@ -26,14 +28,16 @@
 DEFINE_LOG_SCOPE(Fluxion::Plugins::Logs::DummyLogsPlugin);
 USE_LOG_SCOPE(Fluxion::Plugins::Logs::DummyLogsPlugin);
 
-namespace Fluxion::Plugins::Logs::DummyLogsPlugin {
+FLUXION_REGISTER_LOGS_PLUGIN(Fluxion::LogsPlugin::DummyLogsPlugin::DummyLogsPlugin);
+
+namespace Fluxion::LogsPlugin::DummyLogsPlugin {
 
 namespace DummyImpl {
 
 struct ComputedCondition
-    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>
+    : Graphite::Common::Utility::TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::EConditionFlag>
 {
-    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::Data::EConditionFlag>::operator[];
+    using TWithFlags<ComputedCondition, Fluxion::API::LogsPlugin::EConditionFlag>::operator[];
 
     std::size_t column_index{};
     std::variant<std::regex, std::string> condition{};
@@ -41,7 +45,7 @@ struct ComputedCondition
 
 struct ActiveFilter
 {
-    Graphite::Common::Utility::UniqueID id;
+    Fluxion::API::LogsPlugin::UniqueID id;
     std::uint8_t priority{};
     std::vector<ComputedCondition> conditions{};
 };
@@ -50,9 +54,11 @@ struct ActiveFilter
 /// @note Conversion has to be done because of plugin specific regex implementation
 /// TODO: Consider moving this on Fluxion side with a callback / template type for regex handling.
 ///
-inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::Data::Filter> filters)
+
+inline std::vector<ActiveFilter> Convert(std::span<Fluxion::API::LogsPlugin::Filter const> filters)
 {
-    using namespace Fluxion::API::LogsPlugin::Data;
+    using EConditionFlag = Fluxion::API::LogsPlugin::EConditionFlag;
+
     LOG_INFO("::DummyImpl::Convert(): SIZE: {}", filters.size());
 
     std::vector<ActiveFilter> out{};
@@ -66,10 +72,13 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
         for (auto const& condition : filter.conditions)
         {
             auto& out_condition = out_conditions.emplace_back();
+
             out_condition.column_index = condition.column_index;
 
             out_condition[EConditionFlag::IsRegex] = condition[EConditionFlag::IsRegex];
+
             out_condition[EConditionFlag::IsEquals] = condition[EConditionFlag::IsEquals];
+
             out_condition[EConditionFlag::IsCaseSensitive] =
                 condition[EConditionFlag::IsCaseSensitive];
 
@@ -79,7 +88,7 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
             }
             else
             {
-                out_condition.condition = std::move(condition.data);
+                out_condition.condition = condition.data;
             }
         }
 
@@ -89,39 +98,51 @@ inline std::vector<ActiveFilter> Convert(std::vector<Fluxion::API::LogsPlugin::D
     return out;
 }
 
-}; // namespace DummyImpl
+} // namespace DummyImpl
 
 DummyLogsPlugin::DummyLogsPlugin()
 {
     static const std::vector<std::string> levels = {"info", "error", "debug", "trace"};
+
     static const std::vector<std::string> channels = {
         "Channel1", "Channel2", "Channel3", "Channel4"};
+
     constexpr std::uint32_t seed = 69420;
+
     std::mt19937 gen(seed);
+
     std::uniform_int_distribution<> level_dist(0, static_cast<int>(levels.size() - 1));
+
     std::uniform_int_distribution<> channel_dist(0, static_cast<int>(channels.size() - 1));
 
     for (std::size_t i = 0; i < 1000; ++i)
     {
         std::vector<std::string> entry{};
+
         entry.push_back(std::string("2026-01-01 12:00:") + (i < 10 ? "0" : "") + std::to_string(i));
+
         auto const channel_idx{static_cast<std::size_t>(std::max(0, channel_dist(gen)))};
+
         entry.push_back(channels[channel_idx]);
+
         auto const level_idx{static_cast<std::size_t>(std::max(0, level_dist(gen)))};
+
         entry.push_back(levels[level_idx]);
+
         entry.push_back(
             "Dummy log entry number " + std::to_string(i) + " ---------------------------");
+
         m_logs.push_back(std::move(entry));
         m_filtered_logs.push_back({m_logs.back(), {}});
     }
 }
 
-void DummyLogsPlugin::OnEnable(Fluxion::API::LogsPlugin::Data::OnEnableData const& /*data*/)
+void DummyLogsPlugin::OnEnable(Fluxion::API::LogsPlugin::OnEnableData const& /*data*/)
 {
     // No action needed for dummy plugin
 }
 
-void DummyLogsPlugin::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
+void DummyLogsPlugin::OnDisable(Fluxion::API::LogsPlugin::OnDisableData const& /*data*/)
 {
     // No action needed for dummy plugin
 }
@@ -144,38 +165,43 @@ void DummyLogsPlugin::RenderMenu()
 void DummyLogsPlugin::ImportLogs(std::filesystem::path const& path)
 {
     LOG_SCOPE("ImportLogs");
+
     LOG_INFO("::ImportLogs(): Importing {}", path);
 }
 
 void DummyLogsPlugin::ApplyFilters(
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _filters,
-    std::vector<Fluxion::API::LogsPlugin::Data::Filter> _highlight_only)
+    std::span<Fluxion::API::LogsPlugin::Filter const> const filters,
+    std::span<Fluxion::API::LogsPlugin::Filter const> const highlight_only)
 {
     LOG_SCOPE("::ApplyFilters()");
-    using namespace Fluxion::API::LogsPlugin::Data;
 
-    auto const filters = DummyImpl::Convert(std::move(_filters));
-    auto const highlight_only = DummyImpl::Convert(std::move(_highlight_only));
-    LOG_INFO("::ApplyFilters(): Active filters size: {}", filters.size());
-    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", highlight_only.size());
+    auto const active_filters = DummyImpl::Convert(filters);
+    auto const active_highlight_only = DummyImpl::Convert(highlight_only);
+
+    LOG_INFO("::ApplyFilters(): Active filters size: {}", active_filters.size());
+
+    LOG_INFO("::ApplyFilters(): HighlightOnly-Active filters size: {}", active_highlight_only.size());
 
     m_filtered_logs.clear();
+
     std::vector<std::uint8_t> priorities{};
+
     for (auto const& log : m_logs)
     {
-        for (auto const& filter : filters)
+        for (auto const& filter : active_filters)
         {
             bool matches{true};
+
             for (auto const& condition : filter.conditions)
             {
                 auto const& target{log[condition.column_index]};
 
                 bool const equals{
-                    condition[EConditionFlag::IsRegex]
+                    condition[Fluxion::API::LogsPlugin::EConditionFlag::IsRegex]
                         ? std::regex_match(target, std::get<std::regex>(condition.condition))
                         : target == std::get<std::string>(condition.condition)};
 
-                if (condition[EConditionFlag::IsEquals] != equals)
+                if (condition[Fluxion::API::LogsPlugin::EConditionFlag::IsEquals] != equals)
                 {
                     matches = false;
                     break;
@@ -186,26 +212,30 @@ void DummyLogsPlugin::ApplyFilters(
             {
                 m_filtered_logs.emplace_back(
                     log,
-                    Fluxion::API::LogsPlugin::Data::LogRowMetadata{
+                    Fluxion::API::LogsPlugin::OwningLogRowMetadata{
                         .filter_id = filter.id, .highlight_id = filter.id});
+
                 priorities.push_back(filter.priority);
                 break;
             }
         }
     }
 
-    if (filters.empty())
+    if (active_filters.empty())
     {
         DisableFilters();
+
         priorities.clear();
         priorities.resize(m_filtered_logs.size());
+
         std::fill(priorities.begin(), priorities.end(), 0);
     }
 
     std::size_t idx{0};
+
     for (auto& filtered_log : m_filtered_logs)
     {
-        for (auto const& highlight_filter : highlight_only)
+        for (auto const& highlight_filter : active_highlight_only)
         {
             if (highlight_filter.priority < priorities[idx])
             {
@@ -213,16 +243,17 @@ void DummyLogsPlugin::ApplyFilters(
             }
 
             bool matches{true};
+
             for (auto const& condition : highlight_filter.conditions)
             {
                 auto const& target{filtered_log.data[condition.column_index]};
 
                 bool const equals{
-                    condition[EConditionFlag::IsRegex]
+                    condition[Fluxion::API::LogsPlugin::EConditionFlag::IsRegex]
                         ? std::regex_match(target, std::get<std::regex>(condition.condition))
                         : target == std::get<std::string>(condition.condition)};
 
-                if (condition[EConditionFlag::IsEquals] != equals)
+                if (condition[Fluxion::API::LogsPlugin::EConditionFlag::IsEquals] != equals)
                 {
                     matches = false;
                     break;
@@ -235,6 +266,7 @@ void DummyLogsPlugin::ApplyFilters(
                 break;
             }
         }
+
         ++idx;
     }
 }
@@ -242,19 +274,21 @@ void DummyLogsPlugin::ApplyFilters(
 void DummyLogsPlugin::DisableFilters()
 {
     m_filtered_logs.clear();
+
     for (auto const& log : m_logs)
     {
         m_filtered_logs.push_back({.data = log, .metadata = {}});
     }
 }
 
-std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> DummyLogsPlugin::GetTableHeader() const
+std::span<Fluxion::API::LogsPlugin::ColumnDetails const> DummyLogsPlugin::GetTableHeader() const
 {
-    static std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> s_table_header{
-        {Graphite::Common::Utility::UniqueID::Generate(), "Timestamp"},
-        {Graphite::Common::Utility::UniqueID::Generate(), "Channel"},
-        {Graphite::Common::Utility::UniqueID::Generate(), "Level"},
-        {Graphite::Common::Utility::UniqueID::Generate(), "Payload"}};
+    static std::vector<Fluxion::API::LogsPlugin::ColumnDetails> s_table_header{
+        {Fluxion::API::LogsPlugin::UniqueID::Generate(), "Timestamp"},
+        {Fluxion::API::LogsPlugin::UniqueID::Generate(), "Channel"},
+        {Fluxion::API::LogsPlugin::UniqueID::Generate(), "Level"},
+        {Fluxion::API::LogsPlugin::UniqueID::Generate(), "Payload"}};
+
     return s_table_header;
 }
 
@@ -264,8 +298,10 @@ std::size_t DummyLogsPlugin::GetTotalLogs() const
 }
 
 void DummyLogsPlugin::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+    std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+    Fluxion::API::LogsPlugin::WriteLogRowDataFn write_data,
+    Fluxion::API::LogsPlugin::WriteLogRowMetadataFn write_metadata,
+    void* user_data)
 {
     LOG_SCOPE("::GetLogs()");
 
@@ -279,6 +315,7 @@ void DummyLogsPlugin::GetLogs(
                 "::GetLogs(): empty == {} | begin over size == {}",
                 m_filtered_logs.empty(),
                 range.begin >= m_filtered_logs.size());
+
             continue;
         }
 
@@ -288,25 +325,30 @@ void DummyLogsPlugin::GetLogs(
         {
             auto const& source_row = m_filtered_logs[idx];
 
-            auto& target_row = out_logs[idx];
+            std::vector<Fluxion::API::LogsPlugin::LogRowItem> row_data{};
+            row_data.reserve(source_row.data.size());
 
-            if (target_row.data.size() < source_row.data.size())
+            for (auto const& value : source_row.data)
             {
-                target_row.data.resize(source_row.data.size());
+                row_data.push_back({.data = value.data(), .size = value.size()});
             }
 
-            for (std::size_t col_idx = 0; col_idx < source_row.data.size(); ++col_idx)
-            {
-                target_row.data[col_idx] = source_row.data[col_idx];
-            }
+            Fluxion::API::LogsPlugin::LogRowData const safe_data{
+                .data = row_data.data(), .size = row_data.size()};
+            GRAPHITE_ASSERT(write_data != nullptr, "Received nullptr write_data function pointer");
+            write_data(user_data, idx, &safe_data);
 
-            target_row.metadata = source_row.metadata;
+            auto const metadata{Fluxion::API::LogsPlugin::Adapter::MakeMetadata(
+                source_row.metadata.filter_id, source_row.metadata.highlight_id)};
+            GRAPHITE_ASSERT(
+                write_metadata != nullptr, "Received nullptr write_metadata function pointer");
+            write_metadata(user_data, idx, &metadata);
         }
     }
 }
 
 std::optional<std::size_t> DummyLogsPlugin::GetNextLog(
-    Graphite::Common::Utility::UniqueID const& filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& filter_id,
     std::size_t const current_index)
 {
     LOG_SCOPE("::GetNextLog()");
@@ -318,6 +360,7 @@ std::optional<std::size_t> DummyLogsPlugin::GetNextLog(
     }
 
     std::size_t start = current_index + 1;
+
     if (start >= m_filtered_logs.size())
     {
         start = 0; // Wrap around
@@ -346,7 +389,7 @@ std::optional<std::size_t> DummyLogsPlugin::GetNextLog(
 }
 
 std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(
-    Graphite::Common::Utility::UniqueID const& filter_id,
+    Fluxion::API::LogsPlugin::UniqueID const& filter_id,
     std::size_t const current_index)
 {
     LOG_SCOPE("::GetPrevLog()");
@@ -358,6 +401,7 @@ std::optional<std::size_t> DummyLogsPlugin::GetPrevLog(
     }
 
     std::size_t start;
+
     if (current_index > 0)
     {
         start = current_index - 1;
@@ -403,14 +447,9 @@ std::size_t DummyLogsPlugin::GetLogsOperationProgress() const
     return 0;
 }
 
-Fluxion::API::LogsPlugin::Data::ELogsOperationUnit DummyLogsPlugin::GetLogsOperationUnit() const
+Fluxion::API::LogsPlugin::ELogsOperationUnit DummyLogsPlugin::GetLogsOperationUnit() const
 {
-    return API::LogsPlugin::Data::ELogsOperationUnit::Logs;
+    return Fluxion::API::LogsPlugin::ELogsOperationUnit::Logs;
 }
 
-} // namespace Fluxion::Plugins::Logs::DummyLogsPlugin
-
-extern "C" GRAPHITE_EXPORT Fluxion::API::LogsPlugin::IFluxionLogsPlugin* CreateFluxionLogsPlugin()
-{
-    return new Fluxion::Plugins::Logs::DummyLogsPlugin::DummyLogsPlugin();
-}
+} // namespace Fluxion::LogsPlugin::DummyLogsPlugin

@@ -7,3 +7,6 @@ app.graphite.logger.cfg
 .cache
 benchmark_logs.*
 .fluxion
+Testing/*
+.vscode/settings.json
+staging/*

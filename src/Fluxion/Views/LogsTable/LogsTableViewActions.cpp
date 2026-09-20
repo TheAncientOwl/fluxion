@@ -10,6 +10,7 @@
 ///
 
 #include "LogsTableViewActions.hpp"
+#include "Fluxion/API/LogsPlugin/Private/ABI/Adapter.hpp"
 #include "Fluxion/Data/AppState.hpp"
 #include "Fluxion/Data/Formatters.hpp" // IWYU pragma: keep <for Range>
 #include "Graphite/Logger.hpp"
@@ -27,8 +28,8 @@ void handle(AppState& application_state, TPayload const& payload) = delete;
 
 namespace Utility {
 
-std::vector<Fluxion::API::LogsPlugin::Data::Range> MergeRanges(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range>& input_ranges)
+std::vector<Fluxion::API::LogsPlugin::Range> MergeRanges(
+    std::vector<Fluxion::API::LogsPlugin::Range>& input_ranges)
 {
     if (input_ranges.empty())
     {
@@ -43,7 +44,7 @@ std::vector<Fluxion::API::LogsPlugin::Data::Range> MergeRanges(
         return a.end < b.end;
     });
 
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> merged;
+    std::vector<Fluxion::API::LogsPlugin::Range> merged;
     merged.push_back(input_ranges[0]);
 
     for (std::size_t idx = 1; idx < input_ranges.size(); ++idx)
@@ -76,7 +77,7 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
 
     LOG_INFO("::handle<UpdateVisibleLogs>(): cleaning up visible logs indices");
     LOG_INFO("::handle<UpdateVisibleLogs>(): logs indices request: {}", payload.visible_logs_indices);
-    auto final_request_indices{std::vector<Fluxion::API::LogsPlugin::Data::Range>{}};
+    auto final_request_indices{std::vector<Fluxion::API::LogsPlugin::Range>{}};
     auto const& visible_logs{application_state.logs.visible.GetBack().logs};
     for (auto const& range : payload.visible_logs_indices)
     {
@@ -124,9 +125,31 @@ void handle<ELogsViewActionViewType::UpdateVisibleLogs>(
          &logs_plugin = application_state.logs_plugin](VisibleLogs& visible_logs_chunk) {
             if (!final_request_indices.empty())
             {
-                logs_plugin->GetLogs(
+                logs_plugin.GetLogs(
                     final_request_indices,
-                    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter{visible_logs_chunk.logs});
+                    +[](void* user_data,
+                        std::size_t const index,
+                        Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowData const* data) {
+                        auto& logs = *static_cast<decltype(visible_logs_chunk.logs)*>(user_data);
+
+                        auto& log = logs[index];
+                        log.data.clear();
+                        log.data.reserve(data->size);
+
+                        for (auto const& value : std::span{data->data, data->size})
+                        {
+                            log.data.emplace_back(value.data, value.size);
+                        }
+                    },
+                    +[](void* user_data,
+                        std::size_t const index,
+                        Fluxion::API::LogsPlugin::Private::ABI::Safe::LogRowMetadata const* metadata) {
+                        auto& logs = *static_cast<decltype(visible_logs_chunk.logs)*>(user_data);
+
+                        logs[index].metadata =
+                            Fluxion::API::LogsPlugin::Private::ABI::Adapter::ToNative(*metadata);
+                    },
+                    &visible_logs_chunk.logs);
             }
         });
 }

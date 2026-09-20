@@ -75,7 +75,7 @@ void RegexTags::RenderMenu()
                 LOG_INFO("::RenderMenu(): Add Tag.");
                 tags_dirty = true;
                 auto& new_tag = back_tags.emplace_back(std::make_shared<Data::RegexTag>());
-                new_tag->id = Graphite::Common::Utility::UniqueID::Generate();
+                new_tag->id = Fluxion::API::LogsPlugin::UniqueID::Generate();
                 LOG_INFO("::RenderMenu(): New Tag ID {}.", new_tag->id);
 
                 new_tag->display_name = "New Tag";

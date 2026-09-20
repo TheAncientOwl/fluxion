@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 9.10
+/// @version 9.11
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -38,11 +38,11 @@ SQLiteStorage::~SQLiteStorage()
 
 bool SQLiteStorage::Open(
     std::filesystem::path const& path,
-    std::vector<std::string> const& fields,
+    std::vector<std::string> fields,
     std::size_t const id_offset)
 {
     Close();
-    m_fields = fields;
+    m_fields = std::move(fields);
     m_id_offset = id_offset;
     m_next_log_id = id_offset;
 
@@ -253,6 +253,7 @@ bool SQLiteStorage::ReadRowsByIDsInto(
     {
         return false;
     }
+    StatementPtr statement_guard{statement};
     while (sqlite3_step(statement) == SQLITE_ROW)
     {
         auto const id = static_cast<std::size_t>(sqlite3_column_int64(statement, 0));
@@ -297,7 +298,6 @@ bool SQLiteStorage::ReadRowsByIDsInto(
             }
         }
     }
-    sqlite3_finalize(statement);
     return true;
 }
 

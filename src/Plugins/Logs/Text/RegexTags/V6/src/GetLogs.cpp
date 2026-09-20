@@ -5,12 +5,11 @@
 ///
 /// @file GetLogs.cpp
 /// @author Alexandru Delegeanu
-/// @version 6.1
+/// @version 6.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
 #include <filesystem>
-#include <sstream>
 #include <system_error>
 #include <unordered_map>
 #include <vector>
@@ -26,8 +25,10 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6::GetLogs);
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
 
 void RegexTags::GetLogs(
-    std::vector<Fluxion::API::LogsPlugin::Data::Range> const& ranges,
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMapWriter out_logs)
+    std::span<Fluxion::API::LogsPlugin::Range const> const ranges,
+    Fluxion::API::LogsPlugin::WriteLogRowDataFn write_data,
+    Fluxion::API::LogsPlugin::WriteLogRowMetadataFn write_metadata,
+    void* user_data)
 {
     LOG_SCOPE("::GetLogs()");
 
@@ -42,13 +43,6 @@ void RegexTags::GetLogs(
         LOG_WARN("::GetLogs(): SQLite connection is closed and could not be opened");
         return;
     }
-
-    std::stringstream ss{};
-    for (auto const& range : ranges)
-    {
-        ss << "[" << range.begin << ", " << range.end << "), ";
-    }
-    LOG_INFO("::GetLogs(): Requested ranges: {}", ss.str());
 
     if (!static_cast<bool>(m_last_imported_logs_path))
     {
@@ -82,10 +76,11 @@ void RegexTags::GetLogs(
         {
             auto const& filtered_item = m_filtered_logs[view_idx];
 
-            auto& target_row = out_logs[view_idx];
-            target_row.metadata = {
-                .filter_id = filtered_item.filter_id,
-                .highlight_id = filtered_item.highlight_filter_id};
+            GRAPHITE_ASSERT(
+                write_metadata != nullptr, "Received nullptr write_metadata function pointer");
+            auto const metadata{Fluxion::API::LogsPlugin::Adapter::MakeMetadata(
+                filtered_item.filter_id, filtered_item.highlight_filter_id)};
+            write_metadata(user_data, view_idx, &metadata);
 
             log_id_to_view_indices[filtered_item.log_id].push_back(view_idx);
             log_ids_to_fetch.push_back(filtered_item.log_id);
@@ -119,11 +114,25 @@ void RegexTags::GetLogs(
             fields[i - 1] = text ? text : "";
         }
 
+        // Prepare Row Data
+        std::vector<Fluxion::API::LogsPlugin::LogRowItem> row_data{};
+        row_data.reserve(fields.size());
+
+        for (auto const& field : fields)
+        {
+            row_data.push_back({.data = field.data(), .size = field.size()});
+        }
+
+        Fluxion::API::LogsPlugin::LogRowData const safe_data{
+            .data = row_data.data(), .size = row_data.size()};
         if (auto it = log_id_to_view_indices.find(log_id); it != log_id_to_view_indices.end())
         {
             for (std::size_t view_index : it->second)
             {
-                out_logs[view_index].data = fields;
+                GRAPHITE_ASSERT(
+                    write_data != nullptr, "Received nullptr write_data function pointer");
+
+                write_data(user_data, view_index, &safe_data);
             }
         }
     }

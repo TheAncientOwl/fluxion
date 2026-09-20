@@ -1,3 +1,11 @@
+# --- Global MinGW Options ---
+if(WIN32 AND MINGW)
+    add_compile_options(
+        -ffunction-sections
+        -fdata-sections
+    )
+endif()
+
 # --- 0. Fetch Dependencies ---
 include(FetchContent)
 
@@ -64,6 +72,15 @@ add_library(fluxion_logs_plugin__text__regex_tags__v9 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Progress.cpp
 )
 
+if(WIN32 AND MINGW)
+    target_link_options(fluxion_logs_plugin__text__regex_tags__v9 PRIVATE
+        -static-libstdc++
+        -static-libgcc
+        -Wl,--gc-sections
+        -fuse-ld=lld
+)
+endif()
+
 target_compile_definitions(fluxion_logs_plugin__text__regex_tags__v9 PRIVATE
     GRAPHITE_EXPORTS
 )
@@ -96,6 +113,7 @@ target_include_directories(fluxion_logs_plugin__text__regex_tags__v9 PRIVATE
 )
 
 # --- 3. Install to ~/.fluxion/plugins/logs ---
+# Single POST_BUILD step prevents parallel file access collisions on Windows
 add_custom_command(TARGET fluxion_logs_plugin__text__regex_tags__v9 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${FLUXION_PLUGIN_INSTALL_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:fluxion_logs_plugin__text__regex_tags__v9> "${FLUXION_PLUGIN_INSTALL_DIR}"

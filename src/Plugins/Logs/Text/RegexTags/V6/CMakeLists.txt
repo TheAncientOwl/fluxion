@@ -1,3 +1,11 @@
+# --- Global MinGW Options ---
+if(WIN32 AND MINGW)
+    add_compile_options(
+        -ffunction-sections
+        -fdata-sections
+    )
+endif()
+
 # --- 0. Fetch Dependencies ---
 include(FetchContent)
 
@@ -73,6 +81,15 @@ add_library(fluxion_logs_plugin__text__regex_tags__v6 SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RenderMenu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Progress.cpp
 )
+
+if(WIN32 AND MINGW)
+    target_link_options(fluxion_logs_plugin__text__regex_tags__v6 PRIVATE
+        -static-libstdc++
+        -static-libgcc
+        -Wl,--gc-sections
+        -fuse-ld=lld
+)
+endif()
 
 target_compile_definitions(fluxion_logs_plugin__text__regex_tags__v6 PRIVATE
     GRAPHITE_EXPORTS

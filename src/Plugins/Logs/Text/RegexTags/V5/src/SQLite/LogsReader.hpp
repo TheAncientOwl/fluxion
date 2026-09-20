@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,7 @@ public: // Public API
      * @param fields Vector of column field names to select.
      * @return Statement managing the statement lifetime.
      */
-    Statement PrepareGetAllLogsQuery(std::vector<std::string> const& fields);
+    Statement PrepareGetAllLogsQuery(std::span<std::string const> const fields);
 
     /**
      * @brief Fetches the next raw log row, populating the log ID and field values.

@@ -16,12 +16,10 @@
 #include <string>
 #include <vector>
 
+#include "Fluxion/API/LogsPlugin/Private/ABI/Unsafe.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Utility/TWithFlags.hpp"
 #include "Graphite/Common/Utility/UniqueID.hpp"
-
-#include "Fluxion/API/Data/Common.hpp"
-#include "Fluxion/API/LogsPlugin/PluginBridge.hpp"
 
 namespace Fluxion::Application::Data {
 
@@ -64,7 +62,7 @@ struct Filter : public Graphite::Common::Utility::TWithFlags<Filter, EFilterFlag
     Graphite::Common::Utility::UniqueID id{};
     std::string name{};
     Graphite::Common::DataStructures::TCopyDoubleBuffer<std::vector<Condition::Ptr>> conditions{};
-    Fluxion::API::Data::Common::Highlight colors{};
+    Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight colors{};
     std::uint8_t priority{};
 };
 
@@ -107,14 +105,15 @@ namespace Logs {
 
 struct VisibleLogs
 {
-    Fluxion::API::LogsPlugin::Data::IndexToLogRowMap logs{};
+    Fluxion::API::LogsPlugin::Private::ABI::Unsafe::IndexToLogRowMap logs{};
 };
 
 struct SharedFilterMetadata
 {
-    Fluxion::API::Data::Common::Highlight colors{Fluxion::API::Data::Common::Highlight{
-        .foreground = {1.0f, 1.0f, 1.0f, 1.0f},
-        .background = {0.0f, 0.0f, 0.0f, 0.0f}}};
+    Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight colors{
+        Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight{
+            .foreground = {1.0f, 1.0f, 1.0f, 1.0f},
+            .background = {0.0f, 0.0f, 0.0f, 0.0f}}};
 };
 
 struct SearchedLog

@@ -5,7 +5,7 @@
 ///
 /// @file OnDisable.cpp
 /// @author Alexandru Delegeanu
-/// @version 6.1
+/// @version 6.2
 /// @brief Implementation @see RegexTags.hpp
 ///
 
@@ -17,10 +17,14 @@ USE_LOG_SCOPE(Fluxion::Plugins::Logs::Text::RegexTags::V6);
 
 namespace Fluxion::Plugins::Logs::Text::RegexTags::V6 {
 
-void RegexTags::OnDisable(Fluxion::API::LogsPlugin::Data::OnDisableData const& /*data*/)
+void RegexTags::OnDisable(Fluxion::API::LogsPlugin::OnDisableData const& /*data*/)
 {
     LOG_SCOPE("::OnDisable()");
     LOG_TRACE("::OnDisable()");
+
+    m_filtered_logs.clear();
+    m_total_logs_imported = 0;
+    m_sqlite_connection.Close();
 
     SaveSettings();
 

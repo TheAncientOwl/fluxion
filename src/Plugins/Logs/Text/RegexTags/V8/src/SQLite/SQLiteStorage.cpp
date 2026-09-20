@@ -5,7 +5,7 @@
 ///
 /// @file SQLiteStorage.cpp
 /// @author Alexandru Delegeanu
-/// @version 8.0
+/// @version 8.1
 /// @brief Implementation of @see SQLiteStorage.hpp
 ///
 
@@ -36,11 +36,11 @@ SQLiteStorage::~SQLiteStorage()
 
 bool SQLiteStorage::Open(
     std::filesystem::path const& path,
-    std::vector<std::string> const& fields,
+    std::vector<std::string> fields,
     std::size_t const id_offset)
 {
     Close();
-    m_fields = fields;
+    m_fields = std::move(fields);
     m_id_offset = id_offset;
     m_next_log_id = id_offset;
 
@@ -159,6 +159,7 @@ bool SQLiteStorage::WriteChunk(
     {
         auto const& row = rows[row_index];
         auto const log_id = m_next_log_id;
+
         sqlite3_bind_int64(m_insert_statement.get(), 1, static_cast<sqlite3_int64>(log_id));
         for (std::size_t field_index = 0; field_index < m_fields.size(); ++field_index)
         {
@@ -168,17 +169,16 @@ bool SQLiteStorage::WriteChunk(
                 static_cast<int>(field_index + 2),
                 value.data(),
                 static_cast<int>(value.size()),
-                SQLITE_TRANSIENT);
+                SQLITE_STATIC);
         }
 
         if (sqlite3_step(m_insert_statement.get()) != SQLITE_DONE)
         {
             sqlite3_reset(m_insert_statement.get());
-            sqlite3_clear_bindings(m_insert_statement.get());
             return false;
         }
         sqlite3_reset(m_insert_statement.get());
-        sqlite3_clear_bindings(m_insert_statement.get());
+
         if (out_filtered_logs)
         {
             out_filtered_logs->emplace_back(log_id);
@@ -206,6 +206,7 @@ bool SQLiteStorage::ReadAll(std::vector<std::pair<std::size_t, std::vector<std::
     {
         return false;
     }
+    StatementPtr statement_guard{statement};
     while (sqlite3_step(statement) == SQLITE_ROW)
     {
         std::vector<std::string> row;
@@ -218,7 +219,6 @@ bool SQLiteStorage::ReadAll(std::vector<std::pair<std::size_t, std::vector<std::
         out_rows.emplace_back(
             static_cast<std::size_t>(sqlite3_column_int64(statement, 0)), std::move(row));
     }
-    sqlite3_finalize(statement);
     return true;
 }
 
@@ -243,6 +243,7 @@ bool SQLiteStorage::ReadRows(RowCallback const callback) const
     }
 
     bool completed{true};
+    StatementPtr statement_guard{statement};
     while (sqlite3_step(statement) == SQLITE_ROW)
     {
         std::vector<std::string> row;
@@ -259,7 +260,6 @@ bool SQLiteStorage::ReadRows(RowCallback const callback) const
             break;
         }
     }
-    sqlite3_finalize(statement);
     return completed;
 }
 
@@ -304,6 +304,7 @@ bool SQLiteStorage::ReadRowsByIDs(
     {
         return false;
     }
+    StatementPtr statement_guard{statement};
     while (sqlite3_step(statement) == SQLITE_ROW)
     {
         auto const id = static_cast<std::size_t>(sqlite3_column_int64(statement, 0));
@@ -315,7 +316,6 @@ bool SQLiteStorage::ReadRowsByIDs(
             row.emplace_back(value ? reinterpret_cast<char const*>(value) : "");
         }
     }
-    sqlite3_finalize(statement);
     return true;
 }
 

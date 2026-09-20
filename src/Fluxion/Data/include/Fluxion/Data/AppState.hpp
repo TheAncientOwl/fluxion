@@ -16,7 +16,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "Fluxion/API/LogsPlugin/IFluxionLogsPlugin.hpp"
+#include "Fluxion/API/LogsPlugin/Private/LogsPluginAdapter.hpp"
 #include "Fluxion/Data/Data.hpp"
 #include "Graphite/Common/DataStructures/TDoubleBuffer.hpp"
 #include "Graphite/Common/Plugin/DynamicLibrary.hpp"
@@ -41,9 +41,9 @@ enum class ELogsOperation : std::uint8_t
 
 struct AppState
 {
-    std::unique_ptr<Fluxion::API::LogsPlugin::IFluxionLogsPlugin> logs_plugin{nullptr};
-    std::filesystem::path selected_logs_plugin_path{};
     std::unique_ptr<Graphite::Common::Plugin::DynamicLibrary> loaded_plugin_library{nullptr};
+    Fluxion::API::LogsPlugin::Private::LogsPluginAdapter logs_plugin{};
+    std::filesystem::path selected_logs_plugin_path{};
 
     using IdToMetadataMap =
         std::unordered_map<Graphite::Common::Utility::UniqueID, Data::Logs::SharedFilterMetadata>;
@@ -57,7 +57,7 @@ struct AppState
         Graphite::Common::DataStructures::TSwapDoubleBuffer<IdToMetadataMapUpdates> id_to_metadata_updates{};
         IdToMetadataMap id_to_metadata{};
 
-        std::vector<API::Data::Common::Highlight> colors_swatches{};
+        std::vector<Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight> colors_swatches{};
     } filters{};
 
     struct
@@ -72,7 +72,7 @@ struct AppState
     struct
     {
         Graphite::Common::DataStructures::TSwapDoubleBuffer<Data::Logs::VisibleLogs> visible{};
-        std::vector<Fluxion::API::LogsPlugin::Data::ColumnDetails> table_header{};
+        std::vector<Fluxion::API::LogsPlugin::ColumnDetails> table_header{};
 
         Graphite::Common::DataStructures::TCopyLockingDoubleBuffer<Data::Logs::SearchedLog> searched_log{};
     } logs{};

@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.16
+/// @version 1.18
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -144,7 +144,7 @@ std::filesystem::path Logger::GetConfigFilePath()
     return config_dir / "app.graphite.logger.cfg";
 }
 
-std::string_view Logger::DefineLogScope(std::string_view scope)
+const char* Logger::DefineLogScope(const char* scope)
 {
     std::println("Logger instance: {}", (void*)&GetLogger());
 
@@ -155,6 +155,25 @@ std::string_view Logger::DefineLogScope(std::string_view scope)
     m_scope_enabled.emplace(scope, GetDefaultScopeFlags());
 
     return scope;
+}
+
+bool Logger::IsScopeLevelEnabledRaw(const char* scope, ELogLevel const level)
+{
+    std::lock_guard lock{m_scope_mutex};
+    auto it = m_scope_enabled.find(scope);
+
+    if (it == m_scope_enabled.end())
+    {
+        it = m_scope_enabled.emplace(std::string{scope}, GetDefaultScopeFlags()).first;
+    }
+
+    return it->second[level];
+}
+
+void Logger::LogRaw(ELogLevel level, const char* scope, const char* message)
+{
+    Enqueue(
+        LogMessage{level, std::string(scope), std::string(message), std::chrono::system_clock::now()});
 }
 
 void Logger::Enqueue(LogMessage&& msg)
@@ -272,12 +291,17 @@ Logger::LogLevels const& Logger::GetLevels()
     return s_levels;
 }
 
-Logger::~Logger()
+void Logger::Shutdown()
 {
     m_running = false;
     m_cv.notify_one();
     if (m_worker.joinable())
         m_worker.join();
+}
+
+Logger::~Logger()
+{
+    Shutdown();
 }
 
 std::filesystem::path Logger::GetLogFilePath()
@@ -410,101 +434,6 @@ void Logger::PrintMessage(const LogMessage& msg)
                   << " addr=" << &g_write_mutex << " this=" << this << "\n";
         std::terminate();
     }
-}
-
-ScopeLogger::ScopeLogger(std::string tag, std::string_view scope)
-    : m_scope{scope}, m_tag{std::move(tag)}, m_start{}
-{
-    if (!Graphite::Logger::GetLogger().IsLevelEnabled(ELogLevel::Scope))
-        return;
-
-    m_start = std::chrono::high_resolution_clock::now();
-
-    static constexpr auto green = "\033[32m";
-    static constexpr auto gray = "\033[90m";
-
-    Graphite::Logger::GetLogger().Log(
-        ELogLevel::Scope, m_scope, "{}[{}+{}]{} Begin {}» {}{}", gray, green, gray, green, gray, green, m_tag);
-}
-
-ScopeLogger::~ScopeLogger()
-{
-    if (!Graphite::Logger::GetLogger().IsLevelEnabled(ELogLevel::Scope))
-        return;
-
-    auto const end = std::chrono::high_resolution_clock::now();
-    auto const elapsed = end - m_start;
-
-    auto const hours = std::chrono::duration_cast<std::chrono::hours>(elapsed);
-    auto const minutes = std::chrono::duration_cast<std::chrono::minutes>(elapsed - hours);
-    auto const seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed - hours - minutes);
-    auto const milliseconds =
-        std::chrono::duration_cast<std::chrono::milliseconds>(elapsed - hours - minutes - seconds);
-    auto const nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        elapsed - hours - minutes - seconds - milliseconds);
-
-    static constexpr auto red = "\033[91m";
-    static constexpr auto gray = "\033[90m";
-    static constexpr auto reset = "\033[97m";
-
-    std::ostringstream oss;
-    oss << std::setfill('0');
-
-    bool started = false;
-    if (hours.count() > 0)
-    {
-        oss << hours.count() << "h";
-        started = true;
-    }
-    if (started || minutes.count() > 0)
-    {
-        if (started)
-        {
-            oss << ", ";
-        }
-        oss << minutes.count() << "m";
-        started = true;
-    }
-    if (started || seconds.count() > 0)
-    {
-        if (started)
-        {
-            oss << ", ";
-        }
-        oss << seconds.count() << "s";
-        started = true;
-    }
-    if (started || milliseconds.count() > 0)
-    {
-        if (started)
-        {
-            oss << ", ";
-        }
-        oss << milliseconds.count() << "ms";
-        started = true;
-    }
-    if (started || nanoseconds.count() > 0)
-    {
-        if (started)
-        {
-            oss << ", ";
-        }
-        oss << nanoseconds.count() << "ns";
-    }
-    oss << reset;
-
-    Graphite::Logger::GetLogger().Log(
-        ELogLevel::Scope,
-        m_scope,
-        "{}[{}-{}]{} End   {}» {}{} ~ elapsed {}",
-        gray,
-        red,
-        gray,
-        red,
-        gray,
-        m_tag,
-        gray,
-        oss.str());
 }
 
 } // namespace Graphite::Logger

@@ -7,7 +7,9 @@ target_include_directories(fluxion_api_interface INTERFACE
 
 # -- 2. Implementation ---
 add_library(fluxion_api_impl STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Data.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Adapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Interface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LogsPluginAdapter.cpp
 )
 
 set_target_properties(fluxion_api_impl PROPERTIES
@@ -22,6 +24,8 @@ target_link_libraries(fluxion_api_impl PRIVATE
     external_imgui
     project_compile_options
     graphite_logger_interface
+    graphite_logger_impl
+    graphite_settings_impl
     graphite_common_interface
     fluxion_api_interface
 )

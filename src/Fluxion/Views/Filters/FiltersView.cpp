@@ -45,8 +45,8 @@ struct ColorPreset
 template <EColorPickerType ColorPickerType>
 bool ColorsPicker(
     const char* id,
-    Fluxion::API::Data::Common::Highlight& colors,
-    std::vector<Fluxion::API::Data::Common::Highlight>& color_swatches,
+    Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight& colors,
+    std::vector<Fluxion::API::LogsPlugin::Private::ABI::Unsafe::Highlight>& color_swatches,
     ImVec4 const& display,
     std::string_view const preview,
     bool const over_the_rainbow_default_open)

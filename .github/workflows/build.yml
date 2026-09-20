@@ -1,10 +1,10 @@
-name: CI Build
+name: CI Build / Test [ubuntu/macOS/windows]
 
 on:
   push:
-    branches: [ "main" ]
+    # branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build & Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -33,18 +33,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build clang libgl1-mesa-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libvulkan-dev
 
-      - name: Setup MSYS2 / MinGW-w64 & Ninja (Windows)
+      - name: Setup MSYS2 / MinGW-w64 & Ninja (Windows UCRT64)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-vulkan-headers
-            mingw-w64-x86_64-vulkan-loader
+            mingw-w64-ucrt-x86_64-clang
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-vulkan-headers
+            mingw-w64-ucrt-x86_64-vulkan-loader
+            mingw-w64-ucrt-x86_64-lld
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
@@ -57,7 +58,7 @@ jobs:
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFLUXION_VERSION=${{ github.ref_name }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DFLUXION_VERSION=${{ github.ref_name }}
 
       - name: Build Application (Unix)
         if: runner.os != 'Windows'
@@ -67,3 +68,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: cmake --build build
+
+      - name: Run Unit Tests (Unix)
+        if: runner.os != 'Windows'
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run Unit Tests (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: ctest --test-dir build --output-on-failure

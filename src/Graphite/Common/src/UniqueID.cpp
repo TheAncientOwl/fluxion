@@ -253,6 +253,18 @@ std::size_t UniqueID::Hash::operator()(UniqueID const& id) const
     return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
 }
 
+std::array<unsigned char, 16> const& UniqueID::Data() const noexcept
+{
+    return m_data;
+}
+
+UniqueID UniqueID::FromData(std::array<unsigned char, 16> const& data) noexcept
+{
+    UniqueID result;
+    result.m_data = data;
+    return result;
+}
+
 const UniqueID UniqueID::s_default = UniqueID::MakeDefault();
 
 } // namespace Graphite::Common::Utility
