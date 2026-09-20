@@ -5,7 +5,7 @@
 ///
 /// @file Logger.hpp
 /// @author Alexandru Delegeanu
-/// @version 1.19
+/// @version 1.20
 /// @brief Logging utilities
 ///
 
@@ -163,7 +163,10 @@ public: // API
     void SaveConfig();
     void LoadConfig();
 
-    ScopeEnabledMap const& GetScopes() const;
+    ///
+    /// @brief Returns a thread-safe snapshot copy to prevent iterator invalidation and data races during UI iteration
+    ///
+    ScopeEnabledMap GetScopes() const;
     static LogLevels const& GetLevels();
 
     void SetScopeEnabled(std::string_view scope, bool const enabled);
@@ -194,7 +197,7 @@ private:
     std::mutex m_queue_mutex;
     std::queue<LogMessage> m_queue;
 
-    std::mutex m_scope_mutex;
+    mutable std::mutex m_scope_mutex;
     ScopeEnabledMap m_scope_enabled;
     std::atomic<uint8_t> m_global_level_mask;
 

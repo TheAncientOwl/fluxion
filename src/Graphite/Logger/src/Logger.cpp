@@ -5,7 +5,7 @@
 ///
 /// @file Logger.cpp
 /// @author Alexandru Delegeanu
-/// @version 1.18
+/// @version 1.19
 /// @brief Implementation of @see Logger.hpp.
 ///
 
@@ -271,8 +271,9 @@ void Logger::SetScopeLevelEnabled(std::string_view scope, ELogLevel const level,
     it->second[level] = enabled;
 }
 
-Logger::ScopeEnabledMap const& Logger::GetScopes() const
+Logger::ScopeEnabledMap Logger::GetScopes() const
 {
+    std::lock_guard lock{m_scope_mutex};
     return m_scope_enabled;
 }
 
